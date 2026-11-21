@@ -12,3 +12,7 @@ __pycache__/
 .venv/
 venv/
 node_modules/
+
+# Private local letterhead archive (with signature & seal slots) - never push to public GitHub
+brand/archive-private/
+

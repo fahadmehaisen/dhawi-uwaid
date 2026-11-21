@@ -4,9 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ترويسة مراسلات عامة — ذوي عويض</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/logo-seal-clean.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet" />
   <style>
     @page { size: A4 portrait; margin: 0; }
     :root {
@@ -18,7 +19,7 @@
     }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     body {
-      font-family: 'IBM Plex Sans Arabic', Tahoma, sans-serif;
+      font-family: 'Tajawal', sans-serif;
       background: #E5DFD3; color: var(--ink);
       display: flex; flex-direction: column; align-items: center; padding: 20px 12px 40px;
     }
@@ -33,7 +34,7 @@
     .no-print .actions { display: flex; gap: 8px; flex-wrap: wrap; }
     .btn {
       padding: 8px 14px; border-radius: 8px;
-      font-family: inherit; font-size: 0.85rem; font-weight: 600; text-decoration: none; cursor: pointer;
+      font-family: inherit; font-size: 0.85rem; font-weight: 700; text-decoration: none; cursor: pointer;
       border: 1px solid rgba(201, 164, 90, 0.45); background: rgba(255,255,255,0.08); color: #fff;
     }
     .btn-gold { background: var(--gold); color: #16140F; border-color: var(--gold); }
@@ -54,17 +55,14 @@
       height: 1.4mm; background: var(--gold);
     }
     .header {
-      padding: 9mm 16mm 7mm;
+      padding: 8.5mm 16mm 6.5mm;
       display: flex; align-items: center; justify-content: space-between;
       border-bottom: 1.5pt solid var(--gold);
       background: linear-gradient(180deg, rgba(246, 241, 230, 0.72) 0%, rgba(255,255,255,0) 100%);
     }
-    .brand-right { display: flex; align-items: center; gap: 5mm; }
-    .seal-box { width: 24mm; height: 24mm; flex-shrink: 0; }
-    .seal-box img { width: 100%; height: 100%; object-fit: contain; display: block; }
     .brand-text { display: flex; flex-direction: column; align-items: flex-start; }
-    .brand-text img.wm { height: 15.5mm; width: auto; display: block; margin-bottom: 1.2mm; }
-    .brand-text .sub { font-family: 'Amiri', serif; font-size: 11.5pt; color: var(--emerald); font-weight: 700; }
+    .brand-text img.wm { height: 21mm; width: auto; display: block; margin-bottom: 1.5mm; }
+    .brand-text .sub { font-family: 'Amiri', serif; font-size: 12pt; color: var(--emerald); font-weight: 700; }
 
     .header-left { display: flex; flex-direction: column; align-items: flex-end; gap: 2mm; }
     .tribe-pill {
@@ -74,12 +72,12 @@
     .sub-pill { font-size: 8.5pt; color: var(--muted); }
 
     .watermark {
-      position: absolute; top: 51%; left: 50%; transform: translate(-50%, -50%);
-      width: 110mm; height: 110mm; opacity: 0.04; pointer-events: none; z-index: 0;
+      position: absolute; top: 52%; left: 50%; transform: translate(-50%, -50%);
+      width: 112mm; height: 112mm; opacity: 0.04; pointer-events: none; z-index: 0;
     }
     .watermark img { width: 100%; height: 100%; object-fit: contain; display: block; }
     .side-accent {
-      position: absolute; top: 48mm; bottom: 42mm; right: 9mm; width: 0.6mm;
+      position: absolute; top: 48mm; bottom: 28mm; right: 9mm; width: 0.6mm;
       background: linear-gradient(180deg, var(--gold), rgba(201, 164, 90, 0.14), var(--gold));
     }
 
@@ -88,14 +86,14 @@
       font-size: 11.5pt; line-height: 2; color: var(--ink); outline: none;
     }
     .salutation {
-      font-family: 'Amiri', serif; font-size: 14pt; color: var(--emerald);
+      font-family: 'Amiri', serif; font-size: 14.5pt; color: var(--emerald);
       font-weight: 700; text-align: center; margin-bottom: 8mm;
     }
 
     .footer {
       padding: 5mm 16mm 6mm; border-top: 1.4pt solid var(--gold); background: var(--cream);
       display: flex; align-items: center; justify-content: space-between;
-      font-size: 9pt; color: var(--emerald); font-weight: 600; position: relative; z-index: 1;
+      font-size: 9pt; color: var(--emerald); font-weight: 700; position: relative; z-index: 1;
     }
     .footer-bottom-bar { height: 3.2mm; background: var(--emerald); }
 
@@ -125,14 +123,9 @@
     <div class="top-band"></div>
 
     <header class="header">
-      <div class="brand-right">
-        <div class="seal-box">
-          <img src="../assets/logo-seal-emerald.svg" alt="ختم ذوي عويض" />
-        </div>
-        <div class="brand-text">
-          <img class="wm" src="../assets/logo-wordmark-emerald.svg" alt="ذوي عويض" />
-          <div class="sub">من البصصة قبيلة الشدادين بني الحارث</div>
-        </div>
+      <div class="brand-text">
+        <img class="wm" src="../assets/logo-wordmark-emerald.svg" alt="ذوي عويض" />
+        <div class="sub">من البصصة قبيلة الشدادين بني الحارث</div>
       </div>
 
       <div class="header-left">

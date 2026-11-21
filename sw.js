@@ -2,7 +2,7 @@
    Offline Service Worker for Dhawi Uwaid PWA
    ========================================================================== */
 
-const CACHE_NAME = "dhawi-uwaid-v2";
+const CACHE_NAME = "dhawi-uwaid-v3";
 const PRECACHE_URLS = [
   "./",
   "./index.html",

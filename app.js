@@ -1793,25 +1793,23 @@
 
   // -------------------- Pure-Canvas 1080x1350 Luxury Card & Poster Export --------------------
 
-  const brandSealImg = new Image();
-  brandSealImg.src = "assets/logo-seal-clean.svg";
   const brandWordmarkImg = new Image();
   brandWordmarkImg.src = "assets/logo-wordmark-clean.svg";
 
-  function drawCanvasBrandSeal(ctx, cx, cy, size) {
-    if (brandSealImg.complete && brandSealImg.naturalWidth > 0) {
-      ctx.drawImage(brandSealImg, cx - size / 2, cy - size / 2, size, size);
+  function drawCanvasBrandWordmark(ctx, cx, cy, maxW, maxH) {
+    if (brandWordmarkImg.complete && brandWordmarkImg.naturalWidth > 0) {
+      const ratio = Math.min(maxW / brandWordmarkImg.naturalWidth, maxH / brandWordmarkImg.naturalHeight);
+      const dw = brandWordmarkImg.naturalWidth * ratio;
+      const dh = brandWordmarkImg.naturalHeight * ratio;
+      ctx.drawImage(brandWordmarkImg, cx - dw / 2, cy - dh / 2, dw, dh);
       return;
     }
     ctx.save();
-    ctx.strokeStyle = "#C9A45A";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(cx, cy, size * 0.44, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(cx, cy, size * 0.39, 0, Math.PI * 2);
-    ctx.stroke();
+    ctx.direction = "rtl";
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#C9A45A";
+    ctx.font = 'bold 64px "Amiri", serif';
+    ctx.fillText("ذوي عويض", cx, cy + 20);
     ctx.restore();
   }
 
@@ -1862,21 +1860,21 @@
     ctx.fillStyle = "#12372A";
     ctx.fillRect(48, 48, W - 96, 250);
 
-    drawCanvasBrandSeal(ctx, W / 2, 173, 210);
+    drawCanvasBrandWordmark(ctx, W / 2, 173, 440, 200);
 
     ctx.direction = "rtl";
     ctx.textAlign = "center";
     ctx.fillStyle = "#9A7426";
-    ctx.font = 'bold 30px "IBM Plex Sans Arabic", Tahoma, sans-serif';
+    ctx.font = 'bold 30px "Amiri", serif';
     ctx.fillText("بطاقة نسب موثّقة • ذوي عويض", W / 2, 360);
 
     ctx.fillStyle = "#5A554C";
-    ctx.font = '26px "IBM Plex Sans Arabic", Tahoma, sans-serif';
+    ctx.font = 'bold 26px "Amiri", serif';
     ctx.fillText("من البصصة قبيلة الشدادين بني الحارث", W / 2, 405);
 
     // Member main name
     ctx.fillStyle = "#12372A";
-    ctx.font = 'bold 84px "Amiri", "Traditional Arabic", serif';
+    ctx.font = 'bold 84px "Amiri", serif';
     ctx.fillText(node.name, W / 2, 525);
 
     // Branch pill
@@ -1884,24 +1882,24 @@
       node.branchId === "ANC"
         ? "عمود النسب القبلي"
         : node.branchId === "ROOT"
-        ? "الجد الجامع لفخذ ذوي عويض"
+        ? "الجد الجامع لذوي عويض"
         : `فرع ${node.branchName} • الجيل ${toArabicDigits(node.generation)}`;
     ctx.fillStyle = getBranchColor(node.branchId);
     ctx.beginPath();
     ctx.roundRect(W / 2 - 220, 565, 440, 54, 27);
     ctx.fill();
     ctx.fillStyle = "#FFFDF8";
-    ctx.font = 'bold 26px "IBM Plex Sans Arabic", Tahoma, sans-serif';
+    ctx.font = 'bold 26px "Tajawal", sans-serif';
     ctx.fillText(pillText, W / 2, 601);
 
     // Full lineage section
     ctx.fillStyle = "#9A7426";
-    ctx.font = 'bold 26px "IBM Plex Sans Arabic", Tahoma, sans-serif';
+    ctx.font = 'bold 26px "Tajawal", sans-serif';
     ctx.fillText("عمود النسب المتّصل", W / 2, 690);
 
     const lineageFull = formatLineageSentence(node.id, true);
     ctx.fillStyle = "#1C1B18";
-    ctx.font = '600 32px "IBM Plex Sans Arabic", Tahoma, sans-serif';
+    ctx.font = '700 32px "Tajawal", sans-serif';
     const lines = wrapRtlText(ctx, lineageFull, 860);
     lines.forEach((line, i) => {
       ctx.fillText(line, W / 2, 748 + i * 52);
@@ -1910,7 +1908,7 @@
     let yCursor = 748 + lines.length * 52 + 40;
     if (node.bioNote) {
       ctx.fillStyle = "#12372A";
-      ctx.font = 'bold 26px "IBM Plex Sans Arabic", Tahoma, sans-serif';
+      ctx.font = 'bold 26px "Tajawal", sans-serif';
       const noteLines = wrapRtlText(ctx, `ملاحظة: ${node.bioNote}`, 840);
       noteLines.forEach((nl, i) => {
         ctx.fillText(nl, W / 2, yCursor + i * 40);
@@ -1924,7 +1922,7 @@
         .map((cid) => DATA.nodesById[cid].name)
         .join("، ")}`;
       ctx.fillStyle = "#5A554C";
-      ctx.font = '25px "IBM Plex Sans Arabic", Tahoma, sans-serif';
+      ctx.font = '500 25px "Tajawal", sans-serif';
       const sonLines = wrapRtlText(ctx, sonsText, 860).slice(0, 3);
       sonLines.forEach((sl, i) => {
         ctx.fillText(sl, W / 2, yCursor + i * 38);
@@ -1933,7 +1931,7 @@
 
     // Footer edition stamp
     ctx.fillStyle = "#12372A";
-    ctx.font = 'bold 23px "IBM Plex Sans Arabic", Tahoma, sans-serif';
+    ctx.font = 'bold 23px "Tajawal", sans-serif';
     ctx.fillText(DATA.meta.editionLabel, W / 2, H - 102);
 
     const filename = `بطاقة_نسب_${node.name.replace(/\s+/g, "_")}.png`;
@@ -2008,16 +2006,16 @@
     // Header strip
     ctx.fillStyle = "#12372A";
     ctx.fillRect(0, 0, treeW, headerH);
-    drawCanvasBrandSeal(ctx, treeW - 105, 95, 148);
+    drawCanvasBrandWordmark(ctx, treeW - 190, 95, 290, 130);
 
     ctx.direction = "rtl";
     ctx.textAlign = "right";
     ctx.fillStyle = "#FFFDF8";
     ctx.font = 'bold 46px "Amiri", serif';
-    ctx.fillText("شجرة ذوي عويض — من البصصة قبيلة الشدادين بني الحارث", treeW - 210, 88);
+    ctx.fillText("شجرة ذوي عويض — من البصصة قبيلة الشدادين بني الحارث", treeW - 365, 88);
     ctx.fillStyle = "#E2BE6E";
-    ctx.font = '600 22px "IBM Plex Sans Arabic", sans-serif';
-    ctx.fillText(DATA.meta.editionLabel, treeW - 210, 134);
+    ctx.font = '700 22px "Tajawal", sans-serif';
+    ctx.fillText(DATA.meta.editionLabel, treeW - 365, 134);
 
     const offX = treeW / 2 - (minX + maxX) / 2;
     const offY = headerH + pad - minY;
@@ -2055,7 +2053,7 @@
       ctx.stroke();
 
       ctx.fillStyle = isRootNode ? "#FFFDF8" : "#1C1B18";
-      ctx.font = isRootNode ? 'bold 17px "Amiri", serif' : 'bold 13px "IBM Plex Sans Arabic", sans-serif';
+      ctx.font = isRootNode ? 'bold 17px "Amiri", serif' : 'bold 13px "Tajawal", sans-serif';
       ctx.fillText(p.node.name, cx, cy + 5);
     }
 

@@ -4,9 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>استوديو الشعار والهوية البصرية — ذوي عويض</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/logo-seal-clean.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet" />
   <style>
     :root {
       --emerald: #12372A;
@@ -21,7 +22,7 @@
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'IBM Plex Sans Arabic', Tahoma, sans-serif;
+      font-family: 'Tajawal', sans-serif;
       background: var(--ivory);
       color: var(--ink);
       line-height: 1.7;
@@ -41,15 +42,14 @@
       justify-content: space-between;
       gap: 16px;
     }
-    .brand-row { display: flex; align-items: center; gap: 14px; }
-    .brand-row img.seal { width: 52px; height: 52px; }
-    .brand-row img.wm { height: 34px; width: auto; }
-    .brand-row p { color: var(--gold-light); font-size: 0.85rem; margin-top: 2px; }
+    .brand-row { display: flex; flex-direction: column; align-items: flex-start; }
+    .brand-row img.wm { height: 46px; width: auto; display: block; }
+    .brand-row p { color: var(--gold-light); font-family: 'Amiri', serif; font-size: 0.96rem; margin-top: 2px; }
     .top-actions { display: flex; gap: 10px; flex-wrap: wrap; }
     .btn {
       display: inline-flex; align-items: center; gap: 6px;
       padding: 9px 15px; border-radius: 10px;
-      font-family: inherit; font-size: 0.85rem; font-weight: 600;
+      font-family: inherit; font-size: 0.85rem; font-weight: 700;
       text-decoration: none; cursor: pointer;
       border: 1px solid rgba(226, 200, 139, 0.45);
       background: rgba(255,255,255,0.08); color: #FFFDF8;
@@ -66,8 +66,8 @@
       border-radius: 18px; padding: 24px 28px; margin-bottom: 24px;
       box-shadow: 0 8px 24px rgba(18, 55, 42, 0.06);
     }
-    .intro h2 { font-family: 'Amiri', serif; font-size: 1.75rem; color: var(--emerald); margin-bottom: 6px; }
-    .intro p { color: var(--muted); font-size: 0.96rem; }
+    .intro h2 { font-family: 'Amiri', serif; font-size: 1.8rem; color: var(--emerald); margin-bottom: 8px; }
+    .intro p { color: var(--muted); font-size: 0.98rem; }
 
     .grid-2 {
       display: grid;
@@ -93,21 +93,27 @@
     .badge-row { display: flex; gap: 8px; flex-wrap: wrap; }
     .pill {
       display: inline-block; padding: 3px 10px; border-radius: 999px;
-      font-size: 0.76rem; font-weight: 700;
+      font-size: 0.78rem; font-weight: 700;
       background: #EFE7D4; color: #7C5C1E; border: 1px solid #DFCCA0;
     }
-    .card-body h3 { font-family: 'Amiri', serif; font-size: 1.38rem; color: var(--emerald); }
-    .card-body p { color: var(--muted); font-size: 0.9rem; flex: 1; }
+    .card-body h3 { font-family: 'Amiri', serif; font-size: 1.42rem; color: var(--emerald); }
+    .card-body p { color: var(--muted); font-size: 0.92rem; flex: 1; }
     .dl-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
 
     .matrix-card {
       background: var(--paper); border: 1px solid var(--border);
       border-radius: 18px; padding: 24px 28px; margin-bottom: 28px;
     }
-    .matrix-card h3 { font-family: 'Amiri', serif; font-size: 1.5rem; color: var(--emerald); margin-bottom: 12px; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+    .matrix-card h3 { font-family: 'Amiri', serif; font-size: 1.55rem; color: var(--emerald); margin-bottom: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.94rem; }
     th, td { padding: 12px 14px; border-bottom: 1px solid var(--border); text-align: right; }
     th { background: #FAF6ED; color: var(--emerald); font-weight: 700; }
+
+    .fonts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin-bottom: 28px; }
+    .font-box { background: var(--paper); border: 1px solid var(--border); border-radius: 16px; padding: 22px 24px; }
+    .font-sample-amiri { font-family: 'Amiri', serif; font-size: 2rem; font-weight: 700; color: var(--emerald); margin: 8px 0; }
+    .font-sample-tajawal { font-family: 'Tajawal', sans-serif; font-size: 1.55rem; font-weight: 700; color: var(--emerald); margin: 8px 0; }
+    .font-box p { color: var(--muted); font-size: 0.92rem; }
 
     .palette-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 28px; }
     .swatch { background: var(--paper); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
@@ -120,15 +126,12 @@
   <header class="topbar">
     <div class="topbar-inner">
       <div class="brand-row">
-        <img class="seal" src="../assets/logo-seal-clean.svg" alt="ختم ذوي عويض" />
-        <div>
-          <img class="wm" src="../assets/logo-wordmark-clean.svg" alt="ذوي عويض" />
-          <p>الهوية البصرية المعتمدة — من البصصة قبيلة الشدادين بني الحارث</p>
-        </div>
+        <img class="wm" src="../assets/logo-wordmark-clean.svg" alt="ذوي عويض" />
+        <p>الهوية البصرية الموحّدة — من البصصة قبيلة الشدادين بني الحارث</p>
       </div>
       <div class="top-actions">
         <a href="wall-mural.html" class="btn btn-gold">اللوحة الجدارية (٧٦٠ اسماً)</a>
-        <a href="letterhead-official.html" class="btn">المخاطبات الرسمي</a>
+        <a href="letterhead-official.html" class="btn">الترويسة الرسمية</a>
         <a href="letterhead-clean.html" class="btn">المراسلات العام</a>
         <a href="../index.html" class="btn">العودة للشجرة</a>
       </div>
@@ -137,51 +140,19 @@
 
   <main class="container">
     <section class="intro">
-      <h2>نظام الشعار الموحّد لذوي عويض (الختم الملكي + المخطوطة الحرة)</h2>
-      <p>يجمع نظام الهوية المعتمد بين <strong>الختم الملكي الدائري بالثلث الجلي</strong> و<strong>المخطوطة الديوانية الحرة</strong> دون خلطهما داخل شكل واحد مزدحم. ويتوفّر كل شعار في نسختين: <strong>نسخة رسمية كاملة</strong> تحمل أسفلها عبارة «من البصصة قبيلة الشدادين بني الحارث» للمطبوعات والأوراق، و<strong>نسخة صافية</strong> للأيقونات والبروشات والميداليات والمقاسات الصغيرة.</p>
+      <h2>قاعدة الفصل المعتمدة لشعارَي ذوي عويض</h2>
+      <p>يُحافظ النظام البصري الموحّد على هيبة كل شعار باستقلالية تامة دون وضعهما متجاورَين داخل أي ترويسة واحدة: تأتي <strong>المخطوطة الحرة (بدون دائرة)</strong> شعاراً رئيسياً لرأس صفحات الموقع والترويسات الرسمية واللوحة الجدارية والمطبوعات، بينما يُخصَّص <strong>الختم الملكي الدائري</strong> للأيقونات وصورة الواتساب والبروش المعدني والميدالية والعلامة المائية وسط الورق الرسمي.</p>
     </section>
 
     <section class="grid-2">
       <article class="logo-card">
         <div class="stage dark">
-          <img src="final/logo-seal-clean-gold.svg" alt="الشعار ١ الصافي" />
+          <img src="final/logo-wordmark-clean-gold.svg" alt="المخطوطة الحرة الصافية" />
         </div>
         <div class="card-body">
-          <div class="badge-row"><span class="pill">الشعار ١ — صافي</span><span class="pill">بدون نص إضافي</span></div>
-          <h3>الختم الملكي الدائري (النسخة الصافية)</h3>
-          <p>معتمد لأيقونة تطبيق الآيفون والجوال، البروش المعدني، الميداليات، ختم القماش الجلدي الصغير، والعلامة المائية داخل الأوراق الرسمية.</p>
-          <div class="dl-row">
-            <a class="btn btn-emerald" href="final/logo-seal-clean-gold.svg" download="dhawi-uwaid-seal-clean-gold.svg">تحميل ذهبي SVG</a>
-            <a class="btn btn-soft" href="final/logo-seal-clean-emerald.svg" download="dhawi-uwaid-seal-clean-emerald.svg">تحميل زمردي SVG</a>
-            <a class="btn btn-soft" href="final/logo-seal-clean-black.svg" download="dhawi-uwaid-seal-clean-black.svg">أسود للأختام SVG</a>
-          </div>
-        </div>
-      </article>
-
-      <article class="logo-card">
-        <div class="stage light">
-          <img src="final/logo-seal-full-emerald.svg" alt="الشعار ١ الرسمي الكامل" />
-        </div>
-        <div class="card-body">
-          <div class="badge-row"><span class="pill">الشعار ١ — رسمي كامل</span><span class="pill">من البصصة قبيلة الشدادين بني الحارث</span></div>
-          <h3>الختم الملكي الدائري مع النص التعريفي</h3>
-          <p>معتمد لأغلفة الكتب الرسمية، الدروع التذكارية، الشهادات، والطباعات التي تتسع لعرض النص التعريفي أسفل الختم بوضوح تام.</p>
-          <div class="dl-row">
-            <a class="btn btn-emerald" href="final/logo-seal-full-emerald.svg" download="dhawi-uwaid-seal-full-emerald.svg">تحميل زمردي SVG</a>
-            <a class="btn btn-soft" href="final/logo-seal-full-gold.svg" download="dhawi-uwaid-seal-full-gold.svg">تحميل ذهبي SVG</a>
-            <a class="btn btn-soft" href="final/logo-seal-full-black.svg" download="dhawi-uwaid-seal-full-black.svg">أسود SVG</a>
-          </div>
-        </div>
-      </article>
-
-      <article class="logo-card">
-        <div class="stage dark">
-          <img src="final/logo-wordmark-clean-gold.svg" alt="الشعار ٢ الصافي" />
-        </div>
-        <div class="card-body">
-          <div class="badge-row"><span class="pill">الشعار ٢ — صافي</span><span class="pill">بدون نص إضافي</span></div>
+          <div class="badge-row"><span class="pill">الشعار ١ للواجهات والهيدر</span><span class="pill">بدون دائرة — صافي</span></div>
           <h3>المخطوطة الديوانية الحرة (النسخة الصافية)</h3>
-          <p>معتمدة لشريط الموقع العلوي، الأكواب المطبوعة بأسلوب بسيط، توقيعات البطاقات الرقمية، والواجهات الضيقة التي يكتب فيها السطر التعريفي مستقلاً.</p>
+          <p>معتمدة لرأس صفحات الموقع والمنصة والهواتف الذكية والأكواب البسيطة والعناوين الرقمية حيث يظهر السطر التعريفي تحتها بحرية.</p>
           <div class="dl-row">
             <a class="btn btn-emerald" href="final/logo-wordmark-clean-gold.svg" download="dhawi-uwaid-wordmark-clean-gold.svg">تحميل ذهبي SVG</a>
             <a class="btn btn-soft" href="final/logo-wordmark-clean-emerald.svg" download="dhawi-uwaid-wordmark-clean-emerald.svg">تحميل زمردي SVG</a>
@@ -192,12 +163,12 @@
 
       <article class="logo-card">
         <div class="stage light">
-          <img src="final/logo-wordmark-full-emerald.svg" alt="الشعار ٢ الرسمي الكامل" />
+          <img src="final/logo-wordmark-full-emerald.svg" alt="المخطوطة الرسمية الكاملة" />
         </div>
         <div class="card-body">
-          <div class="badge-row"><span class="pill">الشعار ٢ — رسمي كامل</span><span class="pill">من البصصة قبيلة الشدادين بني الحارث</span></div>
-          <h3>المخطوطة الحرة مع النص التعريفي</h3>
-          <p>معتمدة لترويسة ورق المراسلات الرسمي، اللوحة الجدارية الكاملة للشجرة، الأكواب الفاخرة، لافتات القاعات، ومطبوعات الاحتفالات الكبرى.</p>
+          <div class="badge-row"><span class="pill">الشعار ١ للمطبوعات الرسمية</span><span class="pill">من البصصة قبيلة الشدادين بني الحارث</span></div>
+          <h3>المخطوطة الحرة مع النص التعريفي الكامل</h3>
+          <p>معتمدة لرأس الورق الرسمي والمخاطبات واللوحة الجدارية والأكواب الفاخرة ولافتات الحفل والمناسبات.</p>
           <div class="dl-row">
             <a class="btn btn-emerald" href="final/logo-wordmark-full-emerald.svg" download="dhawi-uwaid-wordmark-full-emerald.svg">تحميل زمردي SVG</a>
             <a class="btn btn-soft" href="final/logo-wordmark-full-gold.svg" download="dhawi-uwaid-wordmark-full-gold.svg">تحميل ذهبي SVG</a>
@@ -205,20 +176,66 @@
           </div>
         </div>
       </article>
+
+      <article class="logo-card">
+        <div class="stage dark">
+          <img src="final/logo-seal-clean-gold.svg" alt="الختم الملكي الصافي" />
+        </div>
+        <div class="card-body">
+          <div class="badge-row"><span class="pill">الختم الدائري — صافي</span><span class="pill">للواتساب والأيقونات والبروش والميدالية</span></div>
+          <h3>الختم الملكي الدائري (النسخة الصافية)</h3>
+          <p>معتمد كصورة للواتساب، وأيقونة تطبيق الآيفون والويب، والبروش المعدني، والميدالية التذكارية، والعلامة المائية وسط الورق الرسمي.</p>
+          <div class="dl-row">
+            <a class="btn btn-gold" href="final/dhawi-uwaid-whatsapp-avatar.png" download="صورة_واتساب_وأيقونة_ذوي_عويض.png">صورة واتساب PNG</a>
+            <a class="btn btn-emerald" href="final/logo-seal-clean-gold.svg" download="dhawi-uwaid-seal-clean-gold.svg">ذهبي SVG</a>
+            <a class="btn btn-soft" href="final/logo-seal-clean-emerald.svg" download="dhawi-uwaid-seal-clean-emerald.svg">زمردي SVG</a>
+            <a class="btn btn-soft" href="final/logo-seal-clean-black.svg" download="dhawi-uwaid-seal-clean-black.svg">أسود للأختام SVG</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="logo-card">
+        <div class="stage light">
+          <img src="final/logo-seal-full-emerald.svg" alt="الختم الملكي الكامل" />
+        </div>
+        <div class="card-body">
+          <div class="badge-row"><span class="pill">الختم الدائري — رسمي كامل</span><span class="pill">من البصصة قبيلة الشدادين بني الحارث</span></div>
+          <h3>الختم الملكي مع النص التعريفي الكامل</h3>
+          <p>معتمد لأغلفة الكتب الفاخرة والدروع التكريمية والشهادات التذكارية حيث تتسع المساحة لإبراز الختم مع عبارة النسب تحته بوضوح تام.</p>
+          <div class="dl-row">
+            <a class="btn btn-emerald" href="final/logo-seal-full-emerald.svg" download="dhawi-uwaid-seal-full-emerald.svg">تحميل زمردي SVG</a>
+            <a class="btn btn-soft" href="final/logo-seal-full-gold.svg" download="dhawi-uwaid-seal-full-gold.svg">تحميل ذهبي SVG</a>
+            <a class="btn btn-soft" href="final/logo-seal-full-black.svg" download="dhawi-uwaid-seal-full-black.svg">أسود SVG</a>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="fonts-grid">
+      <div class="font-box">
+        <span class="pill">خط العناوين والتراث والنسب</span>
+        <div class="font-sample-amiri">الأميري التراثي — ذوي عويض</div>
+        <p>معتمد للعناوين الكبرى، الآية الكريمة، الحديث الشريف، سطر «من البصصة قبيلة الشدادين بني الحارث»، ورؤوس الفروع والبطاقات التوثيقية.</p>
+      </div>
+      <div class="font-box">
+        <span class="pill">خط القراءة والواجهات والأسماء</span>
+        <div class="font-sample-tajawal">خط تجوال العربي — شجرة ذوي عويض</div>
+        <p>معتمد لأسماء الأعضاء في الشجرة واللوحة الجدارية، وقوائم البحث والتطبيق، والنصوص المطبوعة لوضوحه العالي وسلاسته على الجوال والورق.</p>
+      </div>
     </section>
 
     <section class="matrix-card">
-      <h3>دليل الاستخدام الصحيح في المطبوعات والهدايا</h3>
+      <h3>دليل الاستخدام الصحيح والفصل التام بين الشعارين</h3>
       <table>
         <thead>
-          <tr><th>التطبيق</th><th>الشعار الأنسب</th><th>النسخة (كاملة أم صافية؟)</th></tr>
+          <tr><th>الموضع أو المطبوع</th><th>الشعار المعتمد وحده</th><th>النسخة المعتمدة</th></tr>
         </thead>
         <tbody>
-          <tr><td>أيقونة التطبيق على الآيفون والويب</td><td>الشعار ١ (الختم الدائري)</td><td>صافية بدون نص إضافي لضمان الوضوح في المقاس الصغير</td></tr>
-          <tr><td>البروش المعدني والميدالية التذكارية</td><td>الشعار ١ (الختم الدائري)</td><td>صافية (النقش تحت ٢.٥ سم يطمس النص الصغير أثناء الصب)</td></tr>
-          <tr><td>غلاف الكتاب التذكاري والدروع</td><td>الشعار ١ (الختم الدائري)</td><td>كاملة بالذهب الحراري مع سطر «من البصصة قبيلة الشدادين بني الحارث»</td></tr>
-          <tr><td>الورق الرسمي واللوحة الجدارية ولافتات الحفل</td><td>الشعار ٢ (المخطوطة الحرة) + الختم كعلامة مائية</td><td>كاملة بالخط التراثي الكامل والمحاذاة الرسمية</td></tr>
-          <tr><td>الأكواب الخزفية والهدايا الرسمية</td><td>الشعار ١ أو الشعار ٢</td><td>صافية على الكوب الداكن، أو كاملة على الوجه الواسع للكوب</td></tr>
+          <tr><td>رأس الموقع والتطبيق على الكمبيوتر والجوال</td><td>المخطوطة الحرة (بدون دائرة)</td><td>صافية مع سطر «من البصصة قبيلة الشدادين بني الحارث» في الترويسة</td></tr>
+          <tr><td>اللوحة الجدارية الفاخرة ولافتات الحفل</td><td>المخطوطة الحرة في الأعلى (والختم في مفتاح الفروع)</td><td>رسمية كاملة بعبارة «من البصصة قبيلة الشدادين بني الحارث»</td></tr>
+          <tr><td>الورق الرسمي والمراسلات والأكواب</td><td>المخطوطة الحرة في الرأس (والختم علامة مائية خفيفة وسط الورق)</td><td>رسمية كاملة بالزمردي والذهبي وبدون مكان توقيع أو ختم في النسخة العامة</td></tr>
+          <tr><td>صورة الواتساب وأيقونة الآيفون والبروش والميدالية</td><td>الختم الملكي الدائري فقط</td><td>صافية بدون نص تحتي للمقاسات الصغيرة وصور الحسابات</td></tr>
+          <tr><td>غلاف الكتب التذكارية والدروع</td><td>الختم الملكي الدائري</td><td>كاملة بالذهب الحراري مع سطر النسب في الأسفل</td></tr>
         </tbody>
       </table>
     </section>

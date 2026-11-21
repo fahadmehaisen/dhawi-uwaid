@@ -18,8 +18,8 @@
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 20px;
-  --font-body: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
-  --font-display: "Amiri", "Traditional Arabic", serif;
+  --font-body: "Tajawal", sans-serif;
+  --font-display: "Amiri", serif;
 }
 
 [data-theme="dark"] {
@@ -184,7 +184,7 @@ a {
 }
 
 .brand-wordmark-img {
-  height: 38px;
+  height: 44px;
   width: auto;
   max-width: 100%;
   display: block;
@@ -2034,8 +2034,8 @@ a {
     height: 34px;
   }
   .brand-wordmark-img {
-    height: 27px;
-    width: 58px;
+    height: 31px;
+    width: 67px;
   }
   .brand-title {
     font-size: 1.24rem;
@@ -2155,10 +2155,10 @@ a {
     padding: 4px 8px;
   }
   .tree-hud {
-    top: 8px;
-    bottom: auto;
-    left: 8px;
-    padding: 3px 4px;
+    top: auto;
+    bottom: 12px;
+    left: 10px;
+    padding: 4px 6px;
     gap: 4px;
   }
   .hud-btn {

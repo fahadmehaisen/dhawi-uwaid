@@ -3,12 +3,42 @@ const path = require("path");
 
 const ROOT = "c:\\Projects\\dhawi-uwaid";
 const TREE = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "tree.json"), "utf8"));
-const TRACED = JSON.parse(fs.readFileSync(path.join(ROOT, "scripts", "_traced_paths.json"), "utf8"));
+
+function getPathBBox(d) {
+  const nums = d.match(/-?\d+(?:\.\d+)?/g).map(Number);
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (let i = 0; i < nums.length - 1; i += 2) {
+    const x = nums[i], y = nums[i + 1];
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+  }
+  return { minX, minY, maxX, maxY, w: maxX - minX, h: maxY - minY, cx: (minX + maxX) / 2, cy: (minY + maxY) / 2 };
+}
+
+function loadBrandPaths() {
+  const sealSvg = fs.readFileSync(path.join(ROOT, "assets", "logo-seal-clean.svg"), "utf8");
+  const sealD = sealSvg.match(/<path[^>]*\sd="([^"]+)"/)[1];
+  const fullWordSvg = fs.readFileSync(path.join(ROOT, "brand", "final", "logo-wordmark-full-emerald.svg"), "utf8");
+  const wBlock = fullWordSvg.match(/<g id="wordmark-calligraphy"[^>]*>[\s\S]*?<path[^>]*\sd="([^"]+)"/)[1];
+  const sBlock = fullWordSvg.match(/<g id="tribal-subtext"[^>]*>[\s\S]*?<path[^>]*\sd="([^"]+)"/)[1];
+  return {
+    sealD,
+    sealBB: getPathBBox(sealD),
+    wordD: wBlock,
+    wordBB: getPathBBox(wBlock),
+    subD: sBlock,
+    subBB: getPathBBox(sBlock),
+  };
+}
+
+const TRACED = loadBrandPaths();
 
 const W = 5400;
 const H = 6750;
 const CX = 2700;
-const CY = 3680;
+const CY = 3455; // Lifted closer to top header so canopy fills frame like a stately date palm
 
 const ARABIC_DIGITS = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"];
 const toArabic = (v) => String(v).replace(/\d/g, (d) => ARABIC_DIGITS[Number(d)]);
@@ -18,6 +48,8 @@ const esc = (s) =>
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+// Explicit Unicode RTL isolate wrapper prevents Chrome SVG from flipping colons or quotes
+const rtl = (s) => `\u2067${esc(s)}\u2069`;
 
 const BRANCH_COLORS = {
   B01: "#1F6E58",
@@ -32,7 +64,7 @@ const BRANCH_COLORS = {
 
 const nodesById = TREE.nodesById;
 
-// 1. Compute subtree weights to give dense leaf clusters proportionally wide angular arcs
+// 1. Subtree angular weights
 const weights = new Map();
 function calcWeight(id) {
   const n = nodesById[id];
@@ -43,22 +75,19 @@ function calcWeight(id) {
   }
   let sum = 0;
   for (const cid of n.childrenIds) sum += calcWeight(cid);
-  // Ensure branches/sub-nodes don't shrink below clean visual floor
   const val = n.generation === 1 ? Math.max(4.5, sum) : Math.max(1, sum);
   weights.set(id, val);
   return val;
 }
 for (const bid of nodesById["R00"].childrenIds) calcWeight(bid);
 
-// 2. Assign angular sectors right-to-left around canopy:
-// Start from right-lower edge (+54 deg) moving counter-clockwise through 0 (right), -90 (top 12 o'clock), -180 (left), to -234 (left-lower, i.e. 126 deg)
-// Total canopy span = 288 deg; open southern trunk corridor = +54 to +126 deg (72 deg straight down)
-const branchOrder = [...nodesById["R00"].childrenIds]; // B01..B08
+// 2. Angular range: 284 deg canopy sweeping from +52 deg down/over-top to -232 deg
+const branchOrder = [...nodesById["R00"].childrenIds];
 const totalWeight = branchOrder.reduce((a, b) => a + weights.get(b), 0);
-const SECTOR_GAP_DEG = 2.6;
-const TOTAL_SPAN = 288 - SECTOR_GAP_DEG * (branchOrder.length - 1);
+const SECTOR_GAP_DEG = 2.4;
+const TOTAL_SPAN = 284 - SECTOR_GAP_DEG * (branchOrder.length - 1);
 
-const nodeAngles = new Map(); // id -> { deg, midRad }
+const nodeAngles = new Map();
 function assignAngles(id, aStart, aEnd) {
   const n = nodesById[id];
   const aMid = (aStart + aEnd) / 2;
@@ -76,7 +105,7 @@ function assignAngles(id, aStart, aEnd) {
   }
 }
 
-let cursorDeg = 54; // clockwise positive -> going decreasing (CCW) from +54 down to -234
+let cursorDeg = 52;
 for (let i = 0; i < branchOrder.length; i++) {
   const bid = branchOrder[i];
   const span = (TOTAL_SPAN * weights.get(bid)) / totalWeight;
@@ -84,19 +113,18 @@ for (let i = 0; i < branchOrder.length; i++) {
   cursorDeg = cursorDeg - span - SECTOR_GAP_DEG;
 }
 
-// 3. Assign staggered radii per generation to mathematically avoid any overlap
+// 3. Generous enlarged palm frond rings & pill sizes (~45% larger text and pills)
 const GEN_RADII = {
   1: [400],
-  2: [655],
-  3: [925],
-  4: [1195, 1325],
-  5: [1480, 1605, 1730, 1855],
-  6: [2010, 2145],
-  7: [2300],
-  8: [2445],
+  2: [675],
+  3: [955],
+  4: [1205, 1378],
+  5: [1550, 1720, 1890, 2060],
+  6: [2225, 2385],
+  7: [2505],
+  8: [2568],
 };
 
-// Sort each generation globally by angle so round-robin tier assignment alternates cleanly across neighbors
 const byGen = new Map();
 for (const n of Object.values(nodesById)) {
   if (n.generation >= 1) {
@@ -104,24 +132,26 @@ for (const n of Object.values(nodesById)) {
     byGen.get(n.generation).push(n);
   }
 }
-const nodePos = new Map(); // id -> { x, y, r, deg, rad, w, h, fontSize, isBranch, isParent }
+
+const nodePos = new Map();
 for (const [gen, list] of byGen.entries()) {
   list.sort((a, b) => nodeAngles.get(b.id).deg - nodeAngles.get(a.id).deg);
-  const tiers = GEN_RADII[gen] || [2445];
-  // Group by sub-tier to enforce minimum angular chord spacing >= h + 5 px
+  const tiers = GEN_RADII[gen] || [2558];
   const byTier = new Map();
+
   for (let idx = 0; idx < list.length; idx++) {
     const n = list[idx];
     const r = tiers[idx % tiers.length];
     const ang = nodeAngles.get(n.id);
     const isParent = n.childrenCount > 0;
     const isBranch = n.generation === 1;
-    let w = 102, h = 21, fontSize = 13.5;
-    if (isBranch) { w = 166; h = 48; fontSize = 26; }
-    else if (gen === 2) { w = 136; h = 36; fontSize = 19; }
-    else if (gen === 3) { w = 116; h = 28; fontSize = 16; }
-    else if (isParent) { w = 104; h = 22; fontSize = 14; }
-    else { w = 96; h = 19.5; fontSize = 13; }
+
+    let w = 134, h = 27.5, fontSize = 18;
+    if (isBranch) { w = 216; h = 62; fontSize = 36; }
+    else if (gen === 2) { w = 176; h = 46; fontSize = 26; }
+    else if (gen === 3) { w = 148; h = 36; fontSize = 21.5; }
+    else if (isParent) { w = 136; h = 29; fontSize = 19; }
+    else { w = 128; h = 26.5; fontSize = 17.5; }
 
     if (n.name.length >= 9 && !isBranch) w += 18;
     else if (n.name.length >= 7 && !isBranch) w += 8;
@@ -132,18 +162,17 @@ for (const [gen, list] of byGen.entries()) {
     nodePos.set(n.id, item);
   }
 
-  // Tangential separation pass within each sub-tier so arc gap never falls below pill thickness + 6px
   for (const [r, tierList] of byTier.entries()) {
-    tierList.sort((a, b) => a.deg - b.deg); // -234 up to +54
-    for (let iter = 0; iter < 12; iter++) {
+    tierList.sort((a, b) => a.deg - b.deg);
+    for (let iter = 0; iter < 30; iter++) {
       for (let i = 0; i < tierList.length - 1; i++) {
         const A = tierList[i], B = tierList[i + 1];
         const minDeg = ((Math.max(A.h, B.h) + 6) / r) * (180 / Math.PI);
         const diff = B.deg - A.deg;
         if (diff < minDeg) {
-          const push = (minDeg - diff) * 0.52;
-          A.deg = Math.max(-235, A.deg - push);
-          B.deg = Math.min(55, B.deg + push);
+          const push = (minDeg - diff) * 0.55;
+          A.deg = Math.max(-232.5, A.deg - push);
+          B.deg = Math.min(52.5, B.deg + push);
         }
       }
     }
@@ -155,10 +184,9 @@ for (const [gen, list] of byGen.entries()) {
   }
 }
 
-// Root Uwaid at (CX, CY)
-nodePos.set("R00", { n: nodesById["R00"], x: CX, y: CY, r: 0, deg: -90, rad: -Math.PI / 2, w: 320, h: 320, fontSize: 64, isRoot: true });
+nodePos.set("R00", { n: nodesById["R00"], x: CX, y: CY, r: 0, deg: -90, rad: -Math.PI / 2, w: 324, h: 324, fontSize: 82, isRoot: true });
 
-// 4. OBB collision audit across all descendant nodes
+// 4. OBB collision check
 function obbOverlapCount(items) {
   function corners(p) {
     const c = Math.cos(p.rad), s = Math.sin(p.rad);
@@ -201,18 +229,19 @@ function obbOverlapCount(items) {
 
 const descItems = [...nodePos.values()].filter((p) => !p.isRoot);
 const overlaps = obbOverlapCount(descItems);
-console.log(`Mural layout ready: descendants=${descItems.length}, total=${Object.keys(nodesById).length}, OBB_overlaps=${overlaps}`);
+console.log(`Palm Wall Mural ready: descendants=${descItems.length}, total=${Object.keys(nodesById).length}, OBB_overlaps=${overlaps}`);
 
-// 5. Build SVG document
+// 5. Build SVG document with RTL directionality on text
 const out = [];
-out.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`);
+out.push(`<svg xmlns="http://www.w3.org/2000/svg" lang="ar" xml:lang="ar" direction="rtl" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`);
 out.push(`<defs>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&amp;family=IBM+Plex+Sans+Arabic:wght@500;600;700&amp;display=swap');
-    .m-serif { font-family: 'Amiri', 'Traditional Arabic', serif; }
-    .m-sans  { font-family: 'IBM Plex Sans Arabic', 'Tahoma', sans-serif; }
+    @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&amp;family=Tajawal:wght@500;700;800&amp;display=swap');
+    text { direction: rtl; unicode-bidi: isolate; }
+    .m-serif { font-family: 'Amiri', serif; }
+    .m-sans  { font-family: 'Tajawal', sans-serif; }
   </style>
-  <radialGradient id="parchmentGlow" cx="50%" cy="52%" r="60%">
+  <radialGradient id="parchmentGlow" cx="50%" cy="50%" r="60%">
     <stop offset="0%" stop-color="#FFFDF8"/>
     <stop offset="65%" stop-color="#F6F1E4"/>
     <stop offset="100%" stop-color="#ECE3D0"/>
@@ -228,69 +257,66 @@ out.push(`<defs>
     <stop offset="100%" stop-color="#9A7426"/>
   </linearGradient>
   <linearGradient id="trunkGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-    <stop offset="0%" stop-color="#4A3520"/>
+    <stop offset="0%" stop-color="#3F2D1B"/>
     <stop offset="50%" stop-color="#6B4D2F"/>
-    <stop offset="100%" stop-color="#4A3520"/>
+    <stop offset="100%" stop-color="#3F2D1B"/>
   </linearGradient>
 </defs>`);
 
-// Background & Luxury Border Frame
 out.push(`<rect width="${W}" height="${H}" fill="url(#parchmentGlow)"/>`);
-out.push(`<rect x="54" y="54" width="${W - 108}" height="${H - 108}" rx="28" fill="none" stroke="#12372A" stroke-width="18"/>`);
-out.push(`<rect x="82" y="82" width="${W - 164}" height="${H - 164}" rx="18" fill="none" stroke="url(#goldSheen)" stroke-width="5"/>`);
-out.push(`<rect x="104" y="104" width="${W - 208}" height="${H - 208}" rx="12" fill="none" stroke="#C9A45A" stroke-width="1.6" stroke-dasharray="6 10" stroke-opacity="0.65"/>`);
+out.push(`<rect x="50" y="50" width="${W - 100}" height="${H - 100}" rx="28" fill="none" stroke="#12372A" stroke-width="18"/>`);
+out.push(`<rect x="78" y="78" width="${W - 156}" height="${H - 156}" rx="18" fill="none" stroke="url(#goldSheen)" stroke-width="5"/>`);
+out.push(`<rect x="100" y="100" width="${W - 200}" height="${H - 200}" rx="12" fill="none" stroke="#C9A45A" stroke-width="1.6" stroke-dasharray="6 10" stroke-opacity="0.65"/>`);
 
-// Four Heritage Corner Diamonds
-for (const [cx, cy] of [[104, 104], [W - 104, 104], [104, H - 104], [W - 104, H - 104]]) {
+for (const [cx, cy] of [[100, 100], [W - 100, 100], [100, H - 100], [W - 100, H - 100]]) {
   out.push(`<g transform="translate(${cx},${cy})">
     <circle r="28" fill="#12372A" stroke="#C9A45A" stroke-width="3"/>
     <polygon points="0,-16 16,0 0,16 -16,0" fill="#E2C88B"/>
   </g>`);
 }
 
-// Subtle Concentric Canopy Guide Rings
-for (const rGuide of [420, 690, 970, 1300, 1680, 2100]) {
+for (const rGuide of [400, 675, 955, 1288, 1780, 2275]) {
   out.push(`<circle cx="${CX}" cy="${CY}" r="${rGuide}" fill="none" stroke="#C9A45A" stroke-width="1.2" stroke-opacity="0.16" stroke-dasharray="8 12"/>`);
 }
 
-// Top Royal Header: Pure-path Logo #2 Wordmark + Pure-path Subtext + Verse & Hadith Cartouches
+// Header Centerpiece: Logo #2 Wordmark + Tribal Subtext
 const wScale = 1480 / TRACED.wordBB.w;
 const wTx = CX - TRACED.wordBB.cx * wScale;
-const wTy = 375 - TRACED.wordBB.cy * wScale;
-const sScale = 1120 / TRACED.subBB.w;
+const wTy = 365 - TRACED.wordBB.cy * wScale;
+const sScale = 1140 / TRACED.subBB.w;
 const sTx = CX - TRACED.subBB.cx * sScale;
-const sTy = 755 - TRACED.subBB.cy * sScale;
+const sTy = 720 - TRACED.subBB.cy * sScale;
 
 out.push(`<g id="mural-header">
   <g transform="translate(${wTx.toFixed(1)}, ${wTy.toFixed(1)}) scale(${wScale.toFixed(4)})">
     <path d="${TRACED.wordD}" fill="#12372A" fill-rule="evenodd"/>
   </g>
-  <line x1="2050" y1="648" x2="2668" y2="648" stroke="#C9A45A" stroke-width="3.5" stroke-linecap="round"/>
-  <line x1="2732" y1="648" x2="3350" y2="648" stroke="#C9A45A" stroke-width="3.5" stroke-linecap="round"/>
-  <polygon points="2700,632 2716,648 2700,664 2684,648" fill="#C9A45A"/>
+  <line x1="2050" y1="615" x2="2668" y2="615" stroke="#C9A45A" stroke-width="3.5" stroke-linecap="round"/>
+  <line x1="2732" y1="615" x2="3350" y2="615" stroke="#C9A45A" stroke-width="3.5" stroke-linecap="round"/>
+  <polygon points="2700,599 2716,615 2700,631 2684,615" fill="#C9A45A"/>
   <g transform="translate(${sTx.toFixed(1)}, ${sTy.toFixed(1)}) scale(${sScale.toFixed(4)})">
     <path d="${TRACED.subD}" fill="#12372A" fill-rule="evenodd"/>
   </g>
 </g>`);
 
-// Top-Right Quranic Verse Cartouche & Top-Left Hadith Cartouche
+// Large Executive Top Cartouches (x: 200..1720 Left, 3680..5200 Right)
 function pushCartouche(x, y, w, h, title, lines, footerTxt) {
   out.push(`<g>
-    <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="20" fill="#FFFDF8" stroke="#C9A45A" stroke-width="3"/>
-    <rect x="${x + 12}" y="${y + 12}" width="${w - 24}" height="${h - 24}" rx="14" fill="none" stroke="#12372A" stroke-width="1.2" stroke-opacity="0.35"/>
-    <rect x="${x + w / 2 - 190}" y="${y - 22}" width="380" height="44" rx="22" fill="#12372A" stroke="#C9A45A" stroke-width="2.5"/>
-    <text x="${x + w / 2}" y="${y + 8}" text-anchor="middle" fill="#E2C88B" font-size="26" font-weight="700" class="m-sans">${esc(title)}</text>`);
+    <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="22" fill="#FFFDF8" stroke="#C9A45A" stroke-width="3.5"/>
+    <rect x="${x + 14}" y="${y + 14}" width="${w - 28}" height="${h - 28}" rx="15" fill="none" stroke="#12372A" stroke-width="1.3" stroke-opacity="0.35"/>
+    <rect x="${x + w / 2 - 220}" y="${y - 26}" width="440" height="52" rx="26" fill="#12372A" stroke="#C9A45A" stroke-width="2.5"/>
+    <text x="${x + w / 2}" y="${y + 11}" text-anchor="middle" fill="#E2C88B" font-size="32" font-weight="700" class="m-sans">${rtl(title)}</text>`);
   lines.forEach((ln, idx) => {
-    out.push(`<text x="${x + w / 2}" y="${y + 92 + idx * 54}" text-anchor="middle" fill="#12372A" font-size="33" font-weight="700" class="m-serif">${esc(ln)}</text>`);
+    out.push(`<text x="${x + w / 2}" y="${y + 120 + idx * 78}" text-anchor="middle" fill="#12372A" font-size="45" font-weight="700" class="m-serif">${rtl(ln)}</text>`);
   });
   if (footerTxt) {
-    out.push(`<text x="${x + w / 2}" y="${y + h - 34}" text-anchor="middle" fill="#8A6826" font-size="22" font-weight="700" class="m-sans">${esc(footerTxt)}</text>`);
+    out.push(`<text x="${x + w / 2}" y="${y + h - 42}" text-anchor="middle" fill="#8A6826" font-size="30" font-weight="700" class="m-sans">${rtl(footerTxt)}</text>`);
   }
   out.push(`</g>`);
 }
 
 pushCartouche(
-  3820, 210, 1340, 390,
+  3660, 195, 1540, 440,
   "الآية الكريمة",
   [
     "﴿ يَا أَيُّهَا النَّاسُ إِنَّا خَلَقْنَاكُمْ مِنْ ذَكَرٍ وَأُنْثَىٰ",
@@ -301,7 +327,7 @@ pushCartouche(
 );
 
 pushCartouche(
-  240, 210, 1340, 390,
+  200, 195, 1540, 440,
   "الحديث الشريف",
   [
     "روي عن النبي ﷺ أنه قال:",
@@ -311,15 +337,14 @@ pushCartouche(
   "حفظ النسب وصلة الأرحام"
 );
 
-// 6. Edges Layer (Curved Organic Radial Limbs)
+// 6. Flowing Palm Frond Limbs
 out.push(`<g id="mural-edges">`);
 for (const p of descItems) {
-  const parentId = p.n.parentId;
-  const pp = nodePos.get(parentId);
+  const pp = nodePos.get(p.n.parentId);
   if (!pp) continue;
   const col = BRANCH_COLORS[p.n.branchId] || "#12372A";
-  const strokeW = p.n.generation === 1 ? 10 : p.n.generation === 2 ? 5.5 : p.n.generation === 3 ? 3.2 : 1.75;
-  const opacity = p.n.generation <= 2 ? 0.85 : p.n.generation === 3 ? 0.72 : 0.56;
+  const strokeW = p.n.generation === 1 ? 11 : p.n.generation === 2 ? 6.0 : p.n.generation === 3 ? 3.5 : 1.9;
+  const opacity = p.n.generation <= 2 ? 0.88 : p.n.generation === 3 ? 0.74 : 0.58;
 
   if (pp.isRoot) {
     const rStart = 158;
@@ -342,39 +367,44 @@ for (const p of descItems) {
 }
 out.push(`</g>`);
 
-// 7. Southern Ancestral Trunk Pedestal (-10 to -1 up to Uwaid R00)
+// 7. Sculpted Palm Trunk (`جذع النخلة`) with Subtle Leaf-Scale Texture + 10 Ancestor Badges
 const ancOrder = [];
 for (let g = -10; g <= -1; g++) {
   const found = Object.values(nodesById).find((n) => n.generation === g);
   if (found) ancOrder.push(found);
 }
-// Bottom qahTan at y = 6360 rising to Muslih at y = 4140
-const trunkTopY = 4120;
-const trunkBotY = 6360;
+const trunkTopY = 3900;
+const trunkBotY = 6365;
 const stepY = (trunkBotY - trunkTopY) / Math.max(1, ancOrder.length - 1);
 
 out.push(`<g id="mural-trunk">
-  <path d="M ${CX - 165} 6500 C ${CX - 110} 6200, ${CX - 76} 5000, ${CX - 48} ${CY + 140} L ${CX + 48} ${CY + 140} C ${CX + 76} 5000, ${CX + 110} 6200, ${CX + 165} 6500 Z" fill="url(#trunkGrad)" stroke="#C9A45A" stroke-width="5"/>
-  <line x1="${CX}" y1="${CY + 160}" x2="${CX}" y2="${trunkBotY}" stroke="#E2C88B" stroke-width="4" stroke-opacity="0.7"/>
-`);
+  <path d="M ${CX - 185} 6505 C ${CX - 125} 6150, ${CX - 82} 4950, ${CX - 54} ${CY + 140} L ${CX + 54} ${CY + 140} C ${CX + 82} 4950, ${CX + 125} 6150, ${CX + 185} 6505 Z" fill="url(#trunkGrad)" stroke="#C9A45A" stroke-width="5"/>`);
+
+// Subtle palm-trunk chevron segments (`سعف وجذع النخلة`) between trunk medallions
+for (let ty = trunkTopY - 120; ty <= trunkBotY + 40; ty += 95) {
+  const tNorm = (ty - (CY + 140)) / (6505 - (CY + 140));
+  const halfW = 54 + Math.pow(Math.max(0, tNorm), 1.35) * 124;
+  out.push(`<path d="M ${(CX - halfW + 10).toFixed(1)} ${ty} Q ${CX} ${(ty + 38).toFixed(1)}, ${(CX + halfW - 10).toFixed(1)} ${ty}" fill="none" stroke="#C9A45A" stroke-width="2.2" stroke-opacity="0.36"/>`);
+}
+
+out.push(`<line x1="${CX}" y1="${CY + 160}" x2="${CX}" y2="${trunkBotY}" stroke="#E2C88B" stroke-width="4" stroke-opacity="0.72"/>`);
+
 ancOrder.forEach((anc, idx) => {
-  // idx=0 is gen -10 (قحطان -> bottom trunkBotY), idx=9 is gen -1 (مصلح -> trunkTopY)
   const y = trunkBotY - idx * stepY;
   const isQahtan = idx === 0;
-  const bw = isQahtan ? 320 : 230;
-  const bh = isQahtan ? 76 : 58;
+  const bw = isQahtan ? 350 : 254;
+  const bh = isQahtan ? 82 : 62;
   out.push(`<g transform="translate(${CX}, ${y.toFixed(1)})">
-    <rect x="${-bw / 2}" y="${-bh / 2}" width="${bw}" height="${bh}" rx="${bh / 2}" fill="${isQahtan ? "#12372A" : "#FFFDF8"}" stroke="#C9A45A" stroke-width="${isQahtan ? 5 : 3}"/>
-    <text x="0" y="${isQahtan ? 10 : 8}" text-anchor="middle" fill="${isQahtan ? "#E2C88B" : "#12372A"}" font-size="${isQahtan ? 38 : 30}" font-weight="700" class="m-serif">${esc(anc.name)}</text>
+    <rect x="${-bw / 2}" y="${-bh / 2}" width="${bw}" height="${bh}" rx="${bh / 2}" fill="${isQahtan ? "#12372A" : "#FFFDF8"}" stroke="#C9A45A" stroke-width="${isQahtan ? 5.5 : 3.2}"/>
+    <text x="0" y="${isQahtan ? 12 : 10}" text-anchor="middle" fill="${isQahtan ? "#E2C88B" : "#12372A"}" font-size="${isQahtan ? 44 : 34}" font-weight="700" class="m-serif">${rtl(anc.name)}</text>
   </g>`);
 });
 out.push(`</g>`);
 
-// 8. All 749 Descendant Nodes Layer
+// 8. Enlarged 749 Descendant Nodes
 out.push(`<g id="mural-nodes">`);
 for (const p of descItems) {
   const col = BRANCH_COLORS[p.n.branchId] || "#12372A";
-  // Keep text readable upright: flip 180 deg when left side (cos < 0)
   let rotDeg = p.deg;
   if (Math.cos(p.rad) < 0) rotDeg += 180;
 
@@ -385,105 +415,88 @@ for (const p of descItems) {
   let cls = "m-sans";
 
   if (p.isBranch) {
-    fill = col;
-    stroke = "#E2C88B";
-    sw = 3.2;
-    textFill = "#FFFDF8";
-    cls = "m-serif";
+    fill = col; stroke = "#E2C88B"; sw = 3.5; textFill = "#FFFDF8"; cls = "m-serif";
   } else if (p.n.generation === 2) {
-    fill = "#FFFDF8";
-    stroke = col;
-    sw = 3.0;
-    textFill = col;
-    cls = "m-serif";
+    fill = "#FFFDF8"; stroke = col; sw = 3.2; textFill = col; cls = "m-serif";
   } else if (p.isParent) {
-    fill = "#FFFBF2";
-    stroke = col;
-    sw = 2.1;
-    textFill = "#12372A";
+    fill = "#FFFBF2"; stroke = col; sw = 2.3; textFill = "#12372A";
   } else {
-    fill = "#F9F4E8";
-    stroke = col;
-    sw = 1.25;
-    textFill = "#2A2620";
+    fill = "#F9F4E8"; stroke = col; sw = 1.4; textFill = "#1F1C18";
   }
 
   out.push(`<g transform="translate(${p.x.toFixed(1)}, ${p.y.toFixed(1)}) rotate(${rotDeg.toFixed(2)})">
     <rect x="${(-p.w / 2).toFixed(1)}" y="${(-p.h / 2).toFixed(1)}" width="${p.w}" height="${p.h}" rx="${(p.h / 2).toFixed(1)}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>
-    <text x="0" y="${(p.fontSize * 0.34).toFixed(1)}" text-anchor="middle" fill="${textFill}" font-size="${p.fontSize}" font-weight="700" class="${cls}">${esc(p.n.name)}</text>
+    <text x="0" y="${(p.fontSize * 0.34).toFixed(1)}" text-anchor="middle" fill="${textFill}" font-size="${p.fontSize}" font-weight="700" class="${cls}">${rtl(p.n.name)}</text>
   </g>`);
 }
 out.push(`</g>`);
 
-// 9. Central Grand Medallion for الجد عويض (R00)
+// 9. Central Grand Palm Crown Medallion for عويض (R00)
 out.push(`<g id="mural-root" transform="translate(${CX}, ${CY})">
-  <circle r="176" fill="none" stroke="url(#goldSheen)" stroke-width="5" stroke-opacity="0.7"/>
-  <circle r="162" fill="url(#emeraldMedallion)" stroke="url(#goldSheen)" stroke-width="8"/>
-  <circle r="144" fill="none" stroke="#E2C88B" stroke-width="2" stroke-opacity="0.75"/>
-  <text x="0" y="2" text-anchor="middle" fill="#FFFDF8" font-size="80" font-weight="700" class="m-serif">عويض</text>
-  <text x="0" y="54" text-anchor="middle" fill="#E2C88B" font-size="21" font-weight="700" class="m-sans">جد ذوي عويض • ٧٤٩ ذرية</text>
+  <circle r="180" fill="none" stroke="url(#goldSheen)" stroke-width="5" stroke-opacity="0.72"/>
+  <circle r="165" fill="url(#emeraldMedallion)" stroke="url(#goldSheen)" stroke-width="8"/>
+  <circle r="147" fill="none" stroke="#E2C88B" stroke-width="2" stroke-opacity="0.78"/>
+  <text x="0" y="0" text-anchor="middle" fill="#FFFDF8" font-size="84" font-weight="700" class="m-serif">${rtl("عويض")}</text>
+  <text x="0" y="58" text-anchor="middle" fill="#E2C88B" font-size="24" font-weight="700" class="m-sans">${rtl("جد ذوي عويض • ٧٤٩ ذرية")}</text>
 </g>`);
 
-// 10. Bottom Ceremonial Cartouches (Left: Footnote & Stats, Right: Seal + Branch Key)
-// Bottom-Right Panel (x: 3440..5180, y: 5750..6520)
-const brX = 3440, brY = 5750, brW = 1740, brH = 770;
-const sealS = 310 / TRACED.sealBB.w;
-const sealCx = brX + 240;
-const sealCy = brY + 340;
+// 10. Bottom Ceremonial Cartouches (Enlarged Readable Typography + Fixed RTL Brackets)
+const brX = 3300, brY = 5660, brW = 1900, brH = 870;
+const sealS = 350 / TRACED.sealBB.w;
+const sealCx = brX + 255;
+const sealCy = brY + 385;
 const sealTx = sealCx - TRACED.sealBB.cx * sealS;
 const sealTy = sealCy - TRACED.sealBB.cy * sealS;
 
 out.push(`<g id="mural-legend-box">
-  <rect x="${brX}" y="${brY}" width="${brW}" height="${brH}" rx="26" fill="#FFFDF8" stroke="#C9A45A" stroke-width="4"/>
-  <rect x="${brX + 14}" y="${brY + 14}" width="${brW - 28}" height="${brH - 28}" rx="18" fill="none" stroke="#12372A" stroke-width="1.4" stroke-opacity="0.3"/>
-  <text x="${brX + brW - 54}" y="${brY + 86}" text-anchor="end" fill="#12372A" font-size="44" font-weight="700" class="m-serif">مفتاح الفروع الثمانية لذوي عويض</text>
-  <line x1="${brX + 460}" y1="${brY + 114}" x2="${brX + brW - 54}" y2="${brY + 114}" stroke="#C9A45A" stroke-width="2.5"/>
+  <rect x="${brX}" y="${brY}" width="${brW}" height="${brH}" rx="28" fill="#FFFDF8" stroke="#C9A45A" stroke-width="4"/>
+  <rect x="${brX + 16}" y="${brY + 16}" width="${brW - 32}" height="${brH - 32}" rx="20" fill="none" stroke="#12372A" stroke-width="1.5" stroke-opacity="0.32"/>
+  <text x="${brX + brW - 56}" y="${brY + 94}" text-anchor="start" fill="#12372A" font-size="52" font-weight="700" class="m-serif">${rtl("مفتاح الفروع الثمانية لذوي عويض")}</text>
+  <line x1="${brX + 490}" y1="${brY + 124}" x2="${brX + brW - 56}" y2="${brY + 124}" stroke="#C9A45A" stroke-width="2.5"/>
   <g transform="translate(${sealTx.toFixed(1)}, ${sealTy.toFixed(1)}) scale(${sealS.toFixed(4)})">
     <path d="${TRACED.sealD}" fill="#12372A" fill-rule="evenodd"/>
   </g>
-  <text x="${sealCx}" y="${brY + 560}" text-anchor="middle" fill="#12372A" font-size="22" font-weight="700" class="m-sans">من البصصة قبيلة الشدادين بني الحارث</text>
+  <text x="${sealCx}" y="${brY + 640}" text-anchor="middle" fill="#12372A" font-size="27" font-weight="700" class="m-serif">${rtl("من البصصة قبيلة الشدادين بني الحارث")}</text>
 `);
 
-// 2 columns x 4 rows branch pills inside brX + 470 .. brX + brW - 50
 TREE.branchStats.forEach((bs, idx) => {
-  const colIdx = Math.floor(idx / 4); // 0 right col, 1 left col
+  const colIdx = Math.floor(idx / 4);
   const rowIdx = idx % 4;
-  const px = colIdx === 0 ? brX + brW - 60 : brX + brW - 640;
-  const py = brY + 185 + rowIdx * 124;
+  const px = colIdx === 0 ? brX + brW - 56 : brX + brW - 700;
+  const py = brY + 190 + rowIdx * 148;
   const c = BRANCH_COLORS[bs.branchId] || "#12372A";
   out.push(`<g>
-    <rect x="${px - 510}" y="${py}" width="510" height="88" rx="18" fill="#F8F4EA" stroke="${c}" stroke-width="3"/>
-    <circle cx="${px - 44}" cy="${py + 44}" r="18" fill="${c}"/>
-    <text x="${px - 80}" y="${py + 54}" text-anchor="end" fill="#12372A" font-size="34" font-weight="700" class="m-serif">${esc(bs.name)}</text>
-    <text x="${px - 486}" y="${py + 53}" text-anchor="start" fill="${c}" font-size="28" font-weight="700" class="m-sans">${toArabic(bs.totalInBranch)} اسماً</text>
+    <rect x="${px - 595}" y="${py}" width="595" height="106" rx="22" fill="#F8F4EA" stroke="${c}" stroke-width="3.2"/>
+    <circle cx="${px - 48}" cy="${py + 53}" r="20" fill="${c}"/>
+    <text x="${px - 88}" y="${py + 66}" text-anchor="start" fill="#12372A" font-size="40" font-weight="700" class="m-serif">${rtl(bs.name)}</text>
+    <text x="${px - 566}" y="${py + 64}" text-anchor="end" fill="${c}" font-size="31" font-weight="700" class="m-sans">${rtl(`${toArabic(bs.totalInBranch)} اسماً`)}</text>
   </g>`);
 });
 out.push(`</g>`);
 
-// Bottom-Left Panel (x: 220..1960, y: 5750..6520)
-const blX = 220, blY = 5750, blW = 1740, blH = 770;
-const footnote = (TREE.meta.lineageFootnotes && TREE.meta.lineageFootnotes[0]) || "";
+// Bottom-Left Panel
+const blX = 200, blY = 5660, blW = 1900, blH = 870;
 out.push(`<g id="mural-lineage-box">
-  <rect x="${blX}" y="${blY}" width="${blW}" height="${blH}" rx="26" fill="#FFFDF8" stroke="#C9A45A" stroke-width="4"/>
-  <rect x="${blX + 14}" y="${blY + 14}" width="${blW - 28}" height="${blH - 28}" rx="18" fill="none" stroke="#12372A" stroke-width="1.4" stroke-opacity="0.3"/>
-  <text x="${blX + blW - 54}" y="${blY + 86}" text-anchor="end" fill="#12372A" font-size="44" font-weight="700" class="m-serif">التوثيق وعمود النسب الكامل</text>
-  <line x1="${blX + 54}" y1="${blY + 114}" x2="${blX + blW - 54}" y2="${blY + 114}" stroke="#C9A45A" stroke-width="2.5"/>
-  <text x="${blX + blW - 54}" y="${blY + 190}" text-anchor="end" fill="#12372A" font-size="32" font-weight="700" class="m-serif">ذوي عويض بن مصلح بن مسفر بن بصيص بن دمشق بن ملفي</text>
-  <text x="${blX + blW - 54}" y="${blY + 246}" text-anchor="end" fill="#12372A" font-size="32" font-weight="700" class="m-serif">بن مفلح بن عياش بن شداد بن حارث بن قحطان</text>
-  <text x="${blX + blW - 54}" y="${blY + 322}" text-anchor="end" fill="#8A6826" font-size="27" font-weight="700" class="m-sans">من البصصة قبيلة الشدادين بني الحارث</text>
+  <rect x="${blX}" y="${blY}" width="${blW}" height="${blH}" rx="28" fill="#FFFDF8" stroke="#C9A45A" stroke-width="4"/>
+  <rect x="${blX + 16}" y="${blY + 16}" width="${blW - 32}" height="${blH - 32}" rx="20" fill="none" stroke="#12372A" stroke-width="1.5" stroke-opacity="0.32"/>
+  <text x="${blX + blW - 56}" y="${blY + 94}" text-anchor="start" fill="#12372A" font-size="52" font-weight="700" class="m-serif">${rtl("التوثيق وعمود النسب الكامل")}</text>
+  <line x1="${blX + 56}" y1="${blY + 124}" x2="${blX + blW - 56}" y2="${blY + 124}" stroke="#C9A45A" stroke-width="2.5"/>
+  <text x="${blX + blW - 56}" y="${blY + 204}" text-anchor="start" fill="#12372A" font-size="40" font-weight="700" class="m-serif">${rtl("ذوي عويض بن مصلح بن مسفر بن بصيص بن دمشق بن ملفي")}</text>
+  <text x="${blX + blW - 56}" y="${blY + 266}" text-anchor="start" fill="#12372A" font-size="40" font-weight="700" class="m-serif">${rtl("بن مفلح بن عياش بن شداد بن حارث بن قحطان")}</text>
+  <text x="${blX + blW - 56}" y="${blY + 346}" text-anchor="start" fill="#8A6826" font-size="34" font-weight="700" class="m-serif">${rtl("من البصصة قبيلة الشدادين بني الحارث")}</text>
 
-  <rect x="${blX + 54}" y="${blY + 365}" width="${blW - 108}" height="186" rx="16" fill="#F8F4EA" stroke="#DED4BE" stroke-width="2"/>
-  <text x="${blX + blW - 84}" y="${blY + 416}" text-anchor="end" fill="#12372A" font-size="24" font-weight="700" class="m-sans">الحاشية والتوثيق:</text>
-  <text x="${blX + blW - 84}" y="${blY + 462}" text-anchor="end" fill="#46423A" font-size="22" font-weight="500" class="m-sans">ذُكر في الحاشية الشفهية عند بعض كبار السن وجود اسم (مسفر) إضافي بين عويض ومصلح،</text>
-  <text x="${blX + blW - 84}" y="${blY + 502}" text-anchor="end" fill="#46423A" font-size="22" font-weight="500" class="m-sans">والمعتمد في النسخة المحرّرة التسلسل المثبت في الجذع المتّصل أعلاه إلى قحطان.</text>
+  <rect x="${blX + 56}" y="${blY + 392}" width="${blW - 112}" height="216" rx="18" fill="#F8F4EA" stroke="#DED4BE" stroke-width="2.5"/>
+  <text x="${blX + blW - 88}" y="${blY + 448}" text-anchor="start" fill="#12372A" font-size="30" font-weight="700" class="m-sans">${rtl("الحاشية والتوثيق:")}</text>
+  <text x="${blX + blW - 88}" y="${blY + 504}" text-anchor="start" fill="#3D3932" font-size="27" font-weight="500" class="m-sans">${rtl("ذُكر في الحاشية الشفهية عند بعض كبار السن وجود اسم (مسفر) إضافي بين عويض ومصلح،")}</text>
+  <text x="${blX + blW - 88}" y="${blY + 554}" text-anchor="start" fill="#3D3932" font-size="27" font-weight="500" class="m-sans">${rtl("والمعتمد في النسخة المحرّرة التسلسل المثبت في الجذع المتّصل أعلاه إلى قحطان.")}</text>
 
-  <rect x="${blX + 54}" y="${blY + 592}" width="${blW - 108}" height="114" rx="18" fill="#12372A" stroke="#C9A45A" stroke-width="2.5"/>
-  <text x="${blX + blW / 2}" y="${blY + 644}" text-anchor="middle" fill="#FFFDF8" font-size="29" font-weight="700" class="m-sans">إجمالي الموثّق في الشجرة: ٧٦٠ اسماً  •  ٨ فروع رئيسية  •  ١٠ أجداد إلى قحطان</text>
-  <text x="${blX + blW / 2}" y="${blY + 686}" text-anchor="middle" fill="#E2C88B" font-size="23" font-weight="600" class="m-sans">${esc(TREE.meta.editionLabel)}</text>
+  <rect x="${blX + 56}" y="${blY + 650}" width="${blW - 112}" height="150" rx="22" fill="#12372A" stroke="#C9A45A" stroke-width="2.8"/>
+  <text x="${blX + blW / 2}" y="${blY + 712}" text-anchor="middle" fill="#FFFDF8" font-size="35" font-weight="700" class="m-sans">${rtl("إجمالي الموثّق في الشجرة: ٧٦٠ اسماً  •  ٨ فروع رئيسية  •  ١٠ أجداد إلى قحطان")}</text>
+  <text x="${blX + blW / 2}" y="${blY + 764}" text-anchor="middle" fill="#E2C88B" font-size="28" font-weight="700" class="m-sans">${rtl(TREE.meta.editionLabel)}</text>
 </g>`);
 
 out.push(`</svg>`);
 
 const svgPath = path.join(ROOT, "brand", "dhawi-uwaid-wall-mural.svg");
 fs.writeFileSync(svgPath, out.join("\n"), "utf8");
-console.log("Wrote mural SVG:", svgPath, "size=", fs.statSync(svgPath).size);
+console.log("Wrote upgraded Palm Wall Mural SVG:", svgPath, "size=", fs.statSync(svgPath).size);
