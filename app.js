@@ -187,7 +187,7 @@
     sunburstRootId: "R00",
     sunburstInspectorId: "R00",
     directoryPageSize: 48,
-    kinshipA: "L262",
+    kinshipA: "M109",
     kinshipB: "M165",
   };
 
@@ -1263,6 +1263,10 @@
   function renderAnalytics() {
     const maxBranchTotal = Math.max(...DATA.branchStats.map((b) => b.totalInBranch));
     const maxDescGen = Math.max(...DATA.branchStats.map((b) => b.maxGeneration));
+    const deepestBranchNames = DATA.branchStats
+      .filter((b) => b.maxGeneration === maxDescGen)
+      .map((b) => b.name)
+      .join(" و");
 
     const kpis = [
       {
@@ -1278,7 +1282,7 @@
       {
         val: toArabicDigits(maxDescGen),
         label: "أعمق امتداد للأجيال",
-        sub: `يبلغ أقصاه ${toArabicDigits(maxDescGen)} أجيال متصلة في فرع ماضي`,
+        sub: `يبلغ أقصاه ${toArabicDigits(maxDescGen)} أجيال متصلة في فرع ${deepestBranchNames}`,
       },
       {
         val: toArabicDigits(ALL_NODES.filter((n) => n.bioNote).length),
