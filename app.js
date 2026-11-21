@@ -197,6 +197,10 @@
     state.theme = theme;
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem(STORAGE_THEME_KEY, theme);
+    const metaTheme = document.getElementById("meta-theme-color");
+    if (metaTheme) {
+      metaTheme.setAttribute("content", theme === "dark" ? "#0B1A14" : "#12372A");
+    }
     const icon = document.getElementById("theme-toggle-icon");
     const label = document.getElementById("theme-toggle-label");
     if (theme === "dark") {
@@ -208,9 +212,17 @@
     }
   }
 
+  function closeMobileSearch() {
+    const wrap = document.getElementById("global-search-wrap");
+    if (wrap) wrap.classList.remove("mobile-search-open");
+    const dd = document.getElementById("global-search-dropdown");
+    if (dd) dd.classList.add("hidden");
+  }
+
   function switchView(viewName) {
     state.activeView = viewName;
-    document.querySelectorAll(".tab-btn").forEach((btn) => {
+    closeMobileSearch();
+    document.querySelectorAll(".tab-btn, .mobile-tab-btn").forEach((btn) => {
       const match = btn.dataset.view === viewName;
       btn.classList.toggle("active", match);
       btn.setAttribute("aria-selected", String(match));
@@ -218,6 +230,9 @@
     document.querySelectorAll(".view-panel").forEach((panel) => {
       panel.classList.toggle("active", panel.id === `view-${viewName}`);
     });
+    if (viewName !== "tree" && window.scrollY > 40) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
     if (viewName === "tree") {
       renderTree();
     } else if (viewName === "sunburst") {
@@ -308,6 +323,8 @@
     return { positions, visibleEdges };
   }
 
+  let animFrameId = null;
+
   function applyTreeTransform() {
     const vp = document.getElementById("tree-viewport-group");
     if (!vp) return;
@@ -315,22 +332,61 @@
     vp.setAttribute("transform", `translate(${x.toFixed(2)}, ${y.toFixed(2)}) scale(${k.toFixed(4)})`);
   }
 
-  function fitTreeToViewport(focusNodeId) {
+  function animateTreeTransform(targetX, targetY, targetK, durationMs) {
+    if (animFrameId) {
+      cancelAnimationFrame(animFrameId);
+      animFrameId = null;
+    }
+    const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!durationMs || reduced) {
+      state.treeTransform = { x: targetX, y: targetY, k: targetK };
+      applyTreeTransform();
+      return;
+    }
+    const start = { ...state.treeTransform };
+    const t0 = performance.now();
+    function step(now) {
+      const t = Math.min(1, (now - t0) / durationMs);
+      const ease = 1 - Math.pow(1 - t, 3);
+      state.treeTransform = {
+        x: start.x + (targetX - start.x) * ease,
+        y: start.y + (targetY - start.y) * ease,
+        k: start.k + (targetK - start.k) * ease,
+      };
+      applyTreeTransform();
+      if (t < 1) {
+        animFrameId = requestAnimationFrame(step);
+      } else {
+        animFrameId = null;
+      }
+    }
+    animFrameId = requestAnimationFrame(step);
+  }
+
+  function fitTreeToViewport(focusNodeId, fitOpts) {
+    const opts = fitOpts || {};
     const svg = document.getElementById("family-tree-svg");
     if (!svg || !state.layoutPositions.size) return;
     const rect = svg.getBoundingClientRect();
     const vw = rect.width || 1000;
     const vh = rect.height || 580;
+    const duration = opts.animate ? 240 : 0;
 
     if (focusNodeId && state.layoutPositions.has(focusNodeId)) {
       const p = state.layoutPositions.get(focusNodeId);
-      const k = Math.max(state.treeTransform.k, 1.0);
-      state.treeTransform = {
-        k,
-        x: vw / 2 - p.x * k,
-        y: vh * 0.42 - p.y * k,
-      };
-      applyTreeTransform();
+      const minScale = vw <= 600 ? 0.72 : 1.0;
+      const k = Math.max(state.treeTransform.k, minScale);
+      animateTreeTransform(vw / 2 - p.x * k, vh * 0.42 - p.y * k, k, duration);
+      return;
+    }
+
+    // On narrow mobile screens, frame R00 and middle branches at a readable scale by default
+    const isInitialRootOnly =
+      state.expandedIds.size === 1 && state.expandedIds.has("R00") && !state.showAncestors;
+    if (vw <= 600 && isInitialRootOnly && !opts.forceFullFit && state.layoutPositions.has("R00")) {
+      const pRoot = state.layoutPositions.get("R00");
+      const k = 0.62;
+      animateTreeTransform(vw / 2 - pRoot.x * k, vh * 0.25 - pRoot.y * k, k, duration);
       return;
     }
 
@@ -346,17 +402,12 @@
     }
     const bw = Math.max(120, maxX - minX);
     const bh = Math.max(120, maxY - minY);
-    const pad = 48;
+    const pad = vw <= 600 ? 22 : 48;
     const k = Math.min(1.15, Math.max(0.16, Math.min((vw - pad * 2) / bw, (vh - pad * 2) / bh)));
     const cx = (minX + maxX) / 2;
     const cy = (minY + maxY) / 2;
 
-    state.treeTransform = {
-      k,
-      x: vw / 2 - cx * k,
-      y: vh / 2 - cy * k + 14,
-    };
-    applyTreeTransform();
+    animateTreeTransform(vw / 2 - cx * k, vh / 2 - cy * k + 14, k, duration);
   }
 
   function renderTree(options) {
@@ -467,18 +518,28 @@
           class: "node-expand-btn",
           transform: `translate(0, ${p.h / 2 + 10})`,
         });
-        const pillW = isOpen ? 22 : 34;
+        // Generous invisible touch target so mobile thumbs hit + / - reliably
+        const hitRect = svgEl("rect", {
+          x: -22,
+          y: -16,
+          width: 44,
+          height: 32,
+          rx: 12,
+          fill: "transparent",
+        });
+        const pillW = isOpen ? 24 : 36;
         const pill = svgEl("rect", {
           x: -pillW / 2,
-          y: -9,
+          y: -10,
           width: pillW,
-          height: 18,
-          rx: 9,
+          height: 20,
+          rx: 10,
           class: "node-expand-circle",
           stroke: color,
         });
         const lbl = svgEl("text", { x: 0, y: 0.5, class: "node-expand-label" });
         lbl.textContent = isOpen ? "−" : `+${toArabicDigits(node.childrenCount)}`;
+        btnG.appendChild(hitRect);
         btnG.appendChild(pill);
         btnG.appendChild(lbl);
         btnG.addEventListener("click", (ev) => {
@@ -517,9 +578,9 @@
     }
 
     if (opts.focusId) {
-      fitTreeToViewport(opts.focusId);
+      fitTreeToViewport(opts.focusId, { animate: Boolean(opts.animate) });
     } else if (!opts.preserveView) {
-      fitTreeToViewport();
+      fitTreeToViewport(null, { animate: Boolean(opts.animate), forceFullFit: Boolean(opts.forceFullFit) });
     } else {
       applyTreeTransform();
     }
@@ -617,46 +678,182 @@
 
   function setupTreePanZoom() {
     const svg = document.getElementById("family-tree-svg");
-    let dragging = false;
-    let startX = 0;
-    let startY = 0;
-    let origX = 0;
-    let origY = 0;
+    const pointers = new Map();
+    let panOrigin = null;
+    let pinchStart = null;
+    let dragMoved = false;
+    let suppressNextClick = false;
+    let lastTap = { time: 0, x: 0, y: 0 };
+
+    function pointerMidAndDist() {
+      const pts = [...pointers.values()];
+      const dx = pts[1].x - pts[0].x;
+      const dy = pts[1].y - pts[0].y;
+      return {
+        dist: Math.hypot(dx, dy),
+        mx: (pts[0].x + pts[1].x) / 2,
+        my: (pts[0].y + pts[1].y) / 2,
+      };
+    }
+
+    // Swallow trailing click immediately after any pan or pinch gesture
+    svg.addEventListener(
+      "click",
+      (ev) => {
+        if (suppressNextClick) {
+          suppressNextClick = false;
+          ev.stopPropagation();
+          ev.preventDefault();
+        }
+      },
+      true
+    );
 
     svg.addEventListener("pointerdown", (ev) => {
-      if (ev.target.closest(".tree-node") || ev.target.closest(".node-expand-btn")) return;
-      dragging = true;
-      startX = ev.clientX;
-      startY = ev.clientY;
-      origX = state.treeTransform.x;
-      origY = state.treeTransform.y;
-      svg.setPointerCapture(ev.pointerId);
+      if (animFrameId) {
+        cancelAnimationFrame(animFrameId);
+        animFrameId = null;
+      }
+      pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+
+      if (pointers.size === 1) {
+        dragMoved = false;
+        suppressNextClick = false;
+        panOrigin = {
+          startX: ev.clientX,
+          startY: ev.clientY,
+          tx: state.treeTransform.x,
+          ty: state.treeTransform.y,
+          downTime: performance.now(),
+          onBackground: !ev.target.closest(".tree-node") && !ev.target.closest(".node-expand-btn"),
+        };
+        pinchStart = null;
+      } else if (pointers.size === 2) {
+        const rect = svg.getBoundingClientRect();
+        const { dist, mx, my } = pointerMidAndDist();
+        const localX = mx - rect.left;
+        const localY = my - rect.top;
+        dragMoved = true;
+        suppressNextClick = true;
+        pinchStart = {
+          dist: Math.max(10, dist),
+          k: state.treeTransform.k,
+          worldX: (localX - state.treeTransform.x) / state.treeTransform.k,
+          worldY: (localY - state.treeTransform.y) / state.treeTransform.k,
+        };
+      }
     });
 
     svg.addEventListener("pointermove", (ev) => {
-      if (!dragging) return;
-      state.treeTransform.x = origX + (ev.clientX - startX);
-      state.treeTransform.y = origY + (ev.clientY - startY);
-      applyTreeTransform();
+      if (!pointers.has(ev.pointerId)) return;
+      pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+
+      if (pointers.size === 2 && pinchStart) {
+        const rect = svg.getBoundingClientRect();
+        const { dist, mx, my } = pointerMidAndDist();
+        const localX = mx - rect.left;
+        const localY = my - rect.top;
+        const nextK = Math.min(2.8, Math.max(0.18, pinchStart.k * (dist / pinchStart.dist)));
+        state.treeTransform = {
+          k: nextK,
+          x: localX - pinchStart.worldX * nextK,
+          y: localY - pinchStart.worldY * nextK,
+        };
+        applyTreeTransform();
+        return;
+      }
+
+      if (pointers.size === 1 && panOrigin) {
+        const dx = ev.clientX - panOrigin.startX;
+        const dy = ev.clientY - panOrigin.startY;
+        if (!dragMoved && Math.hypot(dx, dy) > 7) {
+          dragMoved = true;
+          suppressNextClick = true;
+          try {
+            svg.setPointerCapture(ev.pointerId);
+          } catch (_) {}
+        }
+        if (dragMoved) {
+          state.treeTransform.x = panOrigin.tx + dx;
+          state.treeTransform.y = panOrigin.ty + dy;
+          applyTreeTransform();
+        }
+      }
     });
 
-    svg.addEventListener("pointerup", (ev) => {
-      if (!dragging) return;
-      dragging = false;
+    function endPointer(ev) {
+      if (!pointers.has(ev.pointerId)) return;
+      pointers.delete(ev.pointerId);
       try {
-        svg.releasePointerCapture(ev.pointerId);
+        if (svg.hasPointerCapture(ev.pointerId)) svg.releasePointerCapture(ev.pointerId);
       } catch (_) {}
-    });
+
+      if (pointers.size === 1) {
+        const rem = [...pointers.values()][0];
+        panOrigin = {
+          startX: rem.x,
+          startY: rem.y,
+          tx: state.treeTransform.x,
+          ty: state.treeTransform.y,
+          downTime: performance.now(),
+          onBackground: false,
+        };
+        pinchStart = null;
+        return;
+      }
+
+      // Double-tap empty background smoothly zooms in or resets fit
+      if (pointers.size === 0 && !dragMoved && panOrigin && panOrigin.onBackground) {
+        const now = performance.now();
+        const dt = now - lastTap.time;
+        const dd = Math.hypot(ev.clientX - lastTap.x, ev.clientY - lastTap.y);
+        if (dt < 320 && dd < 26) {
+          lastTap.time = 0;
+          if (state.treeTransform.k > 1.1) {
+            fitTreeToViewport(null, { animate: true, forceFullFit: true });
+          } else {
+            const rect = svg.getBoundingClientRect();
+            const mx = ev.clientX - rect.left;
+            const my = ev.clientY - rect.top;
+            const nextK = Math.min(2.2, state.treeTransform.k * 1.55);
+            const ratio = nextK / state.treeTransform.k;
+            animateTreeTransform(
+              mx - (mx - state.treeTransform.x) * ratio,
+              my - (my - state.treeTransform.y) * ratio,
+              nextK,
+              240
+            );
+          }
+        } else {
+          lastTap = { time: now, x: ev.clientX, y: ev.clientY };
+        }
+      }
+
+      panOrigin = null;
+      pinchStart = null;
+      if (suppressNextClick) {
+        setTimeout(() => {
+          suppressNextClick = false;
+        }, 60);
+      }
+    }
+
+    svg.addEventListener("pointerup", endPointer);
+    svg.addEventListener("pointercancel", endPointer);
 
     svg.addEventListener(
       "wheel",
       (ev) => {
         ev.preventDefault();
+        if (animFrameId) {
+          cancelAnimationFrame(animFrameId);
+          animFrameId = null;
+        }
         const rect = svg.getBoundingClientRect();
         const mx = ev.clientX - rect.left;
         const my = ev.clientY - rect.top;
         const factor = ev.deltaY < 0 ? 1.14 : 0.88;
-        const nextK = Math.min(2.6, Math.max(0.14, state.treeTransform.k * factor));
+        const nextK = Math.min(2.8, Math.max(0.14, state.treeTransform.k * factor));
         const ratio = nextK / state.treeTransform.k;
         state.treeTransform.x = mx - (mx - state.treeTransform.x) * ratio;
         state.treeTransform.y = my - (my - state.treeTransform.y) * ratio;
@@ -667,13 +864,17 @@
     );
 
     document.getElementById("zoom-in-btn").addEventListener("click", () => {
-      zoomAtCenter(1.22);
+      zoomAtCenter(1.24);
     });
     document.getElementById("zoom-out-btn").addEventListener("click", () => {
-      zoomAtCenter(0.82);
+      zoomAtCenter(0.8);
     });
-    document.getElementById("zoom-fit-btn").addEventListener("click", () => fitTreeToViewport());
-    document.getElementById("zoom-root-btn").addEventListener("click", () => fitTreeToViewport("R00"));
+    document.getElementById("zoom-fit-btn").addEventListener("click", () =>
+      fitTreeToViewport(null, { animate: true, forceFullFit: true })
+    );
+    document.getElementById("zoom-root-btn").addEventListener("click", () =>
+      fitTreeToViewport("R00", { animate: true })
+    );
   }
 
   function zoomAtCenter(factor) {
@@ -681,12 +882,14 @@
     const rect = svg.getBoundingClientRect();
     const cx = rect.width / 2;
     const cy = rect.height / 2;
-    const nextK = Math.min(2.6, Math.max(0.14, state.treeTransform.k * factor));
+    const nextK = Math.min(2.8, Math.max(0.14, state.treeTransform.k * factor));
     const ratio = nextK / state.treeTransform.k;
-    state.treeTransform.x = cx - (cx - state.treeTransform.x) * ratio;
-    state.treeTransform.y = cy - (cy - state.treeTransform.y) * ratio;
-    state.treeTransform.k = nextK;
-    applyTreeTransform();
+    animateTreeTransform(
+      cx - (cx - state.treeTransform.x) * ratio,
+      cy - (cy - state.treeTransform.y) * ratio,
+      nextK,
+      200
+    );
   }
 
   // -------------------- View 2: Interactive Radial Sunburst --------------------
@@ -1410,13 +1613,64 @@
     if (!node) return;
     state.drawerNodeId = nodeId;
     renderProfileDrawer();
+    const drawer = document.getElementById("profile-drawer");
+    drawer.style.transform = "";
+    drawer.style.transition = "";
     document.getElementById("drawer-backdrop").classList.remove("hidden");
-    document.getElementById("profile-drawer").classList.remove("hidden");
+    drawer.classList.remove("hidden");
   }
 
   function closeProfileDrawer() {
+    const drawer = document.getElementById("profile-drawer");
+    drawer.style.transform = "";
+    drawer.style.transition = "";
     document.getElementById("drawer-backdrop").classList.add("hidden");
-    document.getElementById("profile-drawer").classList.add("hidden");
+    drawer.classList.add("hidden");
+  }
+
+  function setupDrawerSwipeDismiss() {
+    const drawer = document.getElementById("profile-drawer");
+    const handles = [document.getElementById("drawer-grab-bar"), document.getElementById("drawer-drag-handle")];
+    let startY = null;
+    let currentDy = 0;
+
+    function onStart(ev) {
+      if (window.innerWidth > 760 || !ev.touches || !ev.touches.length) return;
+      startY = ev.touches[0].clientY;
+      currentDy = 0;
+      drawer.style.transition = "none";
+    }
+
+    function onMove(ev) {
+      if (startY === null || !ev.touches || !ev.touches.length) return;
+      const dy = ev.touches[0].clientY - startY;
+      if (dy > 0) {
+        currentDy = dy;
+        drawer.style.transform = `translateY(${dy}px)`;
+      }
+    }
+
+    function onEnd() {
+      if (startY === null) return;
+      startY = null;
+      if (currentDy > 75) {
+        drawer.style.transition = "transform 0.18s ease-out";
+        drawer.style.transform = "translateY(100%)";
+        setTimeout(closeProfileDrawer, 170);
+      } else {
+        drawer.style.transition = "transform 0.2s cubic-bezier(0.22, 1, 0.36, 1)";
+        drawer.style.transform = "translateY(0)";
+      }
+      currentDy = 0;
+    }
+
+    for (const h of handles) {
+      if (!h) continue;
+      h.addEventListener("touchstart", onStart, { passive: true });
+      h.addEventListener("touchmove", onMove, { passive: true });
+      h.addEventListener("touchend", onEnd, { passive: true });
+      h.addEventListener("touchcancel", onEnd, { passive: true });
+    }
   }
 
   function renderProfileDrawer() {
@@ -1678,11 +1932,42 @@
     ctx.font = 'bold 23px "IBM Plex Sans Arabic", Tahoma, sans-serif';
     ctx.fillText(DATA.meta.editionLabel, W / 2, H - 102);
 
-    const a = document.createElement("a");
-    a.download = `بطاقة_نسب_${node.name.replace(/\s+/g, "_")}.png`;
-    a.href = canvas.toDataURL("image/png");
-    a.click();
-    showToast(`تم تنزيل بطاقة النسب للعضو: ${node.name}`);
+    const filename = `بطاقة_نسب_${node.name.replace(/\s+/g, "_")}.png`;
+    canvas.toBlob(async (blob) => {
+      if (!blob) {
+        const a = document.createElement("a");
+        a.download = filename;
+        a.href = canvas.toDataURL("image/png");
+        a.click();
+        showToast(`تم تنزيل بطاقة النسب للعضو: ${node.name}`);
+        return;
+      }
+
+      const isMobile = window.matchMedia && window.matchMedia("(max-width: 760px)").matches;
+      if (isMobile && navigator.share && navigator.canShare) {
+        try {
+          const pngFile = new File([blob], filename, { type: "image/png" });
+          if (navigator.canShare({ files: [pngFile] })) {
+            await navigator.share({
+              files: [pngFile],
+              title: `بطاقة نسب ${node.name} — ذوي عويض`,
+            });
+            showToast(`تمت مشاركة بطاقة النسب للعضو: ${node.name}`);
+            return;
+          }
+        } catch (err) {
+          if (err && err.name === "AbortError") return;
+        }
+      }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.download = filename;
+      a.href = url;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      showToast(`تم تنزيل بطاقة النسب للعضو: ${node.name}`);
+    }, "image/png");
   }
 
   function exportTreePosterPng() {
@@ -1848,9 +2133,12 @@
   // -------------------- Event Bindings & Init --------------------
 
   function bindGlobalSearch() {
+    const wrap = document.getElementById("global-search-wrap");
     const input = document.getElementById("global-search-input");
     const clearBtn = document.getElementById("global-search-clear");
     const dd = document.getElementById("global-search-dropdown");
+    const mobileTrigger = document.getElementById("mobile-search-trigger");
+    const mobileClose = document.getElementById("mobile-search-close");
 
     function updateDropdown() {
       const q = input.value.trim();
@@ -1872,6 +2160,7 @@
                 className: "search-result-item",
                 onClick: () => {
                   dd.classList.add("hidden");
+                  closeMobileSearch();
                   locateNodeInTree(h.node.id);
                   openProfileDrawer(h.node.id);
                 },
@@ -1902,9 +2191,25 @@
       input.focus();
     });
 
+    if (mobileTrigger && wrap) {
+      mobileTrigger.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        const isOpen = wrap.classList.toggle("mobile-search-open");
+        if (isOpen) {
+          setTimeout(() => input.focus(), 40);
+        } else {
+          dd.classList.add("hidden");
+        }
+      });
+    }
+    if (mobileClose) {
+      mobileClose.addEventListener("click", closeMobileSearch);
+    }
+
     document.addEventListener("click", (ev) => {
-      if (!ev.target.closest(".global-search-wrap")) {
+      if (!ev.target.closest(".global-search-wrap") && !ev.target.closest("#mobile-search-trigger")) {
         dd.classList.add("hidden");
+        closeMobileSearch();
       }
     });
   }
@@ -1945,10 +2250,41 @@
       }
     });
 
-    // Main tab navigation
-    document.querySelectorAll(".tab-btn").forEach((btn) => {
+    // Main tab navigation (both desktop header tabs & mobile bottom tab bar)
+    document.querySelectorAll(".tab-btn, .mobile-tab-btn").forEach((btn) => {
       btn.addEventListener("click", () => switchView(btn.dataset.view));
     });
+
+    // Mobile tree secondary tools accordion toggle
+    const treeToolbar = document.getElementById("tree-toolbar");
+    const toolsToggle = document.getElementById("mobile-tree-tools-toggle");
+    if (treeToolbar && toolsToggle) {
+      toolsToggle.addEventListener("click", () => {
+        const isOpen = treeToolbar.classList.toggle("mobile-tools-open");
+        toolsToggle.setAttribute("aria-expanded", String(isOpen));
+        toolsToggle.textContent = isOpen ? "أدوات ▴" : "أدوات ▾";
+      });
+    }
+
+    // Touch swipe-down gesture for iOS bottom sheet drawer
+    setupDrawerSwipeDismiss();
+
+    // Subtle iOS Safari install prompt when browsing outside standalone Home Screen mode
+    const iosBanner = document.getElementById("ios-install-banner");
+    const iosDismiss = document.getElementById("ios-install-dismiss");
+    if (iosBanner && iosDismiss) {
+      const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      const isStandalone =
+        Boolean(window.navigator.standalone) ||
+        (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
+      if (isIos && !isStandalone && !localStorage.getItem("dhawi_uwaid_ios_tip_dismissed")) {
+        iosBanner.classList.remove("hidden");
+      }
+      iosDismiss.addEventListener("click", () => {
+        iosBanner.classList.add("hidden");
+        localStorage.setItem("dhawi_uwaid_ios_tip_dismissed", "1");
+      });
+    }
 
     // Tree toolbar actions
     renderBranchPills();
@@ -2150,6 +2486,13 @@
     }
     if (qPerson && DATA.nodesById[qPerson]) {
       openProfileDrawer(qPerson);
+    }
+
+    // Register Service Worker for instant loading & offline Home Screen support
+    if ("serviceWorker" in navigator && (location.protocol === "http:" || location.protocol === "https:")) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js").catch(() => {});
+      });
     }
   }
 

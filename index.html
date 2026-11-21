@@ -2,10 +2,17 @@
 <html lang="ar" dir="rtl" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="description" content="الشجرة التفاعلية ومنصة النسب الرقمية لفخذ ذوي عويض من البصصة الشدادين من بني الحارث — ديار قيا جنوب الطائف." />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="ذوي عويض" />
+  <meta name="theme-color" content="#12372A" id="meta-theme-color" />
   <title>ذوي عويض — الشجرة التفاعلية | قيا — بني الحارث</title>
   <link rel="icon" type="image/svg+xml" href="assets/logo-qiya-crest.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/icon-180.png" />
+  <link rel="manifest" href="manifest.webmanifest" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -50,14 +57,14 @@
               </g>
             </svg>
             <div class="brand-copy">
-              <h1 class="brand-title">فخذ ذوي عويض</h1>
+              <h1 class="brand-title"><span class="desktop-only-inline">فخذ </span>ذوي عويض</h1>
               <p class="brand-subtitle">من البصصة الشدادين من بني الحارث • ديار قيا — جنوب الطائف</p>
             </div>
           </a>
         </div>
 
         <!-- Global Smart Search -->
-        <div class="global-search-wrap" role="search">
+        <div class="global-search-wrap" id="global-search-wrap" role="search">
           <div class="search-input-box">
             <span class="search-icon" aria-hidden="true">⌕</span>
             <input
@@ -69,22 +76,26 @@
               aria-label="بحث شامل في شجرة ذوي عويض"
             />
             <button type="button" id="global-search-clear" class="search-clear-btn hidden" aria-label="مسح البحث">✕</button>
+            <button type="button" id="mobile-search-close" class="mobile-only-btn mobile-search-close-btn" aria-label="إغلاق البحث">تم</button>
           </div>
           <div id="global-search-dropdown" class="search-dropdown hidden" role="listbox" aria-label="نتائج البحث السريع"></div>
         </div>
 
         <!-- Utility Actions -->
         <div class="topbar-actions">
-          <button type="button" id="open-update-modal-btn" class="btn btn-gold btn-sm">
-            <span>+ إضافة / تحديث</span>
+          <button type="button" id="mobile-search-trigger" class="btn btn-ghost btn-sm mobile-only-btn topbar-icon-btn" aria-label="بحث في الشجرة" title="بحث">
+            <span aria-hidden="true">⌕</span>
           </button>
-          <button type="button" id="theme-toggle-btn" class="btn btn-ghost btn-sm" title="التبديل بين النمط التراثي والمجلس الليلي">
+          <button type="button" id="open-update-modal-btn" class="btn btn-gold btn-sm" title="إضافة مولود أو طلب تحديث">
+            <span>+ إضافة<span class="desktop-only-inline"> / تحديث</span></span>
+          </button>
+          <button type="button" id="theme-toggle-btn" class="btn btn-ghost btn-sm topbar-icon-btn-mobile" title="التبديل بين النمط التراثي والمجلس الليلي">
             <span id="theme-toggle-icon" aria-hidden="true">☾</span>
-            <span id="theme-toggle-label">مجلس ليلي</span>
+            <span id="theme-toggle-label" class="desktop-only-inline">مجلس ليلي</span>
           </button>
           <div class="brand-kit-menu" id="brand-kit-menu">
             <button type="button" id="brand-kit-toggle" class="btn btn-outline btn-sm" aria-expanded="false">
-              <span>الهوية والترويسات ▾</span>
+              <span>الهوية<span class="desktop-only-inline"> والترويسات</span> ▾</span>
             </button>
             <div class="brand-kit-popover hidden" id="brand-kit-popover">
               <a href="brand/logo-studio.html" target="_blank" rel="noopener">استوديو الشعارات والألوان</a>
@@ -127,10 +138,13 @@
     <main class="main-stage" id="main-stage">
       <!-- VIEW 1: Interactive Collapsible SVG Tree -->
       <section id="view-tree" class="view-panel active" role="tabpanel">
-        <div class="tree-toolbar card-surface">
+        <div class="tree-toolbar card-surface" id="tree-toolbar">
           <div class="toolbar-row">
-            <div class="branch-pills-scroll" id="tree-branch-pills" aria-label="التركيز السريع على الفروع"></div>
-            <div class="tree-actions-group">
+            <div class="branch-bar-row">
+              <div class="branch-pills-scroll" id="tree-branch-pills" aria-label="التركيز السريع على الفروع"></div>
+              <button type="button" id="mobile-tree-tools-toggle" class="btn btn-subtle btn-xs mobile-tools-toggle" aria-expanded="false">أدوات ▾</button>
+            </div>
+            <div class="tree-actions-group" id="tree-actions-group">
               <label class="toggle-chip" for="toggle-ancestors-cb">
                 <input type="checkbox" id="toggle-ancestors-cb" />
                 <span>عمود النسب إلى قحطان</span>
@@ -364,10 +378,54 @@
     </footer>
   </div>
 
+  <!-- Mobile Native Bottom Tab Bar (<= 760px) -->
+  <nav class="mobile-bottom-nav" id="mobile-bottom-nav" role="tablist" aria-label="التنقل الرئيسي للجوال">
+    <button type="button" class="mobile-tab-btn active" role="tab" aria-selected="true" data-view="tree">
+      <svg class="mtab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M12 20V9M12 9L6 4M12 9L18 4M6 4v3M18 4v3M8 20h8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>الشجرة</span>
+    </button>
+    <button type="button" class="mobile-tab-btn" role="tab" aria-selected="false" data-view="sunburst">
+      <svg class="mtab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/><path d="M12 3v5.5M20.5 15l-4.8-2.5M3.5 15l4.8-2.5"/>
+      </svg>
+      <span>البوصلة</span>
+    </button>
+    <button type="button" class="mobile-tab-btn" role="tab" aria-selected="false" data-view="directory">
+      <svg class="mtab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5" stroke-linecap="round"/>
+      </svg>
+      <span>الدليل</span>
+    </button>
+    <button type="button" class="mobile-tab-btn" role="tab" aria-selected="false" data-view="kinship">
+      <svg class="mtab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M8 7a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm8 0a3 3 0 1 1 0 6 3 3 0 0 1 0-6zM3 19c0-2.5 2.2-4 5-4s5 1.5 5 4M11 19c0-2.5 2.2-4 5-4s5 1.5 5 4" stroke-linecap="round"/>
+      </svg>
+      <span>القرابة</span>
+    </button>
+    <button type="button" class="mobile-tab-btn" role="tab" aria-selected="false" data-view="analytics">
+      <svg class="mtab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M4 19h16M7 16v-6M12 16V6M17 16v-9" stroke-linecap="round"/>
+      </svg>
+      <span>الإحصائيات</span>
+    </button>
+  </nav>
+
+  <!-- Subtle iOS Add-to-Home-Screen Tip Banner (shown only on non-standalone iPhone/iPad Safari) -->
+  <div id="ios-install-banner" class="ios-install-banner hidden" role="region" aria-label="تثبيت التطبيق على الآيفون">
+    <div class="ios-install-copy">
+      <strong>تثبيت التطبيق على الآيفون</strong>
+      <span>اضغط زر المشاركة بالأسفل ثم اختر «إضافة إلى الشاشة الرئيسية».</span>
+    </div>
+    <button type="button" id="ios-install-dismiss" class="ios-install-close" aria-label="إخفاء التنبيه">✕</button>
+  </div>
+
   <!-- Slide-Over Profile Drawer -->
   <div id="drawer-backdrop" class="drawer-backdrop hidden" aria-hidden="true"></div>
   <aside id="profile-drawer" class="profile-drawer hidden" role="dialog" aria-modal="true" aria-labelledby="drawer-person-name">
-    <div class="drawer-header">
+    <div class="sheet-grab-bar" id="drawer-grab-bar" aria-hidden="true"><span></span></div>
+    <div class="drawer-header" id="drawer-drag-handle">
       <div class="drawer-header-copy">
         <span id="drawer-branch-badge" class="badge badge-emerald">فرع ...</span>
         <h2 id="drawer-person-name" class="drawer-name">...</h2>
@@ -406,6 +464,7 @@
   <!-- Community Feedback / Newborn Addition Modal -->
   <div id="modal-backdrop" class="modal-backdrop hidden" aria-hidden="true"></div>
   <div id="update-modal" class="modal-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="update-modal-title">
+    <div class="sheet-grab-bar" aria-hidden="true"><span></span></div>
     <div class="modal-header">
       <div>
         <h2 id="update-modal-title">إضافة مولود أو طلب تحديث بيانات</h2>

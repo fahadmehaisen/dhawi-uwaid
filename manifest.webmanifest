@@ -1,0 +1,39 @@
+{
+  "name": "شجرة فخذ ذوي عويض — الشدادين من بني الحارث",
+  "short_name": "ذوي عويض",
+  "description": "الشجرة التفاعلية ومنصة النسب الرقمية لفخذ ذوي عويض من البصصة الشدادين من بني الحارث — ديار قيا جنوب الطائف.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#12372A",
+  "theme_color": "#12372A",
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
