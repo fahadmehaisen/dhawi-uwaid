@@ -9,7 +9,7 @@ from PIL import Image, ImageDraw, ImageFont
 PROJECT_DIR = Path(r"c:\Projects\dhawi-uwaid")
 PDF2_PATH = Path(r"C:\Users\fahad\Desktop\120x191.pdf")
 NODES_V2_PATH = PROJECT_DIR / "data" / "nodes_v2_raw.json"
-V1_TREE_PATH = PROJECT_DIR / "data" / "tree.json"
+V1_EDGES_PATH = PROJECT_DIR / "data" / "edges.json"
 DIFF_PATH = PROJECT_DIR / "audit" / "diff_v1_v2.json"
 
 OUT_JSON = PROJECT_DIR / "data" / "tree.json"
@@ -65,8 +65,7 @@ def draw_arrow(draw: ImageDraw.ImageDraw, x1: float, y1: float, x2: float, y2: f
 
 def main() -> None:
     nodes_v2 = json.loads(NODES_V2_PATH.read_text(encoding="utf-8"))
-    v1_tree = json.loads(V1_TREE_PATH.read_text(encoding="utf-8"))
-    v1_nodes = v1_tree["nodesById"]
+    v1_edges = json.loads(V1_EDGES_PATH.read_text(encoding="utf-8"))
     diff = json.loads(DIFF_PATH.read_text(encoding="utf-8"))
 
     v2_to_v1 = diff["matched_v2_to_v1"]  # v2_id -> v1_id
@@ -86,7 +85,7 @@ def main() -> None:
     for i in range(1, 9):
         edges[f"B{i:02d}"] = "R00"
 
-    # 2. Transfer verified v1 parents for matched canopy nodes
+    # 2. Transfer verified v1 parents from immutable data/edges.json
     for n in nodes_v2:
         nid = n["id"]
         if nid in edges:
@@ -94,9 +93,9 @@ def main() -> None:
         v1_id = v2_to_v1.get(nid)
         if not v1_id:
             continue
-        cur_v1_parent = v1_nodes[v1_id]["parentId"]
+        cur_v1_parent = v1_edges.get(v1_id)
         while cur_v1_parent and cur_v1_parent not in v1_to_v2:
-            cur_v1_parent = v1_nodes[cur_v1_parent]["parentId"]
+            cur_v1_parent = v1_edges.get(cur_v1_parent)
         if cur_v1_parent and cur_v1_parent in v1_to_v2:
             edges[nid] = v1_to_v2[cur_v1_parent]
 
@@ -114,7 +113,7 @@ def main() -> None:
 
     y_sifr = find_id("tier2_yellow", "سفر")            # Y19
     y_fahid = "Y18"                                     # فهيد
-    y_sarhan = find_id("tier2_yellow", "سرحان")        # Y17
+    y_sarhan = find_id("tier2_yellow", "سرحان", 2092, 2823) # Y17 (on B06 ثويني, NOT Y09 on B07 جرار)
     y_zayid = find_id("tier2_yellow", "زايد")          # Y16
     y_dughaisan = find_id("tier2_yellow", "دغيسان")    # Y15
     y_musaad = find_id("tier2_yellow", "مسعد")         # Y11
@@ -197,10 +196,47 @@ def main() -> None:
         y_muaidh: "B08",
         m_hamad_m35: y_muaidh,
         m_abdulmuhsin: m_hamad_m35,
-        # Also attach M019 مطلق, M030 سلطان, L072 رياض, L079 عبدالله, L053 حمد, L063 صالح to M035 حمد / M019 مطلق cleanly
+        # Also attach M019 مطلق, M031 سلطان, L079 عبدالله under M035 حمد / M031 سلطان
         find_id("tier3_mint", "مطلق", 2050, 1250): m_hamad_m35,
         find_id("tier3_mint", "سلطان", 1910, 1450): m_hamad_m35,
-        find_id("tier4_leaf", "عبدالله", 1940, 1500): m_hamad_m35,
+        "L079": find_id("tier3_mint", "سلطان", 1963, 1428),
+
+        # 14. Visual topology fixes for B08 ماضي (top spine: متعب M025 -> عايض M018 -> أبناؤه السبعة)
+        "M025": "B08",
+        "M018": "M025",
+        "M001": "M018",
+        "M002": "M018",
+        "M003": "M018",
+        "M008": "M018",
+        "M014": "M018",
+        "L042": "M018",
+        "L043": "M018",
+
+        # 15. Visual topology fixes for remaining B08 ماضي branches
+        "L077": "Y04",
+        "M038": m_hamad_m35,
+        "L094": "M043",
+        "L099": "M043",
+        "L101": "M043",
+        "M007": "M015",
+        "M004": "M009",
+        "M057": "M054",
+        "L124": "M070",
+        "L140": "M062",
+
+        # 16. Visual topology fixes for B07 جرار, B06 ثويني, and B05 سمران
+        "M155": y_sarhan,
+        "L300": "M154",
+        "L312": "M153",
+        "M160": "M145",
+        "M168": "M145",
+        "L356": "M179",
+        "M202": "M188",
+        "M199": "M200",
+        "L416": "M200",
+        "M206": "M204",
+        "M225": "M204",
+        "L436": "M204",
     }
     for cid, pid in v2_overrides.items():
         edges[cid] = pid
@@ -287,6 +323,16 @@ def main() -> None:
     assert "فيصل بن ثويني بن مسعد بن ثويني" in nodes["L262"]["fullLineage"], nodes["L262"]["fullLineage"]
     assert "عبدالمحسن بن حمد بن معيض بن ماضي" in nodes[m_abdulmuhsin]["fullLineage"], nodes[m_abdulmuhsin]["fullLineage"]
     assert nodes["M147"]["name"] == "متاعب" and nodes["M147"]["childrenCount"] == 0
+
+    # Verify B08 ماضي & B06 ثويني visual topology fixes
+    b08_child_names = [nodes[cid]["name"] for cid in nodes["B08"]["childrenIds"]]
+    assert b08_child_names.count("عايض") == 1, f"Duplicate عايض directly under ماضي: {b08_child_names}"
+    assert "M025" in nodes["B08"]["childrenIds"] and "M018" not in nodes["B08"]["childrenIds"]
+    assert nodes["M018"]["parentId"] == "M025"
+    assert {"M001", "M002", "M003", "M008", "M014", "L042", "L043"}.issubset(set(nodes["M018"]["childrenIds"]))
+    assert nodes["M034"]["parentId"] == "Y04"
+    for tid in ("M146", "M151", "M156"):
+        assert nodes[tid]["branchId"] == "B06" and nodes[tid]["parentId"] == "Y17", f"{tid} not on B06/Y17"
 
     desc_of_r00 = [n for n in nodes.values() if n["generation"] >= 1]
     assert len(desc_of_r00) == 749, f"Expected 749 descendants of عويض, got {len(desc_of_r00)}"
