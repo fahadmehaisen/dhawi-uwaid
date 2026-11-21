@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>استوديو الهوية البصرية والشعار — ذوي عويض</title>
+  <title>استوديو الشعار والهوية البصرية — ذوي عويض</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -11,543 +11,224 @@
     :root {
       --emerald: #12372A;
       --emerald-deep: #0B241B;
-      --gold: #C59B43;
-      --gold-light: #E2BE6E;
-      --cream: #F8F4EC;
-      --sand: #E8DCC8;
-      --ink: #1C1B18;
-      --muted: #5C574D;
-      --border: rgba(18, 55, 42, 0.14);
+      --gold: #C9A45A;
+      --gold-light: #E2C88B;
+      --ivory: #F6F1E6;
+      --paper: #FFFFFF;
+      --ink: #1A1A1A;
+      --muted: #5A554B;
+      --border: #DED4BE;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'IBM Plex Sans Arabic', Tahoma, sans-serif;
-      background: var(--cream);
+      background: var(--ivory);
       color: var(--ink);
-      line-height: 1.75;
+      line-height: 1.7;
     }
     .topbar {
-      background: linear-gradient(135deg, var(--emerald-deep), var(--emerald));
-      color: var(--cream);
-      padding: 16px 28px;
+      background: linear-gradient(135deg, #0B241B 0%, #12372A 60%, #174636 100%);
+      color: #FFFDF8;
       border-bottom: 3px solid var(--gold);
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
+      padding: 16px 24px;
     }
-    .topbar h1 {
-      font-family: 'Amiri', serif;
-      font-size: 1.65rem;
-      color: var(--gold-light);
-      line-height: 1.3;
-    }
-    .topbar p {
-      font-size: 0.9rem;
-      opacity: 0.88;
-    }
-    .nav-links {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 9px 16px;
-      border-radius: 10px;
-      font-family: inherit;
-      font-size: 0.88rem;
-      font-weight: 600;
-      cursor: pointer;
-      text-decoration: none;
-      border: 1px solid transparent;
-      transition: all 0.2s ease;
-    }
-    .btn-gold {
-      background: var(--gold);
-      color: #16140F;
-    }
-    .btn-gold:hover { background: var(--gold-light); transform: translateY(-1px); }
-    .btn-outline {
-      background: rgba(248, 244, 236, 0.08);
-      color: var(--cream);
-      border-color: rgba(197, 155, 67, 0.45);
-    }
-    .btn-outline:hover { background: rgba(197, 155, 67, 0.2); }
-    .btn-emerald {
-      background: var(--emerald);
-      color: var(--cream);
-    }
-    .btn-emerald:hover { background: var(--emerald-deep); }
-    .btn-soft {
-      background: #fff;
-      color: var(--emerald);
-      border-color: var(--border);
-    }
-    .btn-soft:hover { border-color: var(--gold); background: #FFFBF2; }
-
-    .container {
+    .topbar-inner {
       max-width: 1280px;
       margin: 0 auto;
-      padding: 28px 20px 60px;
-    }
-    .intro-card {
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 24px 28px;
-      margin-bottom: 26px;
-      box-shadow: 0 10px 30px rgba(18, 55, 42, 0.05);
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
-      gap: 20px;
+      gap: 16px;
     }
-    .intro-card h2 {
-      font-family: 'Amiri', serif;
-      font-size: 1.7rem;
-      color: var(--emerald);
-      margin-bottom: 6px;
+    .brand-row { display: flex; align-items: center; gap: 14px; }
+    .brand-row img.seal { width: 52px; height: 52px; }
+    .brand-row img.wm { height: 34px; width: auto; }
+    .brand-row p { color: var(--gold-light); font-size: 0.85rem; margin-top: 2px; }
+    .top-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 15px; border-radius: 10px;
+      font-family: inherit; font-size: 0.85rem; font-weight: 600;
+      text-decoration: none; cursor: pointer;
+      border: 1px solid rgba(226, 200, 139, 0.45);
+      background: rgba(255,255,255,0.08); color: #FFFDF8;
+      transition: transform 0.15s, background 0.15s;
     }
-    .intro-card p { color: var(--muted); max-width: 720px; font-size: 0.96rem; }
-    .bg-switcher {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .bg-chip {
-      padding: 7px 14px;
-      border-radius: 999px;
-      border: 1.5px solid var(--border);
-      background: #fff;
-      font-family: inherit;
-      font-size: 0.85rem;
-      font-weight: 600;
-      cursor: pointer;
-      color: var(--ink);
-    }
-    .bg-chip.active {
-      background: var(--emerald);
-      color: #fff;
-      border-color: var(--emerald);
-    }
+    .btn:hover { transform: translateY(-1px); background: rgba(255,255,255,0.16); }
+    .btn-gold { background: var(--gold); color: #16140F; border-color: var(--gold); }
+    .btn-emerald { background: var(--emerald); color: #FFFDF8; border-color: var(--emerald); }
+    .btn-soft { background: var(--ivory); color: var(--emerald); border-color: var(--border); }
 
-    .grid-3 {
+    .container { max-width: 1280px; margin: 28px auto 64px; padding: 0 20px; }
+    .intro {
+      background: var(--paper); border: 1px solid var(--border);
+      border-radius: 18px; padding: 24px 28px; margin-bottom: 24px;
+      box-shadow: 0 8px 24px rgba(18, 55, 42, 0.06);
+    }
+    .intro h2 { font-family: 'Amiri', serif; font-size: 1.75rem; color: var(--emerald); margin-bottom: 6px; }
+    .intro p { color: var(--muted); font-size: 0.96rem; }
+
+    .grid-2 {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
       gap: 22px;
-      margin-bottom: 34px;
+      margin-bottom: 28px;
     }
     .logo-card {
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      overflow: hidden;
-      box-shadow: 0 10px 26px rgba(18, 55, 42, 0.06);
-      display: flex;
-      flex-direction: column;
+      background: var(--paper); border: 1px solid var(--border);
+      border-radius: 18px; overflow: hidden;
+      display: flex; flex-direction: column;
+      box-shadow: 0 10px 28px rgba(18, 55, 42, 0.08);
     }
-    .logo-stage {
-      height: 290px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      transition: background 0.25s ease;
-      position: relative;
-      background: var(--cream);
+    .stage {
+      height: 310px; padding: 28px;
+      display: flex; align-items: center; justify-content: center;
+      border-bottom: 1px solid var(--border);
     }
-    .logo-stage.bg-emerald { background: linear-gradient(145deg, #0D291F, #164434); }
-    .logo-stage.bg-sand { background: linear-gradient(145deg, #EFE4D1, #E1CFAF); }
-    .logo-stage.bg-charcoal { background: linear-gradient(145deg, #171613, #272520); }
-    .logo-stage svg {
-      width: 175px;
-      height: 175px;
-      filter: drop-shadow(0 10px 18px rgba(0,0,0,0.14));
+    .stage.dark { background: radial-gradient(circle at 50% 40%, #194A39 0%, #0B241B 100%); }
+    .stage.light { background: radial-gradient(circle at 50% 40%, #FFFDF8 0%, #F2EBDC 100%); }
+    .stage img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .card-body { padding: 20px 22px 22px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .pill {
+      display: inline-block; padding: 3px 10px; border-radius: 999px;
+      font-size: 0.76rem; font-weight: 700;
+      background: #EFE7D4; color: #7C5C1E; border: 1px solid #DFCCA0;
     }
-    .stage-badge {
-      position: absolute;
-      top: 14px;
-      right: 14px;
-      background: rgba(18, 55, 42, 0.9);
-      color: var(--gold-light);
-      font-size: 0.76rem;
-      font-weight: 600;
-      padding: 4px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(197, 155, 67, 0.45);
-    }
-    .logo-body {
-      padding: 20px 22px 22px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      flex: 1;
-    }
-    .logo-body h3 {
-      font-family: 'Amiri', serif;
-      font-size: 1.35rem;
-      color: var(--emerald);
-    }
-    .logo-body p {
-      font-size: 0.9rem;
-      color: var(--muted);
-      flex: 1;
-    }
-    .logo-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      padding-top: 8px;
-      border-top: 1px dashed var(--border);
-    }
+    .card-body h3 { font-family: 'Amiri', serif; font-size: 1.38rem; color: var(--emerald); }
+    .card-body p { color: var(--muted); font-size: 0.9rem; flex: 1; }
+    .dl-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
 
-    .section-title {
-      font-family: 'Amiri', serif;
-      font-size: 1.55rem;
-      color: var(--emerald);
-      margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    .matrix-card {
+      background: var(--paper); border: 1px solid var(--border);
+      border-radius: 18px; padding: 24px 28px; margin-bottom: 28px;
     }
-    .palette-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-      gap: 14px;
-      margin-bottom: 34px;
-    }
-    .swatch {
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      overflow: hidden;
-      cursor: pointer;
-      transition: transform 0.15s ease;
-    }
-    .swatch:hover { transform: translateY(-2px); border-color: var(--gold); }
-    .swatch-color { height: 76px; }
-    .swatch-info { padding: 10px 12px; }
-    .swatch-name { font-weight: 700; font-size: 0.88rem; color: var(--ink); }
-    .swatch-hex { font-family: monospace; font-size: 0.82rem; color: var(--muted); direction: ltr; text-align: right; }
+    .matrix-card h3 { font-family: 'Amiri', serif; font-size: 1.5rem; color: var(--emerald); margin-bottom: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+    th, td { padding: 12px 14px; border-bottom: 1px solid var(--border); text-align: right; }
+    th { background: #FAF6ED; color: var(--emerald); font-weight: 700; }
 
-    .type-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 20px;
-    }
-    .type-card {
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 22px 24px;
-    }
-    .type-amiri {
-      font-family: 'Amiri', serif;
-      font-size: 2rem;
-      color: var(--emerald);
-      margin: 10px 0;
-    }
-    .type-ibm {
-      font-family: 'IBM Plex Sans Arabic', sans-serif;
-      font-size: 1.15rem;
-      color: var(--ink);
-      margin: 10px 0;
-    }
-    .toast {
-      position: fixed;
-      bottom: 24px;
-      left: 24px;
-      background: var(--emerald);
-      color: #fff;
-      border: 1px solid var(--gold);
-      padding: 10px 18px;
-      border-radius: 10px;
-      font-size: 0.9rem;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.25s ease;
-      z-index: 999;
-    }
-    .toast.show { opacity: 1; }
+    .palette-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 28px; }
+    .swatch { background: var(--paper); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
+    .swatch-box { height: 74px; border-radius: 10px; margin-bottom: 10px; }
+    .swatch strong { display: block; color: var(--emerald); font-size: 1rem; }
+    .swatch code { font-size: 0.82rem; color: var(--muted); }
   </style>
 </head>
 <body>
   <header class="topbar">
-    <div>
-      <h1>استوديو الهوية البصرية والشعار — فخذ ذوي عويض</h1>
-      <p>هوية مستلهمة من حصون قيا التاريخية وجبال بني الحارث وإبل البادية والصحراء</p>
+    <div class="topbar-inner">
+      <div class="brand-row">
+        <img class="seal" src="../assets/logo-seal-clean.svg" alt="ختم ذوي عويض" />
+        <div>
+          <img class="wm" src="../assets/logo-wordmark-clean.svg" alt="ذوي عويض" />
+          <p>الهوية البصرية المعتمدة — من البصصة قبيلة الشدادين بني الحارث</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <a href="wall-mural.html" class="btn btn-gold">اللوحة الجدارية (٧٦٠ اسماً)</a>
+        <a href="letterhead-official.html" class="btn">المخاطبات الرسمي</a>
+        <a href="letterhead-clean.html" class="btn">المراسلات العام</a>
+        <a href="../index.html" class="btn">العودة للشجرة</a>
+      </div>
     </div>
-    <nav class="nav-links">
-      <a class="btn btn-gold" href="../index.html">العودة إلى موقع الشجرة</a>
-      <a class="btn btn-outline" href="letterhead-clean.html">ترويسة المراسلات العامة</a>
-      <a class="btn btn-outline" href="letterhead-official.html">الترويسة الرسمية</a>
-    </nav>
   </header>
 
   <main class="container">
-    <section class="intro-card">
-      <div>
-        <h2>مقترحات الشعار الثلاثة المرتبطة بديار قيا والإبل</h2>
-        <p>صُمّمت الشعارات بأسلوب المتجهات الدقيقة لتمزج بين الحصن الحجري القياوي ذي الشرفات والقمم الجبلية جنوب الطائف، وبين الإبل العربية الأصيلة وكثبان الصحراء، مع حضور رمزي للرقم ٨ تعبيراً عن أبناء عويض الثمانية.</p>
-      </div>
-      <div class="bg-switcher" aria-label="تبديل خلفية العرض">
-        <span style="font-size:0.85rem;font-weight:700;color:var(--emerald);">خلفية العرض:</span>
-        <button class="bg-chip active" data-bg="">كريمي</button>
-        <button class="bg-chip" data-bg="bg-emerald">أخضر السرو</button>
-        <button class="bg-chip" data-bg="bg-sand">رملي صحراوي</button>
-        <button class="bg-chip" data-bg="bg-charcoal">فحمي داكن</button>
-      </div>
+    <section class="intro">
+      <h2>نظام الشعار الموحّد لذوي عويض (الختم الملكي + المخطوطة الحرة)</h2>
+      <p>يجمع نظام الهوية المعتمد بين <strong>الختم الملكي الدائري بالثلث الجلي</strong> و<strong>المخطوطة الديوانية الحرة</strong> دون خلطهما داخل شكل واحد مزدحم. ويتوفّر كل شعار في نسختين: <strong>نسخة رسمية كاملة</strong> تحمل أسفلها عبارة «من البصصة قبيلة الشدادين بني الحارث» للمطبوعات والأوراق، و<strong>نسخة صافية</strong> للأيقونات والبروشات والميداليات والمقاسات الصغيرة.</p>
     </section>
 
-    <section class="grid-3">
-      <!-- Concept 1 -->
+    <section class="grid-2">
       <article class="logo-card">
-        <div class="logo-stage" id="stage-crest">
-          <span class="stage-badge">الشعار المعتمد في الموقع والترويسة</span>
-          <svg id="svg-crest" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 260" fill="none">
-            <defs>
-              <linearGradient id="g1a" x1="20" y1="15" x2="220" y2="245" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stop-color="#E2BE6E"/><stop offset="50%" stop-color="#C59B43"/><stop offset="100%" stop-color="#9A7426"/>
-              </linearGradient>
-              <linearGradient id="e1a" x1="120" y1="10" x2="120" y2="250" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stop-color="#184737"/><stop offset="100%" stop-color="#0D291F"/>
-              </linearGradient>
-            </defs>
-            <path d="M120 10 L204 42 L224 128 C224 188 176 232 120 250 C64 232 16 188 16 128 L36 42 Z" fill="url(#e1a)" stroke="url(#g1a)" stroke-width="4.5"/>
-            <path d="M120 21 L195 50 L213 128 C213 182 170 221 120 238 C70 221 27 182 27 128 L45 50 Z" fill="none" stroke="url(#g1a)" stroke-width="1.6" stroke-opacity="0.78"/>
-            <g transform="translate(120, 48)">
-              <polygon points="0,-16 4,-4 16,0 4,4 0,16 -4,4 -16,0 -4,-4" fill="url(#g1a)"/>
-              <polygon points="0,-16 4,-4 16,0 4,4 0,16 -4,4 -16,0 -4,-4" fill="url(#g1a)" transform="rotate(45)"/>
-              <circle cx="0" cy="0" r="3.4" fill="#12372A"/>
-            </g>
-            <path d="M36 154 L76 112 L104 138 L142 98 L178 134 L204 152 L204 164 L36 164 Z" fill="#1E523F" opacity="0.72"/>
-            <g>
-              <path d="M70 84 H80 V91 H87 V84 H97 V91 H104 V84 H114 V96 H70 Z" fill="url(#g1a)"/>
-              <polygon points="73,96 111,96 118,168 66,168" fill="#F8F4EC"/>
-              <polygon points="73,96 111,96 118,168 66,168" fill="none" stroke="url(#g1a)" stroke-width="1.8"/>
-              <line x1="71.5" y1="112" x2="112.5" y2="112" stroke="#12372A" stroke-width="1.2" stroke-opacity="0.32"/>
-              <line x1="69.5" y1="128" x2="114.5" y2="128" stroke="#12372A" stroke-width="1.2" stroke-opacity="0.32"/>
-              <line x1="67.8" y1="144" x2="116.2" y2="144" stroke="#12372A" stroke-width="1.2" stroke-opacity="0.32"/>
-              <polygon points="72,102 112,102 113,106 71,106" fill="url(#g1a)"/>
-              <rect x="83" y="116" width="3.5" height="10" rx="1.5" fill="#12372A"/>
-              <rect x="97.5" y="116" width="3.5" height="10" rx="1.5" fill="#12372A"/>
-              <path d="M84 168 V152 C84 147 100 147 100 152 V168 Z" fill="#12372A"/>
-            </g>
-            <path d="M31 168 C68 156 105 170 144 160 C174 152 195 158 209 166 L205 186 C168 208 145 218 120 226 C95 218 68 206 35 184 Z" fill="url(#g1a)" opacity="0.22"/>
-            <path d="M32 174 C72 162 118 178 164 164 C185 158 198 161 208 167" stroke="url(#g1a)" stroke-width="2" stroke-linecap="round" fill="none"/>
-            <path d="M44 190 C84 182 128 194 196 178" stroke="url(#g1a)" stroke-width="1.4" stroke-opacity="0.7" stroke-linecap="round" fill="none"/>
-            <g transform="translate(110, 108) scale(0.95)">
-              <path d="M54 4 C56 2 60 2 63 3 C66 4 68 6 67 8 C66 10 62 11 58 11 C55 11 53 14 52 19 C51 25 50 32 45 36 C41 39 36 37 33 32 C29 24 23 19 16 19 C10 19 5 24 2 31 C0 36 -1 41 1 46 C2 48 4 50 4 56 L3 68 L7 68 L9 50 C12 49 16 49 20 50 L22 68 L26 68 L25 49 C30 48 35 46 39 45 L41 68 L45 68 L44 43 C48 41 51 39 53 35 C56 30 58 20 59 13 C61 11 64 9 65 7 Z" fill="url(#g1a)"/>
-              <path d="M12 24 C18 22 24 25 28 31" stroke="#12372A" stroke-width="1.3" stroke-linecap="round" opacity="0.55"/>
-            </g>
-            <circle cx="105" cy="212" r="2" fill="url(#g1a)"/><circle cx="120" cy="216" r="2.8" fill="url(#g1a)"/><circle cx="135" cy="212" r="2" fill="url(#g1a)"/>
-          </svg>
+        <div class="stage dark">
+          <img src="final/logo-seal-clean-gold.svg" alt="الشعار ١ الصافي" />
         </div>
-        <div class="logo-body">
-          <h3>١. شعار حصن قيا والمطية العربية</h3>
-          <p>درع ثماني الحواف يجمع بين حصن قيا الحجري ذي الشرفات والمطية العربية فوق كثبان الصحراء، وتعلوه نجمة ثمانية لذكرى أبناء عويض.</p>
-          <div class="logo-actions">
-            <button class="btn btn-emerald" onclick="downloadSVG('svg-crest', 'dhawi-uwaid-qiya-crest.svg')">تنزيل متجه SVG</button>
-            <button class="btn btn-soft" onclick="downloadPNG('svg-crest', 'dhawi-uwaid-qiya-crest.png', 2000)">صورة فائقة الدقة PNG</button>
+        <div class="card-body">
+          <div class="badge-row"><span class="pill">الشعار ١ — صافي</span><span class="pill">بدون نص إضافي</span></div>
+          <h3>الختم الملكي الدائري (النسخة الصافية)</h3>
+          <p>معتمد لأيقونة تطبيق الآيفون والجوال، البروش المعدني، الميداليات، ختم القماش الجلدي الصغير، والعلامة المائية داخل الأوراق الرسمية.</p>
+          <div class="dl-row">
+            <a class="btn btn-emerald" href="final/logo-seal-clean-gold.svg" download="dhawi-uwaid-seal-clean-gold.svg">تحميل ذهبي SVG</a>
+            <a class="btn btn-soft" href="final/logo-seal-clean-emerald.svg" download="dhawi-uwaid-seal-clean-emerald.svg">تحميل زمردي SVG</a>
+            <a class="btn btn-soft" href="final/logo-seal-clean-black.svg" download="dhawi-uwaid-seal-clean-black.svg">أسود للأختام SVG</a>
           </div>
         </div>
       </article>
 
-      <!-- Concept 2 -->
       <article class="logo-card">
-        <div class="logo-stage" id="stage-shield">
-          <span class="stage-badge">الوسم الصحراوي والأيقونة</span>
-          <svg id="svg-shield" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none">
-            <defs>
-              <linearGradient id="g2a" x1="25" y1="20" x2="215" y2="220" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stop-color="#E7C677"/><stop offset="50%" stop-color="#C59B43"/><stop offset="100%" stop-color="#987021"/>
-              </linearGradient>
-            </defs>
-            <polygon points="82,16 158,16 218,76 218,154 158,218 82,218 22,154 22,76" fill="#12372A" stroke="url(#g2a)" stroke-width="5"/>
-            <polygon points="86,26 154,26 208,80 208,150 154,208 86,208 32,150 32,80" fill="none" stroke="url(#g2a)" stroke-width="1.5" stroke-dasharray="4 3" stroke-opacity="0.75"/>
-            <path d="M40 156 L84 114 L112 140 L152 104 L200 156 Z" fill="#1B4D3B"/>
-            <path d="M40 156 L84 114 L112 140 L152 104 L200 156" stroke="url(#g2a)" stroke-width="2" stroke-linejoin="round" fill="none"/>
-            <path d="M88 164 C92 138 96 112 96 92 C96 72 104 54 122 48 C134 44 148 46 158 51 C166 55 170 61 167 66 C164 71 154 72 146 71 C138 70 132 72 128 79 C123 88 124 106 128 124 C132 140 138 154 146 164 Z" fill="url(#g2a)"/>
-            <path d="M116 50 L112 40 L122 47" fill="url(#g2a)"/>
-            <circle cx="144" cy="57" r="2.3" fill="#12372A"/>
-            <path d="M46 168 C90 158 148 174 194 164" stroke="#F8F4EC" stroke-width="2.2" stroke-linecap="round"/>
-            <path d="M74 182 H166" stroke="url(#g2a)" stroke-width="1.6" stroke-opacity="0.8"/>
-            <polygon points="120,175 127,182 120,189 113,182" fill="#12372A" stroke="url(#g2a)" stroke-width="2"/>
-          </svg>
+        <div class="stage light">
+          <img src="final/logo-seal-full-emerald.svg" alt="الشعار ١ الرسمي الكامل" />
         </div>
-        <div class="logo-body">
-          <h3>٢. شعار وسم الإبل وجبال قيا وبسل</h3>
-          <p>تكوين أيقوني حديث يضع رأس المطية العربية بشموخ فوق قمم جبال ديار قيا وبسل مع شكل الوسم القبلي في القاعدة، مثالي للأختام والتطريز.</p>
-          <div class="logo-actions">
-            <button class="btn btn-emerald" onclick="downloadSVG('svg-shield', 'dhawi-uwaid-camel-shield.svg')">تنزيل متجه SVG</button>
-            <button class="btn btn-soft" onclick="downloadPNG('svg-shield', 'dhawi-uwaid-camel-shield.png', 2000)">صورة فائقة الدقة PNG</button>
+        <div class="card-body">
+          <div class="badge-row"><span class="pill">الشعار ١ — رسمي كامل</span><span class="pill">من البصصة قبيلة الشدادين بني الحارث</span></div>
+          <h3>الختم الملكي الدائري مع النص التعريفي</h3>
+          <p>معتمد لأغلفة الكتب الرسمية، الدروع التذكارية، الشهادات، والطباعات التي تتسع لعرض النص التعريفي أسفل الختم بوضوح تام.</p>
+          <div class="dl-row">
+            <a class="btn btn-emerald" href="final/logo-seal-full-emerald.svg" download="dhawi-uwaid-seal-full-emerald.svg">تحميل زمردي SVG</a>
+            <a class="btn btn-soft" href="final/logo-seal-full-gold.svg" download="dhawi-uwaid-seal-full-gold.svg">تحميل ذهبي SVG</a>
+            <a class="btn btn-soft" href="final/logo-seal-full-black.svg" download="dhawi-uwaid-seal-full-black.svg">أسود SVG</a>
           </div>
         </div>
       </article>
 
-      <!-- Concept 3 -->
       <article class="logo-card">
-        <div class="logo-stage" id="stage-seal">
-          <span class="stage-badge">الختم الدائري الرسمي</span>
-          <svg id="svg-seal" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none">
-            <defs>
-              <linearGradient id="g3a" x1="20" y1="20" x2="220" y2="220" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stop-color="#E7C677"/><stop offset="50%" stop-color="#C59B43"/><stop offset="100%" stop-color="#9A7223"/>
-              </linearGradient>
-              <clipPath id="isc1"><circle cx="120" cy="120" r="82"/></clipPath>
-            </defs>
-            <circle cx="120" cy="120" r="110" fill="#12372A" stroke="url(#g3a)" stroke-width="5"/>
-            <circle cx="120" cy="120" r="98" fill="none" stroke="url(#g3a)" stroke-width="1.5" stroke-opacity="0.72"/>
-            <circle cx="120" cy="120" r="83" fill="#0E2C21" stroke="url(#g3a)" stroke-width="2.4"/>
-            <g fill="url(#g3a)">
-              <circle cx="120" cy="16" r="3.2"/><circle cx="120" cy="224" r="3.2"/>
-              <circle cx="16" cy="120" r="3.2"/><circle cx="224" cy="120" r="3.2"/>
-              <circle cx="46.5" cy="46.5" r="2.6"/><circle cx="193.5" cy="46.5" r="2.6"/>
-              <circle cx="46.5" cy="193.5" r="2.6"/><circle cx="193.5" cy="193.5" r="2.6"/>
-            </g>
-            <g clip-path="url(#isc1)">
-              <g transform="translate(154, 68)">
-                <polygon points="0,-11 2.8,-2.8 11,0 2.8,2.8 0,11 -2.8,2.8 -11,0 -2.8,-2.8" fill="url(#g3a)"/>
-                <polygon points="0,-11 2.8,-2.8 11,0 2.8,2.8 0,11 -2.8,2.8 -11,0 -2.8,-2.8" fill="url(#g3a)" transform="rotate(45)"/>
-              </g>
-              <path d="M32 152 L72 118 L112 146 L142 126 L208 158 L208 210 L32 210 Z" fill="#1B4D3B"/>
-              <g>
-                <path d="M62 72 H70 V78 H76 V72 H84 V78 H90 V72 H98 V83 H62 Z" fill="url(#g3a)"/>
-                <polygon points="65,83 95,83 102,150 58,150" fill="#F8F4EC"/>
-                <line x1="63.5" y1="100" x2="96.5" y2="100" stroke="#12372A" stroke-width="1.2" stroke-opacity="0.3"/>
-                <line x1="61.5" y1="118" x2="98.5" y2="118" stroke="#12372A" stroke-width="1.2" stroke-opacity="0.3"/>
-                <rect x="74" y="104" width="3" height="9" rx="1.2" fill="#12372A"/>
-                <rect x="83" y="104" width="3" height="9" rx="1.2" fill="#12372A"/>
-                <path d="M74 150 V134 C74 129 86 129 86 134 V150 Z" fill="#12372A"/>
-              </g>
-              <path d="M32 154 C74 142 122 158 208 144 L208 210 L32 210 Z" fill="url(#g3a)"/>
-              <path d="M32 168 C88 158 144 172 208 160 L208 210 L32 210 Z" fill="#12372A" opacity="0.22"/>
-              <g transform="translate(115, 102) scale(0.84)">
-                <path d="M54 4 C56 2 60 2 63 3 C66 4 68 6 67 8 C66 10 62 11 58 11 C55 11 53 14 52 19 C51 25 50 32 45 36 C41 39 36 37 33 32 C29 24 23 19 16 19 C10 19 5 24 2 31 C0 36 -1 41 1 46 C2 48 4 50 4 56 L3 68 L7 68 L9 50 C12 49 16 49 20 50 L22 68 L26 68 L25 49 C30 48 35 46 39 45 L41 68 L45 68 L44 43 C48 41 51 39 53 35 C56 30 58 20 59 13 C61 11 64 9 65 7 Z" fill="#12372A"/>
-              </g>
-            </g>
-          </svg>
+        <div class="stage dark">
+          <img src="final/logo-wordmark-clean-gold.svg" alt="الشعار ٢ الصافي" />
         </div>
-        <div class="logo-body">
-          <h3>٣. شعار ختم قيا الدائري</h3>
-          <p>ميدالية تراثية دائرية تضم ٨ نقاط حول المحيط وحصن قيا المشرف على القافلة والكثبان الذهبية، مثالي للمحاضر والمناسبات.</p>
-          <div class="logo-actions">
-            <button class="btn btn-emerald" onclick="downloadSVG('svg-seal', 'dhawi-uwaid-qiya-seal.svg')">تنزيل متجه SVG</button>
-            <button class="btn btn-soft" onclick="downloadPNG('svg-seal', 'dhawi-uwaid-qiya-seal.png', 2000)">صورة فائقة الدقة PNG</button>
+        <div class="card-body">
+          <div class="badge-row"><span class="pill">الشعار ٢ — صافي</span><span class="pill">بدون نص إضافي</span></div>
+          <h3>المخطوطة الديوانية الحرة (النسخة الصافية)</h3>
+          <p>معتمدة لشريط الموقع العلوي، الأكواب المطبوعة بأسلوب بسيط، توقيعات البطاقات الرقمية، والواجهات الضيقة التي يكتب فيها السطر التعريفي مستقلاً.</p>
+          <div class="dl-row">
+            <a class="btn btn-emerald" href="final/logo-wordmark-clean-gold.svg" download="dhawi-uwaid-wordmark-clean-gold.svg">تحميل ذهبي SVG</a>
+            <a class="btn btn-soft" href="final/logo-wordmark-clean-emerald.svg" download="dhawi-uwaid-wordmark-clean-emerald.svg">تحميل زمردي SVG</a>
+            <a class="btn btn-soft" href="final/logo-wordmark-clean-black.svg" download="dhawi-uwaid-wordmark-clean-black.svg">أسود SVG</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="logo-card">
+        <div class="stage light">
+          <img src="final/logo-wordmark-full-emerald.svg" alt="الشعار ٢ الرسمي الكامل" />
+        </div>
+        <div class="card-body">
+          <div class="badge-row"><span class="pill">الشعار ٢ — رسمي كامل</span><span class="pill">من البصصة قبيلة الشدادين بني الحارث</span></div>
+          <h3>المخطوطة الحرة مع النص التعريفي</h3>
+          <p>معتمدة لترويسة ورق المراسلات الرسمي، اللوحة الجدارية الكاملة للشجرة، الأكواب الفاخرة، لافتات القاعات، ومطبوعات الاحتفالات الكبرى.</p>
+          <div class="dl-row">
+            <a class="btn btn-emerald" href="final/logo-wordmark-full-emerald.svg" download="dhawi-uwaid-wordmark-full-emerald.svg">تحميل زمردي SVG</a>
+            <a class="btn btn-soft" href="final/logo-wordmark-full-gold.svg" download="dhawi-uwaid-wordmark-full-gold.svg">تحميل ذهبي SVG</a>
+            <a class="btn btn-soft" href="final/logo-wordmark-full-black.svg" download="dhawi-uwaid-wordmark-full-black.svg">أسود SVG</a>
           </div>
         </div>
       </article>
     </section>
 
-    <h2 class="section-title">لوحة الألوان المعتمدة</h2>
+    <section class="matrix-card">
+      <h3>دليل الاستخدام الصحيح في المطبوعات والهدايا</h3>
+      <table>
+        <thead>
+          <tr><th>التطبيق</th><th>الشعار الأنسب</th><th>النسخة (كاملة أم صافية؟)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>أيقونة التطبيق على الآيفون والويب</td><td>الشعار ١ (الختم الدائري)</td><td>صافية بدون نص إضافي لضمان الوضوح في المقاس الصغير</td></tr>
+          <tr><td>البروش المعدني والميدالية التذكارية</td><td>الشعار ١ (الختم الدائري)</td><td>صافية (النقش تحت ٢.٥ سم يطمس النص الصغير أثناء الصب)</td></tr>
+          <tr><td>غلاف الكتاب التذكاري والدروع</td><td>الشعار ١ (الختم الدائري)</td><td>كاملة بالذهب الحراري مع سطر «من البصصة قبيلة الشدادين بني الحارث»</td></tr>
+          <tr><td>الورق الرسمي واللوحة الجدارية ولافتات الحفل</td><td>الشعار ٢ (المخطوطة الحرة) + الختم كعلامة مائية</td><td>كاملة بالخط التراثي الكامل والمحاذاة الرسمية</td></tr>
+          <tr><td>الأكواب الخزفية والهدايا الرسمية</td><td>الشعار ١ أو الشعار ٢</td><td>صافية على الكوب الداكن، أو كاملة على الوجه الواسع للكوب</td></tr>
+        </tbody>
+      </table>
+    </section>
+
     <section class="palette-grid">
-      <div class="swatch" onclick="copyHex('#12372A')">
-        <div class="swatch-color" style="background:#12372A"></div>
-        <div class="swatch-info"><div class="swatch-name">أخضر السرو الحارثي</div><div class="swatch-hex">#12372A</div></div>
-      </div>
-      <div class="swatch" onclick="copyHex('#C59B43')">
-        <div class="swatch-color" style="background:#C59B43"></div>
-        <div class="swatch-info"><div class="swatch-name">الذهبي العربي المعتق</div><div class="swatch-hex">#C59B43</div></div>
-      </div>
-      <div class="swatch" onclick="copyHex('#F8F4EC')">
-        <div class="swatch-color" style="background:#F8F4EC; border-bottom:1px solid #E5DEC9"></div>
-        <div class="swatch-info"><div class="swatch-name">الكريمي المخطوطي</div><div class="swatch-hex">#F8F4EC</div></div>
-      </div>
-      <div class="swatch" onclick="copyHex('#E8DCC8')">
-        <div class="swatch-color" style="background:#E8DCC8"></div>
-        <div class="swatch-info"><div class="swatch-name">الرملي الصحراوي</div><div class="swatch-hex">#E8DCC8</div></div>
-      </div>
-      <div class="swatch" onclick="copyHex('#1C1B18')">
-        <div class="swatch-color" style="background:#1C1B18"></div>
-        <div class="swatch-info"><div class="swatch-name">الفحمي للنصوص</div><div class="swatch-hex">#1C1B18</div></div>
-      </div>
-    </section>
-
-    <h2 class="section-title">الخطوط العربية المختارة</h2>
-    <section class="type-grid">
-      <div class="type-card">
-        <div style="font-size:0.85rem;font-weight:700;color:var(--gold)">خط العناوين والوقار والترويسة</div>
-        <div class="type-amiri">فخذ ذوي عويض — قيا بني الحارث</div>
-        <p style="font-size:0.88rem;color:var(--muted)">خط أميري النسخي الكلاسيكي للعناوين الكبرى وأسماء الأجداد وبطاقات النسب الفاخرة.</p>
-      </div>
-      <div class="type-card">
-        <div style="font-size:0.85rem;font-weight:700;color:var(--gold)">خط الواجهات والبحث السريع</div>
-        <div class="type-ibm">تصفّح ٧٥٩ اسماً، احسب صلة القرابة، واستعرض عمود النسب الكامل حتى قحطان بوضوح تام على الجوال والحاسوب.</div>
-        <p style="font-size:0.88rem;color:var(--muted)">خط واضح ومتوازن للقوائم والجداول وواجهات الشجرة التفاعلية.</p>
-      </div>
+      <div class="swatch"><div class="swatch-box" style="background:#12372A;"></div><strong>الأخضر الزمردي الملكي</strong><code>#12372A</code></div>
+      <div class="swatch"><div class="swatch-box" style="background:#C9A45A;"></div><strong>الذهبي التراثي المطفي</strong><code>#C9A45A</code></div>
+      <div class="swatch"><div class="swatch-box" style="background:#F6F1E6;border:1px solid #DED4BE;"></div><strong>ورق الرق العاجي</strong><code>#F6F1E6</code></div>
+      <div class="swatch"><div class="swatch-box" style="background:#1A1A1A;"></div><strong>الحبر الرسمي الداكن</strong><code>#1A1A1A</code></div>
     </section>
   </main>
-
-  <div class="toast" id="toast"></div>
-
-  <script>
-    const toast = document.getElementById('toast');
-    function showToast(msg) {
-      toast.textContent = msg;
-      toast.classList.add('show');
-      clearTimeout(window.__t);
-      window.__t = setTimeout(() => toast.classList.remove('show'), 2200);
-    }
-
-    document.querySelectorAll('.bg-chip').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.bg-chip').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        const cls = btn.dataset.bg;
-        document.querySelectorAll('.logo-stage').forEach(st => {
-          st.className = 'logo-stage' + (cls ? ' ' + cls : '');
-        });
-      });
-    });
-
-    function copyHex(hex) {
-      navigator.clipboard?.writeText(hex);
-      showToast('تم نسخ رمز اللون: ' + hex);
-    }
-
-    function downloadSVG(svgId, filename) {
-      const svg = document.getElementById(svgId);
-      const xml = new XMLSerializer().serializeToString(svg);
-      const blob = new Blob([xml], { type: 'image/svg+xml;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-      showToast('تم تنزيل الشعار بصيغة متجهات');
-    }
-
-    function downloadPNG(svgId, filename, size) {
-      const svg = document.getElementById(svgId);
-      const vb = svg.viewBox.baseVal;
-      const ratio = vb.height / vb.width;
-      const w = size;
-      const h = Math.round(size * ratio);
-      const xml = new XMLSerializer().serializeToString(svg);
-      const dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml);
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, w, h);
-        const a = document.createElement('a');
-        a.href = canvas.toDataURL('image/png');
-        a.download = filename;
-        a.click();
-        showToast('تم تصدير الشعار بدقة عالية');
-      };
-      img.src = dataUrl;
-    }
-  </script>
 </body>
 </html>

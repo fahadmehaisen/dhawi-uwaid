@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>اللوحة الجدارية الفاخرة لشجرة ذوي عويض — ٧٦٠ اسماً</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --emerald: #12372A;
+      --emerald-deep: #0B241B;
+      --gold: #C9A45A;
+      --gold-light: #E2C88B;
+      --ivory: #F6F1E6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'IBM Plex Sans Arabic', Tahoma, sans-serif;
+      background: #1C2722;
+      color: #FFFDF8;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .bar {
+      background: linear-gradient(135deg, #0B241B 0%, #12372A 100%);
+      border-bottom: 2px solid var(--gold);
+      padding: 12px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand img.seal { width: 42px; height: 42px; }
+    .brand img.wm { height: 26px; width: auto; display: block; }
+    .brand small { color: var(--gold-light); font-size: 0.78rem; display: block; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 13px; border-radius: 9px;
+      font-family: inherit; font-size: 0.82rem; font-weight: 600;
+      text-decoration: none; cursor: pointer;
+      border: 1px solid rgba(226, 200, 139, 0.45);
+      background: rgba(255,255,255,0.08); color: #FFFDF8;
+    }
+    .btn:hover { background: rgba(255,255,255,0.16); }
+    .btn-gold { background: var(--gold); color: #16140F; border-color: var(--gold); }
+    .btn-emerald { background: #1B523E; color: #FFFDF8; }
+
+    .stage {
+      flex: 1;
+      overflow: auto;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    .poster-frame {
+      background: #FFFDF8;
+      border-radius: 12px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+      overflow: hidden;
+      transform-origin: top center;
+      transition: width 0.2s ease;
+      width: min(100%, 960px);
+    }
+    .poster-frame img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <header class="bar">
+    <div class="brand">
+      <img class="seal" src="../assets/logo-seal-clean.svg" alt="ختم ذوي عويض" />
+      <div>
+        <img class="wm" src="../assets/logo-wordmark-clean.svg" alt="ذوي عويض" />
+        <small>اللوحة الجدارية الشاملة — ٧٦٠ اسماً • من البصصة قبيلة الشدادين بني الحارث</small>
+      </div>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn" id="z-out">تصغير −</button>
+      <button type="button" class="btn" id="z-fit">ملاءمة</button>
+      <button type="button" class="btn" id="z-in">تكبير +</button>
+      <a class="btn btn-gold" href="لوحة_شجرة_ذوي_عويض_الجدارية.pdf" download="لوحة_شجرة_ذوي_عويض_الجدارية.pdf">تحميل للطباعة (PDF متجهي)</a>
+      <a class="btn btn-emerald" href="لوحة_شجرة_ذوي_عويض_الجدارية.png" download="لوحة_شجرة_ذوي_عويض_الجدارية.png">تحميل عالي الدقة (PNG)</a>
+      <a class="btn" href="dhawi-uwaid-wall-mural.svg" download="شجرة_ذوي_عويض_الجدارية.svg">ملف SVG الأصلي</a>
+      <a class="btn" href="../index.html">العودة للشجرة</a>
+    </div>
+  </header>
+
+  <main class="stage">
+    <div class="poster-frame" id="poster-frame">
+      <img src="dhawi-uwaid-wall-mural.svg" alt="اللوحة الجدارية الكاملة لشجرة ذوي عويض — ٧٦٠ اسماً" />
+    </div>
+  </main>
+
+  <script>
+    const frame = document.getElementById("poster-frame");
+    let widthPct = 960;
+    document.getElementById("z-in").addEventListener("click", () => {
+      widthPct = Math.min(3600, Math.round(widthPct * 1.35));
+      frame.style.width = widthPct + "px";
+    });
+    document.getElementById("z-out").addEventListener("click", () => {
+      widthPct = Math.max(420, Math.round(widthPct / 1.35));
+      frame.style.width = widthPct + "px";
+    });
+    document.getElementById("z-fit").addEventListener("click", () => {
+      widthPct = 960;
+      frame.style.width = "min(100%, 960px)";
+    });
+  </script>
+</body>
+</html>

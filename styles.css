@@ -145,10 +145,51 @@ a {
   flex: 1 1 auto;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.brand-cluster {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .brand-mark-link {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.brand-copy {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.brand-seal-img {
+  width: 50px;
+  height: 50px;
+  flex-shrink: 0;
+  display: block;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.25));
+}
+
+.brand-wordmark-img {
+  height: 38px;
+  width: auto;
+  max-width: 100%;
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.2));
 }
 
 .brand-crest {
@@ -705,10 +746,35 @@ a {
   height: calc(100vh - 270px);
   min-height: 540px;
   overflow: hidden;
+  border: 1.5px solid rgba(197, 155, 67, 0.42);
   background-color: var(--surface);
-  background-image: linear-gradient(to right, rgba(197, 155, 67, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(197, 155, 67, 0.05) 1px, transparent 1px);
-  background-size: 32px 32px;
+  background-image:
+    radial-gradient(circle at 50% 42%, rgba(201, 164, 90, 0.08) 0%, rgba(201, 164, 90, 0) 64%),
+    linear-gradient(to right, rgba(197, 155, 67, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(197, 155, 67, 0.045) 1px, transparent 1px);
+  background-size: 100% 100%, 36px 36px, 36px 36px;
+}
+
+.tree-canvas-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("assets/logo-seal-emerald.svg");
+  background-repeat: no-repeat;
+  background-position: center 52%;
+  background-size: min(440px, 68%) auto;
+  opacity: 0.035;
+}
+
+[data-theme="dark"] .tree-canvas-shell::before {
+  background-image: url("assets/logo-seal-clean.svg");
+  opacity: 0.045;
+}
+
+.tree-canvas-shell > svg {
+  position: relative;
+  z-index: 1;
 }
 
 .tree-hint-bar {
@@ -804,18 +870,23 @@ a {
 
 .tree-edge {
   fill: none;
-  stroke: var(--sand-deep);
-  stroke-width: 1.8;
-  transition: stroke 0.2s, stroke-width 0.2s, opacity 0.2s;
+  stroke-width: 1.9;
+  stroke-opacity: 0.48;
+  transition: stroke 0.2s, stroke-width 0.2s, opacity 0.2s, stroke-opacity 0.2s;
+}
+
+[data-theme="dark"] .tree-edge {
+  stroke-opacity: 0.72;
 }
 
 .tree-edge.dimmed {
-  opacity: 0.22;
+  opacity: 0.2;
 }
 
 .tree-edge.highlighted {
-  stroke: var(--gold);
+  stroke: var(--gold) !important;
   stroke-width: 3.4;
+  stroke-opacity: 1;
   opacity: 1;
 }
 
@@ -834,6 +905,22 @@ a {
   transition: transform 0.15s, stroke-width 0.15s, fill 0.15s;
 }
 
+.tree-node.has-children .node-box {
+  fill: var(--surface);
+  stroke-width: 2.1;
+  filter: drop-shadow(0 2px 6px rgba(18, 55, 42, 0.08));
+}
+
+.tree-node.is-leaf .node-box {
+  fill: var(--surface-alt);
+  stroke-width: 1.4;
+}
+
+.tree-node.is-branch .node-name {
+  font-family: var(--font-display);
+  font-size: 15px;
+}
+
 .tree-node:hover .node-box {
   stroke-width: 2.8;
 }
@@ -841,7 +928,8 @@ a {
 .tree-node.is-root .node-box {
   fill: var(--emerald);
   stroke: var(--gold-light);
-  stroke-width: 2.6;
+  stroke-width: 2.8;
+  filter: drop-shadow(0 4px 14px rgba(18, 55, 42, 0.24));
 }
 
 .tree-node.is-ancestor .node-box {
@@ -1940,9 +2028,14 @@ a {
   .brand-mark-link {
     gap: 8px;
   }
+  .brand-seal-img,
   .brand-crest {
-    width: 32px;
-    height: 35px;
+    width: 34px;
+    height: 34px;
+  }
+  .brand-wordmark-img {
+    height: 27px;
+    width: 58px;
   }
   .brand-title {
     font-size: 1.24rem;

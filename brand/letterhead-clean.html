@@ -3,241 +3,119 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ترويسة مراسلات عامة — فخذ ذوي عويض</title>
+  <title>ترويسة مراسلات عامة — ذوي عويض</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    @page {
-      size: A4 portrait;
-      margin: 0;
-    }
+    @page { size: A4 portrait; margin: 0; }
     :root {
       --emerald: #12372A;
-      --gold: #C59B43;
-      --cream: #F8F4EC;
-      --ink: #1C1B18;
+      --gold: #C9A45A;
+      --cream: #F6F1E6;
+      --ink: #1A1A1A;
       --muted: #5A554B;
     }
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     body {
       font-family: 'IBM Plex Sans Arabic', Tahoma, sans-serif;
-      background: #E5DFD3;
-      color: var(--ink);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 20px 12px 40px;
+      background: #E5DFD3; color: var(--ink);
+      display: flex; flex-direction: column; align-items: center; padding: 20px 12px 40px;
     }
     .no-print {
-      width: 210mm;
-      max-width: 100%;
-      background: var(--emerald);
-      color: #fff;
-      border-radius: 12px;
-      padding: 12px 18px;
-      margin-bottom: 18px;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
+      width: 210mm; max-width: 100%;
+      background: var(--emerald); color: #fff;
+      border-radius: 12px; padding: 12px 18px; margin-bottom: 18px;
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;
       border-bottom: 2px solid var(--gold);
       box-shadow: 0 8px 24px rgba(18, 55, 42, 0.18);
     }
     .no-print .actions { display: flex; gap: 8px; flex-wrap: wrap; }
     .btn {
-      padding: 8px 14px;
-      border-radius: 8px;
-      font-family: inherit;
-      font-size: 0.85rem;
-      font-weight: 600;
-      text-decoration: none;
-      cursor: pointer;
-      border: 1px solid rgba(197, 155, 67, 0.45);
-      background: rgba(255,255,255,0.08);
-      color: #fff;
+      padding: 8px 14px; border-radius: 8px;
+      font-family: inherit; font-size: 0.85rem; font-weight: 600; text-decoration: none; cursor: pointer;
+      border: 1px solid rgba(201, 164, 90, 0.45); background: rgba(255,255,255,0.08); color: #fff;
     }
-    .btn-gold {
-      background: var(--gold);
-      color: #16140F;
-      border-color: var(--gold);
-    }
+    .btn-gold { background: var(--gold); color: #16140F; border-color: var(--gold); }
 
     .page {
-      width: 210mm;
-      height: 297mm;
-      background: #FFFFFF;
-      position: relative;
-      overflow: hidden;
+      width: 210mm; height: 297mm;
+      background: #FFFFFF; position: relative; overflow: hidden;
       box-shadow: 0 18px 44px rgba(0, 0, 0, 0.15);
-      display: flex;
-      flex-direction: column;
+      display: flex; flex-direction: column;
     }
-
-    /* Top structural border inspired by Qiya battlements */
     .top-band {
       height: 7mm;
       background: linear-gradient(90deg, #0D291F 0%, #12372A 50%, #0D291F 100%);
       position: relative;
     }
     .top-band::after {
-      content: "";
-      position: absolute;
-      left: 0; right: 0; bottom: 0;
-      height: 1.4mm;
-      background: var(--gold);
+      content: ""; position: absolute; left: 0; right: 0; bottom: 0;
+      height: 1.4mm; background: var(--gold);
     }
-
     .header {
-      padding: 10mm 16mm 7mm;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      padding: 9mm 16mm 7mm;
+      display: flex; align-items: center; justify-content: space-between;
       border-bottom: 1.5pt solid var(--gold);
-      position: relative;
-      background: linear-gradient(180deg, rgba(248, 244, 236, 0.72) 0%, rgba(255,255,255,0) 100%);
+      background: linear-gradient(180deg, rgba(246, 241, 230, 0.72) 0%, rgba(255,255,255,0) 100%);
     }
-    .brand-right {
-      display: flex;
-      align-items: center;
-      gap: 5.5mm;
-    }
-    .crest-box {
-      width: 23mm;
-      height: 25mm;
-      flex-shrink: 0;
-    }
-    .brand-text h1 {
-      font-family: 'Amiri', serif;
-      font-size: 24pt;
-      line-height: 1.25;
-      color: var(--emerald);
-      font-weight: 700;
-    }
-    .brand-text .sub {
-      font-size: 10.5pt;
-      color: var(--muted);
-      font-weight: 600;
-      margin-top: 1mm;
-    }
-    .brand-text .en-tag {
-      font-size: 8pt;
-      color: var(--gold);
-      letter-spacing: 0.6px;
-      font-weight: 700;
-      margin-top: 0.5mm;
-    }
+    .brand-right { display: flex; align-items: center; gap: 5mm; }
+    .seal-box { width: 24mm; height: 24mm; flex-shrink: 0; }
+    .seal-box img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .brand-text { display: flex; flex-direction: column; align-items: flex-start; }
+    .brand-text img.wm { height: 15.5mm; width: auto; display: block; margin-bottom: 1.2mm; }
+    .brand-text .sub { font-family: 'Amiri', serif; font-size: 11.5pt; color: var(--emerald); font-weight: 700; }
 
-    .header-left {
-      text-align: left;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 2mm;
+    .header-left { display: flex; flex-direction: column; align-items: flex-end; gap: 2mm; }
+    .tribe-pill {
+      border: 1pt solid var(--gold); background: var(--cream); color: var(--emerald);
+      padding: 2mm 4.5mm; border-radius: 3mm; font-size: 9.2pt; font-weight: 700;
     }
-    .region-pill {
-      border: 1pt solid var(--gold);
-      background: var(--cream);
-      color: var(--emerald);
-      padding: 2mm 4.5mm;
-      border-radius: 3mm;
-      font-size: 9.5pt;
-      font-weight: 700;
-    }
-    .sub-pill {
-      font-size: 8.5pt;
-      color: var(--muted);
-    }
+    .sub-pill { font-size: 8.5pt; color: var(--muted); }
 
-    /* Subtle central watermark */
     .watermark {
-      position: absolute;
-      top: 52%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 105mm;
-      height: 114mm;
-      opacity: 0.045;
-      pointer-events: none;
-      z-index: 0;
+      position: absolute; top: 51%; left: 50%; transform: translate(-50%, -50%);
+      width: 110mm; height: 110mm; opacity: 0.04; pointer-events: none; z-index: 0;
     }
-
-    /* Decorative side vertical accent */
+    .watermark img { width: 100%; height: 100%; object-fit: contain; display: block; }
     .side-accent {
-      position: absolute;
-      top: 48mm;
-      bottom: 24mm;
-      right: 9mm;
-      width: 0.6mm;
-      background: linear-gradient(180deg, var(--gold), rgba(197, 155, 67, 0.12), var(--gold));
+      position: absolute; top: 48mm; bottom: 42mm; right: 9mm; width: 0.6mm;
+      background: linear-gradient(180deg, var(--gold), rgba(201, 164, 90, 0.14), var(--gold));
     }
 
     .body-area {
-      flex: 1;
-      padding: 14mm 18mm 14mm 16mm;
-      position: relative;
-      z-index: 1;
-      font-size: 11.5pt;
-      line-height: 2;
-      color: var(--ink);
-      outline: none;
+      flex: 1; padding: 14mm 18mm 10mm 16mm; position: relative; z-index: 1;
+      font-size: 11.5pt; line-height: 2; color: var(--ink); outline: none;
     }
     .salutation {
-      font-family: 'Amiri', serif;
-      font-size: 14pt;
-      color: var(--emerald);
-      font-weight: 700;
-      text-align: center;
-      margin-bottom: 8mm;
+      font-family: 'Amiri', serif; font-size: 14pt; color: var(--emerald);
+      font-weight: 700; text-align: center; margin-bottom: 8mm;
     }
 
     .footer {
-      padding: 4.5mm 16mm 6mm;
-      border-top: 1.4pt solid var(--gold);
-      background: var(--cream);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 8.8pt;
-      color: var(--emerald);
-      font-weight: 600;
-      position: relative;
-      z-index: 1;
+      padding: 5mm 16mm 6mm; border-top: 1.4pt solid var(--gold); background: var(--cream);
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 9pt; color: var(--emerald); font-weight: 600; position: relative; z-index: 1;
     }
-    .footer-bottom-bar {
-      height: 3.2mm;
-      background: var(--emerald);
-    }
+    .footer-bottom-bar { height: 3.2mm; background: var(--emerald); }
 
     @media print {
-      body {
-        background: none;
-        padding: 0;
-      }
+      body { background: none; padding: 0; }
       .no-print { display: none !important; }
-      .page {
-        box-shadow: none;
-        margin: 0;
-      }
+      .page { box-shadow: none; margin: 0; }
     }
   </style>
 </head>
 <body>
   <div class="no-print">
     <div>
-      <strong>ترويسة المراسلات العامة — فخذ ذوي عويض</strong>
-      <div style="font-size:0.78rem;opacity:0.85;">يمكنك الكتابة مباشرة داخل الورقة ثم الضغط على طباعة أو حفظ ملف</div>
+      <strong>الترويسة النظيفة للمراسلات العامة — ذوي عويض</strong>
+      <div style="font-size:0.78rem;opacity:0.85;">تفتح المساحة كاملة للكتابة — يمكنك التعديل مباشرة أو الطباعة والحفظ بصيغة PDF</div>
     </div>
     <div class="actions">
       <button class="btn btn-gold" onclick="window.print()">طباعة / حفظ بصيغة PDF</button>
-      <a class="btn" href="letterhead-official.html">الترويسة الرسمية بختم وتاريخ</a>
+      <a class="btn" href="letterhead-official.html">المخاطبات الرسمي</a>
+      <a class="btn" href="wall-mural.html">اللوحة الجدارية</a>
       <a class="btn" href="logo-studio.html">استوديو الشعار</a>
       <a class="btn" href="../index.html">الموقع</a>
     </div>
@@ -248,56 +126,25 @@
 
     <header class="header">
       <div class="brand-right">
-        <div class="crest-box">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 260" fill="none">
-            <path d="M120 10 L204 42 L224 128 C224 188 176 232 120 250 C64 232 16 188 16 128 L36 42 Z" fill="#12372A" stroke="#C59B43" stroke-width="5"/>
-            <path d="M120 21 L195 50 L213 128 C213 182 170 221 120 238 C70 221 27 182 27 128 L45 50 Z" fill="none" stroke="#C59B43" stroke-width="1.6" stroke-opacity="0.8"/>
-            <g transform="translate(120, 48)">
-              <polygon points="0,-16 4,-4 16,0 4,4 0,16 -4,4 -16,0 -4,-4" fill="#C59B43"/>
-              <polygon points="0,-16 4,-4 16,0 4,4 0,16 -4,4 -16,0 -4,-4" fill="#C59B43" transform="rotate(45)"/>
-              <circle cx="0" cy="0" r="3.4" fill="#12372A"/>
-            </g>
-            <path d="M36 154 L76 112 L104 138 L142 98 L178 134 L204 152 L204 164 L36 164 Z" fill="#1E523F" opacity="0.72"/>
-            <path d="M70 84 H80 V91 H87 V84 H97 V91 H104 V84 H114 V96 H70 Z" fill="#C59B43"/>
-            <polygon points="73,96 111,96 118,168 66,168" fill="#F8F4EC" stroke="#C59B43" stroke-width="1.8"/>
-            <line x1="71.5" y1="112" x2="112.5" y2="112" stroke="#12372A" stroke-width="1.2" stroke-opacity="0.32"/>
-            <line x1="69.5" y1="128" x2="114.5" y2="128" stroke="#12372A" stroke-width="1.2" stroke-opacity="0.32"/>
-            <line x1="67.8" y1="144" x2="116.2" y2="144" stroke="#12372A" stroke-width="1.2" stroke-opacity="0.32"/>
-            <polygon points="72,102 112,102 113,106 71,106" fill="#C59B43"/>
-            <rect x="83" y="116" width="3.5" height="10" rx="1.5" fill="#12372A"/>
-            <rect x="97.5" y="116" width="3.5" height="10" rx="1.5" fill="#12372A"/>
-            <path d="M84 168 V152 C84 147 100 147 100 152 V168 Z" fill="#12372A"/>
-            <path d="M32 174 C72 162 118 178 164 164 C185 158 198 161 208 167" stroke="#C59B43" stroke-width="2" stroke-linecap="round"/>
-            <g transform="translate(110, 108) scale(0.95)">
-              <path d="M54 4 C56 2 60 2 63 3 C66 4 68 6 67 8 C66 10 62 11 58 11 C55 11 53 14 52 19 C51 25 50 32 45 36 C41 39 36 37 33 32 C29 24 23 19 16 19 C10 19 5 24 2 31 C0 36 -1 41 1 46 C2 48 4 50 4 56 L3 68 L7 68 L9 50 C12 49 16 49 20 50 L22 68 L26 68 L25 49 C30 48 35 46 39 45 L41 68 L45 68 L44 43 C48 41 51 39 53 35 C56 30 58 20 59 13 C61 11 64 9 65 7 Z" fill="#C59B43"/>
-            </g>
-            <circle cx="105" cy="212" r="2" fill="#C59B43"/><circle cx="120" cy="216" r="2.8" fill="#C59B43"/><circle cx="135" cy="212" r="2" fill="#C59B43"/>
-          </svg>
+        <div class="seal-box">
+          <img src="../assets/logo-seal-emerald.svg" alt="ختم ذوي عويض" />
         </div>
         <div class="brand-text">
-          <h1>فخذ ذوي عويض</h1>
-          <div class="sub">من البصصة الشدادين من بني الحارث</div>
-          <div class="en-tag">DHAWI UWAID • AL-SHADADIN • BANI AL-HARITH</div>
+          <img class="wm" src="../assets/logo-wordmark-emerald.svg" alt="ذوي عويض" />
+          <div class="sub">من البصصة قبيلة الشدادين بني الحارث</div>
         </div>
       </div>
 
       <div class="header-left">
-        <div class="region-pill">ديار قيا — جنوب الطائف</div>
-        <div class="sub-pill">شجرة ومجلس فخذ ذوي عويض</div>
+        <div class="tribe-pill">مراسلات ومطبوعات ذوي عويض</div>
+        <div class="sub-pill">الشدادين من بني الحارث</div>
       </div>
     </header>
 
     <div class="side-accent"></div>
 
     <div class="watermark">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 260" fill="none">
-        <path d="M120 10 L204 42 L224 128 C224 188 176 232 120 250 C64 232 16 188 16 128 L36 42 Z" fill="#12372A"/>
-        <path d="M70 84 H80 V91 H87 V84 H97 V91 H104 V84 H114 V96 H70 Z" fill="#C59B43"/>
-        <polygon points="73,96 111,96 118,168 66,168" fill="#FFFFFF"/>
-        <g transform="translate(110, 108) scale(0.95)">
-          <path d="M54 4 C56 2 60 2 63 3 C66 4 68 6 67 8 C66 10 62 11 58 11 C55 11 53 14 52 19 C51 25 50 32 45 36 C41 39 36 37 33 32 C29 24 23 19 16 19 C10 19 5 24 2 31 C0 36 -1 41 1 46 C2 48 4 50 4 56 L3 68 L7 68 L9 50 C12 49 16 49 20 50 L22 68 L26 68 L25 49 C30 48 35 46 39 45 L41 68 L45 68 L44 43 C48 41 51 39 53 35 C56 30 58 20 59 13 C61 11 64 9 65 7 Z" fill="#C59B43"/>
-        </g>
-      </svg>
+      <img src="../assets/logo-seal-emerald.svg" alt="" />
     </div>
 
     <main class="body-area" contenteditable="true">
@@ -305,8 +152,8 @@
     </main>
 
     <footer class="footer">
-      <span>فخذ ذوي عويض • الشدادين من بني الحارث</span>
-      <span>قيا — جنوب الطائف</span>
+      <span>ذوي عويض • من البصصة قبيلة الشدادين بني الحارث</span>
+      <span>شجرة ومنصة ذوي عويض</span>
     </footer>
     <div class="footer-bottom-bar"></div>
   </div>

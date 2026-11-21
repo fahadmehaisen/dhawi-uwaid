@@ -436,8 +436,11 @@
       const d = `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`;
 
       const isEdgeHi = hasHighlight && state.highlightedIds.has(edge.from) && state.highlightedIds.has(edge.to);
+      const toNode = DATA.nodesById[edge.to];
+      const edgeColor = toNode ? getBranchColor(toNode.branchId) : "#C9B38C";
       const path = svgEl("path", {
         d,
+        stroke: isEdgeHi ? "#C59B43" : edgeColor,
         class: `tree-edge${isEdgeHi ? " highlighted" : hasHighlight ? " dimmed" : ""}`,
       });
       edgesLayer.appendChild(path);
@@ -448,10 +451,16 @@
       const node = p.node;
       const color = getBranchColor(node.branchId);
       const isHi = hasHighlight && state.highlightedIds.has(id);
+      const isRoot = node.id === "R00" || node.branchId === "ROOT";
+      const isAnc = node.generation < 0;
+      const isBranch = node.generation === 1;
 
       const classes = ["tree-node"];
-      if (node.tier === "R") classes.push("is-root");
-      if (node.tier === "A") classes.push("is-ancestor");
+      if (isRoot) classes.push("is-root");
+      if (isAnc) classes.push("is-ancestor");
+      if (isBranch) classes.push("is-branch");
+      if (node.childrenCount > 0) classes.push("has-children");
+      else classes.push("is-leaf");
       if (isHi) classes.push("is-highlighted");
       else if (hasHighlight) classes.push("dimmed");
 
@@ -466,14 +475,31 @@
         y: -p.h / 2,
         width: p.w,
         height: p.h,
-        rx: node.tier === "R" ? 12 : 8,
+        rx: isRoot ? 12 : 8,
         class: "node-box",
-        stroke: node.tier === "R" ? "#E2BE6E" : color,
+        stroke: isRoot ? "#E2BE6E" : color,
       });
       g.appendChild(rect);
 
+      // Inner gold double-trim cartouche frame for ancestral root Uwaid
+      if (isRoot) {
+        const innerTrim = svgEl("rect", {
+          x: -p.w / 2 + 4,
+          y: -p.h / 2 + 4,
+          width: p.w - 8,
+          height: p.h - 8,
+          rx: 9,
+          fill: "none",
+          stroke: "#E2BE6E",
+          "stroke-width": 1,
+          "stroke-opacity": 0.55,
+          "pointer-events": "none",
+        });
+        g.appendChild(innerTrim);
+      }
+
       // Branch accent top bar inside non-root nodes
-      if (node.tier !== "R" && node.tier !== "A") {
+      if (!isRoot && !isAnc) {
         const accent = svgEl("rect", {
           x: -p.w / 2 + 1,
           y: -p.h / 2 + 1,
@@ -485,20 +511,20 @@
         g.appendChild(accent);
       }
 
+      // Sublabel
+      let subLabel = "";
+      if (isRoot) subLabel = "جد ذوي عويض • ٧٤٩ ذرية";
+      else if (isBranch) subLabel = `فرع (${toArabicDigits(node.descendantCount + 1)})`;
+      else if (node.bioNote) subLabel = "سيرة / ملاحظة";
+      else if (node.childrenCount > 0) subLabel = `${toArabicDigits(node.descendantCount)} ذرية`;
+
       const nameTxt = svgEl("text", {
         x: 0,
-        y: node.childrenCount > 0 || node.bioNote ? -4 : 1,
+        y: subLabel ? -5 : 1,
         class: "node-name",
       });
       nameTxt.textContent = node.name;
       g.appendChild(nameTxt);
-
-      // Sublabel
-      let subLabel = "";
-      if (node.tier === "R") subLabel = "جد الفخذ • ٧٤٩ ذرية";
-      else if (node.tier === "B") subLabel = `فرع (${toArabicDigits(node.descendantCount + 1)})`;
-      else if (node.bioNote) subLabel = "سيرة / ملاحظة";
-      else if (node.childrenCount > 0) subLabel = `${toArabicDigits(node.descendantCount)} ذرية`;
 
       if (subLabel) {
         const subTxt = svgEl("text", { x: 0, y: 12, class: "node-sub" });
@@ -1767,47 +1793,25 @@
 
   // -------------------- Pure-Canvas 1080x1350 Luxury Card & Poster Export --------------------
 
-  function drawCanvasQiyaEmblem(ctx, cx, cy, scale) {
+  const brandSealImg = new Image();
+  brandSealImg.src = "assets/logo-seal-clean.svg";
+  const brandWordmarkImg = new Image();
+  brandWordmarkImg.src = "assets/logo-wordmark-clean.svg";
+
+  function drawCanvasBrandSeal(ctx, cx, cy, size) {
+    if (brandSealImg.complete && brandSealImg.naturalWidth > 0) {
+      ctx.drawImage(brandSealImg, cx - size / 2, cy - size / 2, size, size);
+      return;
+    }
     ctx.save();
-    ctx.translate(cx, cy);
-    ctx.scale(scale, scale);
-    ctx.translate(-120, -130);
-
-    // Outer heritage shield
-    const shield = new Path2D(
-      "M120 10 L204 42 L224 128 C224 188 176 232 120 250 C64 232 16 188 16 128 L36 42 Z"
-    );
-    ctx.fillStyle = "#12372A";
-    ctx.fill(shield);
-    ctx.lineWidth = 4.5;
-    ctx.strokeStyle = "#C59B43";
-    ctx.stroke(shield);
-
-    // Watchtower body
-    ctx.fillStyle = "#F8F4EC";
-    const tower = new Path2D("M73 96 L111 96 L118 168 L66 168 Z");
-    ctx.fill(tower);
-    ctx.fillStyle = "#C59B43";
-    ctx.fill(new Path2D("M70 84 H80 V91 H87 V84 H97 V91 H104 V84 H114 V96 H70 Z"));
-    ctx.fillStyle = "#12372A";
-    ctx.fill(new Path2D("M84 168 V152 C84 147 100 147 100 152 V168 Z"));
-
-    // Camel silhouette (striding toward fortress)
-    ctx.save();
-    ctx.translate(110, 108);
-    ctx.scale(0.95, 0.95);
-    ctx.fillStyle = "#E2BE6E";
-    ctx.fill(
-      new Path2D(
-        "M54 4 C56 2 60 2 63 3 C66 4 68 6 67 8 C66 10 62 11 58 11 C55 11 53 14 52 19 C51 25 50 32 45 36 C41 39 36 37 33 32 C29 24 23 19 16 19 C10 19 5 24 2 31 C0 36 -1 41 1 46 C2 48 4 50 4 56 L3 68 L7 68 L9 50 C12 49 16 49 20 50 L22 68 L26 68 L25 49 C30 48 35 46 39 45 L41 68 L45 68 L44 43 C48 41 51 39 53 35 C56 30 58 20 59 13 C61 11 64 9 65 7 Z"
-      )
-    );
-    ctx.restore();
-
-    // Sand dune wave
-    ctx.strokeStyle = "#E2BE6E";
-    ctx.lineWidth = 2.4;
-    ctx.stroke(new Path2D("M32 174 C72 162 118 178 164 164 C185 158 198 161 208 167"));
+    ctx.strokeStyle = "#C9A45A";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(cx, cy, size * 0.44, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, cy, size * 0.39, 0, Math.PI * 2);
+    ctx.stroke();
     ctx.restore();
   }
 
@@ -1858,17 +1862,17 @@
     ctx.fillStyle = "#12372A";
     ctx.fillRect(48, 48, W - 96, 250);
 
-    drawCanvasQiyaEmblem(ctx, W / 2, 165, 0.72);
+    drawCanvasBrandSeal(ctx, W / 2, 173, 210);
 
     ctx.direction = "rtl";
     ctx.textAlign = "center";
-    ctx.fillStyle = "#E2BE6E";
+    ctx.fillStyle = "#9A7426";
     ctx.font = 'bold 30px "IBM Plex Sans Arabic", Tahoma, sans-serif';
-    ctx.fillText("بطاقة نسب موثّقة • فخذ ذوي عويض", W / 2, 360);
+    ctx.fillText("بطاقة نسب موثّقة • ذوي عويض", W / 2, 360);
 
     ctx.fillStyle = "#5A554C";
     ctx.font = '26px "IBM Plex Sans Arabic", Tahoma, sans-serif';
-    ctx.fillText("من البصصة الشدادين من بني الحارث • ديار قيا جنوب الطائف", W / 2, 405);
+    ctx.fillText("من البصصة قبيلة الشدادين بني الحارث", W / 2, 405);
 
     // Member main name
     ctx.fillStyle = "#12372A";
@@ -2004,16 +2008,16 @@
     // Header strip
     ctx.fillStyle = "#12372A";
     ctx.fillRect(0, 0, treeW, headerH);
-    drawCanvasQiyaEmblem(ctx, treeW - 110, 95, 0.56);
+    drawCanvasBrandSeal(ctx, treeW - 105, 95, 148);
 
     ctx.direction = "rtl";
     ctx.textAlign = "right";
     ctx.fillStyle = "#FFFDF8";
     ctx.font = 'bold 46px "Amiri", serif';
-    ctx.fillText("شجرة فخذ ذوي عويض — من البصصة الشدادين من بني الحارث", treeW - 210, 88);
+    ctx.fillText("شجرة ذوي عويض — من البصصة قبيلة الشدادين بني الحارث", treeW - 210, 88);
     ctx.fillStyle = "#E2BE6E";
     ctx.font = '600 22px "IBM Plex Sans Arabic", sans-serif';
-    ctx.fillText(`ديار قيا — جنوب الطائف • ${DATA.meta.editionLabel}`, treeW - 210, 134);
+    ctx.fillText(DATA.meta.editionLabel, treeW - 210, 134);
 
     const offX = treeW / 2 - (minX + maxX) / 2;
     const offY = headerH + pad - minY;
@@ -2040,17 +2044,18 @@
     for (const [, p] of state.layoutPositions.entries()) {
       const cx = p.x + offX;
       const cy = p.y + offY;
+      const isRootNode = p.node.id === "R00" || p.node.branchId === "ROOT";
       const col = getBranchColor(p.node.branchId);
-      ctx.fillStyle = p.node.tier === "R" ? "#12372A" : "#FFFDF8";
-      ctx.strokeStyle = p.node.tier === "R" ? "#C59B43" : col;
+      ctx.fillStyle = isRootNode ? "#12372A" : "#FFFDF8";
+      ctx.strokeStyle = isRootNode ? "#C59B43" : col;
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.roundRect(cx - p.w / 2, cy - p.h / 2, p.w, p.h, 8);
       ctx.fill();
       ctx.stroke();
 
-      ctx.fillStyle = p.node.tier === "R" ? "#FFFDF8" : "#1C1B18";
-      ctx.font = p.node.tier === "R" ? 'bold 17px "Amiri", serif' : 'bold 13px "IBM Plex Sans Arabic", sans-serif';
+      ctx.fillStyle = isRootNode ? "#FFFDF8" : "#1C1B18";
+      ctx.font = isRootNode ? 'bold 17px "Amiri", serif' : 'bold 13px "IBM Plex Sans Arabic", sans-serif';
       ctx.fillText(p.node.name, cx, cy + 5);
     }
 
