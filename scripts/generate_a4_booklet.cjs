@@ -27,14 +27,11 @@ function loadBrandPaths() {
   const sealD = sealSvg.match(/<path[^>]*\sd="([^"]+)"/)[1];
   const fullWordSvg = fs.readFileSync(path.join(ROOT, "brand", "final", "logo-wordmark-full-emerald.svg"), "utf8");
   const wBlock = fullWordSvg.match(/<g id="wordmark-calligraphy"[^>]*>[\s\S]*?<path[^>]*\sd="([^"]+)"/)[1];
-  const sBlock = fullWordSvg.match(/<g id="tribal-subtext"[^>]*>[\s\S]*?<path[^>]*\sd="([^"]+)"/)[1];
   return {
     sealD,
     sealBB: getPathBBox(sealD),
     wordD: wBlock,
     wordBB: getPathBBox(wBlock),
-    subD: sBlock,
-    subBB: getPathBBox(sBlock),
   };
 }
 
@@ -136,7 +133,6 @@ function plateChromeSvg(pageNum, totalPages, branchTitle, subtitleText, branchCo
   out.push(`<rect x="40" y="40" width="${PW - 80}" height="${PH - 80}" rx="15" fill="none" stroke="url(#a4Gold_${pageNum})" stroke-width="2.8"/>`);
   out.push(`<rect x="52" y="52" width="${PW - 104}" height="${PH - 104}" rx="10" fill="none" stroke="#C9A45A" stroke-width="1" stroke-dasharray="5 7" stroke-opacity="0.65"/>`);
 
-  // Header strip inside A4 plate
   out.push(`<g transform="translate(${wTx.toFixed(1)}, ${wTy.toFixed(1)}) scale(${wScale.toFixed(4)})">
     <path d="${TRACED.wordD}" fill="#12372A" fill-rule="evenodd"/>
   </g>`);
@@ -145,289 +141,323 @@ function plateChromeSvg(pageNum, totalPages, branchTitle, subtitleText, branchCo
   out.push(`<rect x="92" y="90" width="210" height="58" rx="29" fill="#12372A" stroke="#C9A45A" stroke-width="2.2"/>`);
   out.push(`<text x="197" y="128" text-anchor="middle" fill="#E7CD90" font-size="26" font-weight="700" class="m-sans">${rtl(`صفحة ${toArabic(pageNum)} من ${toArabic(totalPages)}`)}</text>`);
   out.push(`<line x1="88" y1="222" x2="${PW - 88}" y2="222" stroke="#C9A45A" stroke-width="2.2"/>`);
-
-  // Discreet bottom border footer
-  out.push(`<text x="${PW / 2}" y="${PH - 72}" text-anchor="middle" fill="#6E6556" font-size="22" font-weight="700" class="m-sans">${rtl("ذوي عويض — من البصصة قبيلة الشدادين بني الحارث • نسخة الطباعة الواضحة (A4)")}</text>`);
+  out.push(`<text x="${PW / 2}" y="${PH - 70}" text-anchor="middle" fill="#6E6556" font-size="22" font-weight="700" class="m-sans">${rtl("ذوي عويض — من البصصة قبيلة الشدادين بني الحارث • نسخة الطباعة الواضحة (A4)")}</text>`);
   return out;
 }
 
-// Build single enlarged artistic palm-bough plate for a branch (Pages 2..6)
+// Planar Curved Two-Wing Pinnate Frond Engine for Pages 2..6
 function buildBranchPlate(branchId, pageNum, totalPages) {
   const PW = 2100, PH = 2970;
   const pal = BRANCH_PALETTE[branchId] || BRANCH_PALETTE.B08;
   const branchNode = nodesById[branchId];
   const stats = TREE.branchStats.find((b) => b.branchId === branchId);
   const count = stats ? stats.totalInBranch : 1;
+  const CX = 1050;
+  const STEM_BOT_Y = 2725;
+  const STEM_TOP_Y = 440;
+  const Y_TOP = 265;
+  const Y_BOT = 2635;
 
-  // Gather subtree nodes
-  const subIds = [];
-  function collect(id) {
-    subIds.push(id);
+  const sizeBoost = count <= 70 ? 1.38 : count <= 110 ? 1.24 : count <= 160 ? 1.14 : 1.06;
+
+  function a4Spec(n, sc) {
+    const len = n.name.length;
+    if (n.generation === 1) return { w: 280, h: 82, fontSize: 48 };
+    if (n.generation === 2) {
+      const m = Math.min(1.22, sizeBoost) * sc;
+      return { w: Math.round((96 + len * 12) * m), h: Math.round(52 * m), fontSize: Math.round(33 * m) };
+    }
+    if (n.childrenCount > 0) {
+      const m = Math.min(1.25, sizeBoost) * sc;
+      return { w: Math.round(Math.min(185, Math.max(114, 72 + len * 11)) * m), h: Math.round(42 * m), fontSize: Math.round(28 * m) };
+    }
+    const m = sizeBoost * sc;
+    return { w: Math.round(Math.min(176, Math.max(106, 66 + len * 10.5)) * m), h: Math.round(40 * m), fontSize: Math.round(27.5 * m) };
+  }
+
+  function chunkLeaves(leaves, sc) {
+    // Wrap horizontal leaf clusters to at most 3 per sprig row (or 4 when wide space) so they never cram inside 895px half-wing width
+    const maxPerRow = 3;
+    const rows = [];
+    for (let i = 0; i < leaves.length; i += maxPerRow) {
+      rows.push(leaves.slice(i, i + maxPerRow));
+    }
+    return rows;
+  }
+
+  function maxWingOutW(id, sc) {
     const n = nodesById[id];
-    if (n && n.childrenIds) n.childrenIds.forEach(collect);
-  }
-  collect(branchId);
-
-  const countSub = new Map();
-  const maxDMap = new Map();
-  function analyze(id) {
-    const n = nodesById[id];
-    if (!n.childrenIds || n.childrenIds.length === 0) {
-      countSub.set(id, 1);
-      maxDMap.set(id, 0);
-      return { t: 1, d: 0 };
-    }
-    let t = 1, d = 0;
-    for (const c of n.childrenIds) {
-      const r = analyze(c);
-      t += r.t;
-      if (r.d + 1 > d) d = r.d + 1;
-    }
-    countSub.set(id, t);
-    maxDMap.set(id, d);
-    return { t, d };
-  }
-  analyze(branchId);
-
-  // Palm-bough base anchor at bottom-center
-  const OX = 1050;
-  const OY = 2660;
-  const START_A = 6;
-  const END_A = -186;
-
-  const angMap = new Map();
-  function assignAng(id, a0, a1) {
-    const n = nodesById[id];
-    const mid = (a0 + a1) / 2;
-    angMap.set(id, { deg: mid, rad: (mid * Math.PI) / 180 });
-    if (!n.childrenIds || n.childrenIds.length === 0) return;
-    const ws = n.childrenIds.map((c) => (countSub.get(c) || 1) + 0.4);
-    const sum = ws.reduce((a, b) => a + b, 0);
-    let cur = a0;
-    for (let i = 0; i < n.childrenIds.length; i++) {
-      const span = ((a1 - a0) * ws[i]) / sum;
-      assignAng(n.childrenIds[i], cur, cur + span);
-      cur += span;
-    }
-  }
-  assignAng(branchId, START_A, END_A);
-
-  // Adaptive spacious typography for count (from 60 in Qulaishan up to 226 in Madi)
-  const sizeBoost = count <= 70 ? 1.26 : count <= 110 ? 1.15 : count <= 160 ? 1.07 : 1.0;
-
-  // Boundary max distance along elliptical A4 plate ray
-  function a4MaxR(deg) {
-    const rad = (deg * Math.PI) / 180;
-    const ux = Math.cos(rad), uy = Math.sin(rad);
-    let lo = 120, hi = 2600;
-    for (let s = 0; s < 20; s++) {
-      const mid = (lo + hi) / 2;
-      const x = OX + mid * ux;
-      const y = OY + mid * uy * 1.48;
-      if (x >= 115 && x <= PW - 115 && y >= 275 && y <= 2740) lo = mid;
-      else hi = mid;
-    }
-    return lo;
-  }
-
-  const sibMap = new Map();
-  for (const id of subIds) {
-    const n = nodesById[id];
-    if (n.childrenIds) n.childrenIds.forEach((c, idx) => sibMap.set(c, idx));
-  }
-
-  function runBranchLayout(sc) {
-    const items = [];
-    const byId = new Map();
-    for (const id of subIds) {
-      const n = nodesById[id];
-      const ang = angMap.get(id);
-      const isBranch = n.generation === 1;
-      const isParent = n.childrenCount > 0;
-      const sibIdx = sibMap.get(id) || 0;
-
-      let w, h, fontSize, rotDeg = 0;
-      if (isBranch) {
-        w = 270; h = 84; fontSize = 48; rotDeg = 0;
-      } else if (n.generation === 2) {
-        w = 200 * Math.min(1.15, sizeBoost); h = 62 * Math.min(1.12, sizeBoost); fontSize = 35 * Math.min(1.15, sizeBoost); rotDeg = 0;
-      } else if (isParent) {
-        w = Math.min(200, Math.max(134, 96 + n.name.length * 11)) * Math.min(1.15, sizeBoost);
-        h = 48 * Math.min(1.12, sizeBoost);
-        fontSize = 29 * Math.min(1.15, sizeBoost);
-        rotDeg = 0;
-      } else {
-        w = Math.min(186, Math.max(120, 88 + n.name.length * 10.2)) * sizeBoost;
-        h = 43 * Math.min(1.18, sizeBoost);
-        fontSize = 27 * sizeBoost;
-        rotDeg = Math.max(-10, Math.min(10, Math.cos(ang.rad) * -8));
-      }
-
-      w = Math.round(w * sc * 10) / 10;
-      h = Math.round(h * sc * 10) / 10;
-      fontSize = Math.round(fontSize * sc * 10) / 10;
-      const rotRad = (rotDeg * Math.PI) / 180;
-      const cosR = Math.abs(Math.cos(rotRad)), sinR = Math.abs(Math.sin(rotRad));
-      const envHW = (w * cosR + h * sinR) / 2;
-      const envHH = (w * sinR + h * cosR) / 2;
-
-      const rMax = a4MaxR(ang.deg);
-      let x, y;
-      if (isBranch) {
-        x = OX; y = OY;
-      } else {
-        const effD = Math.min(6, Math.max(4, n.generation + (maxDMap.get(n.id) || 0)));
-        const t = n.generation === 2
-          ? 0.19 + (sibIdx % 2) * 0.05
-          : isParent
-            ? Math.min(0.75, (n.generation - 1.4) / Math.max(2.3, effD - 1.1))
-            : 0.48 + ((n.generation - 3) * 0.14) + ((sibIdx % 4) / 3) * 0.3;
-        const r = Math.max(185, Math.min(rMax - 30, 170 + Math.min(0.98, Math.max(0.16, t)) * (rMax - 195)));
-        x = OX + r * Math.cos(ang.rad);
-        y = OY + r * Math.sin(ang.rad) * 1.48;
-      }
-
-      const item = { n, ang, x, y, anchorX: x, anchorY: y, w, h, fontSize, rotDeg, rotRad, envHW, envHH, isBranch, isParent };
-      items.push(item);
-      byId.set(id, item);
-    }
-
-    function clampP(p) {
-      if (p.isBranch) { p.x = OX; p.y = OY; return; }
-      const hw = p.envHW + 10, hh = p.envHH + 10;
-      p.x = Math.max(92 + hw, Math.min(PW - 92 - hw, p.x));
-      p.y = Math.max(255 + hh, Math.min(2820 - hh, p.y));
-      // Keep clear of branch root medallion
-      const dx = p.x - OX, dy = p.y - OY;
-      const dist = Math.hypot(dx, dy);
-      if (dist < 175 && dist > 0.01) {
-        p.x = OX + (dx / dist) * 175;
-        p.y = OY + (dy / dist) * 175;
+    const sp = a4Spec(n, sc);
+    if (!n || !n.childrenIds || n.childrenIds.length === 0) return sp.w;
+    const ch = n.childrenIds;
+    const leaves = ch.filter((c) => !(nodesById[c].childrenIds && nodesById[c].childrenIds.length));
+    const pars = ch.filter((c) => nodesById[c].childrenIds && nodesById[c].childrenIds.length);
+    let maxChild = 0;
+    if (leaves.length > 0) {
+      const rows = chunkLeaves(leaves, sc);
+      for (const r of rows) {
+        const lw = r.reduce((s, c) => s + a4Spec(nodesById[c], sc).w + 10 * sc, 38 * sc);
+        maxChild = Math.max(maxChild, lw);
       }
     }
+    for (const p of pars) maxChild = Math.max(maxChild, maxWingOutW(p, sc));
+    return sp.w + 26 + maxChild;
+  }
 
-    const PAD = 7;
-    for (let iter = 0; iter < 1400; iter++) {
-      const phaseA = iter < 200;
-      if (phaseA) {
-        const sp = 0.05 * (1 - iter / 200);
-        for (const p of items) {
-          if (p.isBranch) continue;
-          p.x += (p.anchorX - p.x) * sp;
-          p.y += (p.anchorY - p.y) * sp;
-        }
-      }
-      items.sort((a, b) => a.x - b.x);
-      let ov = 0;
-      const gain = phaseA ? 0.68 : 0.92;
-      for (let i = 0; i < items.length; i++) {
-        const A = items[i];
-        for (let j = i + 1; j < items.length; j++) {
-          const B = items[j];
-          const dx = B.x - A.x;
-          if (dx > 340) break;
-          const sumW = A.envHW + B.envHW + PAD * 2;
-          const ox = sumW - dx;
-          if (ox <= 0) continue;
-          const dy = B.y - A.y;
-          const sumH = A.envHH + B.envHH + PAD * 2;
-          const oy = sumH - Math.abs(dy);
-          if (oy <= 0) continue;
-          ov++;
-          const wA = A.isBranch ? 0 : 0.5;
-          const wB = B.isBranch ? 0 : 0.5;
-          const wSum = wA + wB || 1;
-          if ((ox / sumW) < (oy / sumH)) {
-            const sx = ox * gain + 0.8;
-            A.x -= sx * (wA / wSum);
-            B.x += sx * (wB / wSum);
-          } else {
-            const sy = oy * gain + 0.8;
-            if (dy >= 0) { A.y -= sy * (wA / wSum); B.y += sy * (wB / wSum); }
-            else { A.y += sy * (wA / wSum); B.y -= sy * (wB / wSum); }
+  function needPx(id, sc, padV = 5) {
+    const n = nodesById[id];
+    const selfH = a4Spec(n, sc).h + padV;
+    if (!n || !n.childrenIds || n.childrenIds.length === 0) return selfH;
+    const ch = n.childrenIds;
+    const leaves = ch.filter((c) => !(nodesById[c].childrenIds && nodesById[c].childrenIds.length));
+    const pars = ch.filter((c) => nodesById[c].childrenIds && nodesById[c].childrenIds.length);
+    let total = 0;
+    if (leaves.length > 0) {
+      const rows = chunkLeaves(leaves, sc);
+      total += rows.length * (a4Spec(nodesById[leaves[0]], sc).h + padV + 6);
+    }
+    for (const p of pars) total += needPx(p, sc, padV);
+    return Math.max(selfH, total);
+  }
+
+  function tryLayout(sc) {
+    // Partition Gen 2 children evenly across Right Wing (+1) and Left Wing (-1)
+    const g2Ids = [...(branchNode.childrenIds || [])];
+    g2Ids.sort((a, b) => needPx(b, sc) - needPx(a, sc));
+    const rightG2 = [], leftG2 = [];
+    let rLoad = 0, lLoad = 0;
+    for (const gid of g2Ids) {
+      const w = needPx(gid, sc);
+      if (rLoad <= lLoad) { rightG2.push(gid); rLoad += w; }
+      else { leftG2.push(gid); lLoad += w; }
+    }
+
+    const placed = [];
+    const edges = [];
+
+    function runWing(dir, wingG2Ids) {
+      if (!wingG2Ids.length) return;
+      const xStart = CX + dir * 48;
+      const xEnd = dir > 0 ? PW - 88 : 88;
+      const totLoad = wingG2Ids.reduce((s, gid) => s + needPx(gid, sc), 0);
+      const wingPad = 14;
+      const availY = (Y_BOT - Y_TOP) - wingPad * Math.max(0, wingG2Ids.length - 1);
+      // Center vertically cleanly if small branch
+      const usedY = Math.min(availY, Math.max(availY * 0.88, totLoad * 1.35));
+      let curY = (Y_TOP + Y_BOT) / 2 - (usedY + wingPad * Math.max(0, wingG2Ids.length - 1)) / 2;
+
+      function placeSub(id, y0, y1, minEdgeX) {
+        const n = nodesById[id];
+        const sp = a4Spec(n, sc);
+        const ch = n.childrenIds || [];
+        const leaves = ch.filter((c) => !(nodesById[c].childrenIds && nodesById[c].childrenIds.length));
+        const pars = ch.filter((c) => nodesById[c].childrenIds && nodesById[c].childrenIds.length);
+
+        let childOutW = 0;
+        if (leaves.length > 0) {
+          for (const r of chunkLeaves(leaves, sc)) {
+            const lw = r.reduce((s, c) => s + a4Spec(nodesById[c], sc).w + 10 * sc, 38 * sc);
+            childOutW = Math.max(childOutW, lw);
           }
         }
+        for (const p of pars) childOutW = Math.max(childOutW, maxWingOutW(p, sc));
+
+        let xSelf;
+        const availAfter = Math.max(24, Math.abs(xEnd - minEdgeX) - childOutW - sp.w / 2);
+        const stepNice = Math.min(140, Math.max(20, availAfter * 0.45));
+        xSelf = minEdgeX + dir * (sp.w / 2 + stepNice);
+        const maxAllow = xEnd - dir * (childOutW + sp.w / 2 + 4);
+        if (dir > 0) xSelf = Math.min(maxAllow, Math.max(minEdgeX + sp.w / 2 + 20, xSelf));
+        else xSelf = Math.max(maxAllow, Math.min(minEdgeX - sp.w / 2 - 20, xSelf));
+        const nextEdge = xSelf + dir * (sp.w / 2 + 10);
+
+        const blocks = [];
+        if (leaves.length > 0) {
+          const rows = chunkLeaves(leaves, sc);
+          blocks.push({ type: "leaves", rows, need: rows.length * (a4Spec(nodesById[leaves[0]], sc).h + 11) });
+        }
+        for (const pid of pars) blocks.push({ type: "parent", id: pid, need: needPx(pid, sc) });
+
+        if (!blocks.length) {
+          const rec = { n, x: xSelf, y: (y0 + y1) / 2, ...sp, isParent: false };
+          placed.push(rec);
+          return rec;
+        }
+
+        const bTot = blocks.reduce((a, b) => a + b.need, 0);
+        let byCur = y0;
+        const anchors = [];
+        for (const blk of blocks) {
+          const bh = ((y1 - y0) * blk.need) / bTot;
+          const by0 = byCur, by1 = byCur + bh;
+          byCur = by1;
+          if (blk.type === "parent") {
+            const cRec = placeSub(blk.id, by0, by1, nextEdge);
+            anchors.push({ type: "parent", rec: cRec, yCenter: cRec.y });
+          } else {
+            const rowPlacedAll = [];
+            blk.rows.forEach((rIds, rIdx) => {
+              const rSpecs = rIds.map((lid) => ({ lid, n: nodesById[lid], sp: a4Spec(nodesById[lid], sc) }));
+              const yRow = by0 + ((rIdx + 0.5) / blk.rows.length) * bh;
+              const startX = nextEdge + dir * 24 * sc;
+              const spanW = Math.max(10, Math.abs(xEnd - startX));
+              const sumW = rSpecs.reduce((s, it) => s + it.sp.w, 0);
+              const gap = rSpecs.length > 1 ? Math.max(8 * sc, Math.min(34, (spanW - sumW) / rSpecs.length)) : 0;
+              let cx = startX;
+              const rowPlaced = [];
+              for (const it of rSpecs) {
+                const lx = cx + dir * (it.sp.w / 2);
+                cx += dir * (it.sp.w + gap);
+                const lRec = { n: it.n, x: lx, y: yRow, ...it.sp, isParent: false };
+                placed.push(lRec);
+                rowPlaced.push(lRec);
+              }
+              rowPlacedAll.push(rowPlaced);
+            });
+            anchors.push({ type: "leaves", rows: rowPlacedAll, yCenter: (by0 + by1) / 2 });
+          }
+        }
+
+        const ySelf = (anchors[0].yCenter + anchors[anchors.length - 1].yCenter) / 2;
+        const rec = { n, x: xSelf, y: ySelf, ...sp, isParent: true };
+        placed.push(rec);
+
+        for (const a of anchors) {
+          if (a.type === "parent") {
+            const cr = a.rec;
+            const vx = cr.x - rec.x;
+            edges.push({
+              x1: rec.x, y1: rec.y, cx1: rec.x + vx * 0.54, cy1: rec.y,
+              cx2: rec.x + vx * 0.46, cy2: cr.y, x2: cr.x, y2: cr.y,
+              wStart: rec.n.generation === 2 ? 10 : 5.5, wEnd: 4,
+            });
+          } else {
+            for (const row of a.rows) {
+              if (row.length === 1) {
+                const lf = row[0], vx = lf.x - rec.x;
+                edges.push({
+                  x1: rec.x, y1: rec.y, cx1: rec.x + vx * 0.55, cy1: rec.y,
+                  cx2: rec.x + vx * 0.45, cy2: lf.y, x2: lf.x, y2: lf.y,
+                  wStart: 4.5, wEnd: 1.8,
+                });
+              } else {
+                const spineOff = (row[0].y < rec.y ? -1 : 1) * (row[0].h * 0.54 + 2);
+                const last = row[row.length - 1];
+                const yEndS = last.y + spineOff * 0.65;
+                const entryY = row[0].y + spineOff;
+                const cx1 = rec.x + dir * Math.min(54, Math.abs(row[0].x - rec.x) * 0.35);
+                const cx2 = row[0].x + (last.x - row[0].x) * 0.48;
+                edges.push({
+                  x1: rec.x, y1: rec.y, cx1, cy1: entryY, cx2, cy2: entryY,
+                  x2: last.x, y2: yEndS, wStart: 4.5, wEnd: 1.6,
+                });
+                for (const lf of row) {
+                  const targetX = lf.x - dir * 10;
+                  let bestT = 0.5, errMin = Infinity;
+                  for (let k = 0; k <= 16; k++) {
+                    const tt = k / 16, mt = 1 - tt;
+                    const sx = mt * mt * mt * rec.x + 3 * mt * mt * tt * cx1 + 3 * mt * tt * tt * cx2 + tt * tt * tt * last.x;
+                    if (Math.abs(sx - targetX) < errMin) { errMin = Math.abs(sx - targetX); bestT = tt; }
+                  }
+                  const mt = 1 - bestT;
+                  const sx = mt * mt * mt * rec.x + 3 * mt * mt * bestT * cx1 + 3 * mt * bestT * bestT * cx2 + bestT * bestT * bestT * last.x;
+                  const sy = mt * mt * mt * rec.y + 3 * mt * mt * bestT * entryY + 3 * mt * bestT * bestT * entryY + bestT * bestT * bestT * yEndS;
+                  edges.push({ x1: sx, y1: sy, cx1: sx + dir * 3, cy1: (sy + lf.y) * 0.5, cx2: lf.x - dir * 5, cy2: lf.y, x2: lf.x, y2: lf.y, wStart: 2.6, wEnd: 1.4 });
+                }
+              }
+            }
+          }
+        }
+        return rec;
       }
-      for (const p of items) clampP(p);
-      if (!phaseA && ov === 0) break;
+
+      for (const gid of wingG2Ids) {
+        const gh = (usedY * needPx(gid, sc)) / totLoad;
+        const gRec = placeSub(gid, curY, curY + gh, xStart);
+        curY += gh + wingPad;
+        // Connect gracefully from central rising branch stem up into Gen 2 cloud!
+        const stemY = Math.min(STEM_BOT_Y - 75, Math.max(STEM_TOP_Y + 40, gRec.y + 130));
+        edges.push({
+          x1: CX, y1: stemY, cx1: CX + dir * 24, cy1: (stemY + gRec.y) * 0.5 - 24,
+          cx2: CX + dir * Math.abs(gRec.x - CX) * 0.45, cy2: gRec.y,
+          x2: gRec.x, y2: gRec.y, wStart: 15, wEnd: 9,
+        });
+      }
     }
 
-    // Count remaining overlaps cleanly
-    let remOv = 0;
-    for (let i = 0; i < items.length; i++) {
-      for (let j = i + 1; j < items.length; j++) {
-        const A = items[i], B = items[j];
-        if (Math.abs(A.x - B.x) < (A.envHW + B.envHW + 1) && Math.abs(A.y - B.y) < (A.envHH + B.envHH + 1)) remOv++;
+    runWing(1, rightG2);
+    runWing(-1, leftG2);
+
+    // Check AABB overlaps (all nodes horizontal!)
+    let ov = 0;
+    for (let i = 0; i < placed.length; i++) {
+      for (let j = i + 1; j < placed.length; j++) {
+        const A = placed[i], B = placed[j];
+        if (Math.abs(A.x - B.x) < (A.w + B.w) / 2 - 1 && Math.abs(A.y - B.y) < (A.h + B.h) / 2 - 1) ov++;
       }
     }
-    return { items, byId, remOv };
+    return { placed, edges, ov };
   }
 
-  let best = null;
-  for (const sc of [1.0, 0.94, 0.88, 0.82]) {
-    const r = runBranchLayout(sc);
-    best = r;
-    if (r.remOv === 0) break;
+  let chosen = null;
+  for (const sc of [1.0, 0.94, 0.88, 0.82, 0.76]) {
+    const r = tryLayout(sc);
+    chosen = { ...r, sc };
+    if (r.ov === 0) break;
   }
-  console.log(`A4 Page ${pageNum} (${branchNode.name}, n=${best.items.length}): overlaps=${best.remOv}, leafFont=${best.items.find((x) => !x.isParent && !x.isBranch)?.fontSize || "-"}px`);
+  const sampleLeaf = chosen.placed.find((p) => !p.isParent && p.n.generation >= 3);
+  console.log(`A4 Page ${pageNum} (${branchNode.name}, n=${chosen.placed.length + 1}): scale=${chosen.sc}, overlaps=${chosen.ov}, leafFont=${sampleLeaf ? sampleLeaf.fontSize : "-"}px`);
 
   const out = [];
   out.push(`<svg xmlns="http://www.w3.org/2000/svg" lang="ar" xml:lang="ar" direction="rtl" viewBox="0 0 ${PW} ${PH}">`);
   out.push(...plateChromeSvg(pageNum, totalPages, `فرع ${branchNode.name}`, `عدد أفراد الفرع: ${toArabic(count)} اسماً — مرتب حسب الأجيال والأفخاذ`, pal.stroke));
 
-  // Decorative trunk stub beneath branch medallion
-  out.push(`<path d="M ${OX - 76} 2810 C ${OX - 55} 2740, ${OX - 44} 2700, ${OX - 38} ${OY} L ${OX + 38} ${OY} C ${OX + 44} 2700, ${OX + 55} 2740, ${OX + 76} 2810 Z" fill="url(#a4Trunk_${pageNum})" stroke="#C9A45A" stroke-width="3"/>`);
-
-  // Tapered organic boughs
+  // Tapered organic boughs (behind stem & branch shield)
   out.push(`<g>`);
-  for (const p of best.items) {
-    if (p.isBranch) continue;
-    const par = best.byId.get(p.n.parentId);
-    if (!par) continue;
-    const isLeaf = !p.isParent;
-    const wS = par.isBranch ? 16 : par.n.generation === 2 ? 9.5 : 5.5;
-    const wE = isLeaf ? 2.0 : 4.2;
-    const vx = p.x - par.x, vy = p.y - par.y;
-    const cx1 = par.x + vx * 0.25;
-    const cy1 = par.y + vy * 0.45 - 24;
-    const cx2 = p.x - vx * 0.22;
-    const cy2 = p.y - vy * 0.35;
-    out.push(`<path d="${taperedBezierPath(par.x, par.y, cx1, cy1, cx2, cy2, p.x, p.y, wS, wE, isLeaf ? 10 : 14)}" fill="${pal.bough}" fill-opacity="${isLeaf ? 0.72 : 0.85}"/>`);
+  for (const e of chosen.edges) {
+    out.push(`<path d="${taperedBezierPath(e.x1, e.y1, e.cx1, e.cy1, e.cx2, e.cy2, e.x2, e.y2, e.wStart, e.wEnd, 14)}" fill="${pal.bough}" fill-opacity="0.82"/>`);
   }
   out.push(`</g>`);
 
-  // Nodes (leaves -> fathers -> Gen 2 -> Branch head)
-  const ordered = [...best.items].sort((a, b) => b.n.generation - a.n.generation);
+  // Rising sculpted central palm bough stem for this branch plate
+  const minNodeY = Math.min(...chosen.placed.map((p) => p.y));
+  const stemTopActual = Math.max(STEM_TOP_Y, minNodeY + 30);
+  out.push(`<path d="M ${CX - 54} 2815 C ${CX - 34} 2740, ${CX - 26} 2690, ${CX - 20} ${STEM_BOT_Y} L ${CX - 8} ${stemTopActual} L ${CX + 8} ${stemTopActual} L ${CX + 20} ${STEM_BOT_Y} C ${CX + 26} 2690, ${CX + 34} 2740, ${CX + 54} 2815 Z" fill="url(#a4Trunk_${pageNum})" stroke="#C9A45A" stroke-width="3"/>`);
+
+  // Nodes (leaves -> fathers -> Gen 2)
+  const ordered = [...chosen.placed].sort((a, b) => b.n.generation - a.n.generation);
   for (const p of ordered) {
-    out.push(`<g transform="translate(${p.x.toFixed(1)}, ${p.y.toFixed(1)}) rotate(${p.rotDeg.toFixed(2)})">`);
-    if (p.isBranch) {
-      out.push(`<rect x="${-p.w / 2}" y="${-p.h / 2}" width="${p.w}" height="${p.h}" rx="${p.h / 2}" fill="${pal.stroke}" stroke="#E7CD90" stroke-width="4.5"/>
-        <text x="0" y="${(p.fontSize * 0.34).toFixed(1)}" text-anchor="middle" fill="#FFFDF8" font-size="${p.fontSize}" font-weight="700" class="m-serif">${rtl(p.n.name)}</text>`);
-    } else if (p.n.generation === 2) {
+    out.push(`<g transform="translate(${p.x.toFixed(1)}, ${p.y.toFixed(1)})">`);
+    if (p.n.generation === 2) {
       out.push(`<path d="${heritageCloudPath(p.w, p.h)}" fill="url(#a4Cloud_${pageNum})" stroke="#9B6E1F" stroke-width="3"/>
         <text x="0" y="${(p.fontSize * 0.34).toFixed(1)}" text-anchor="middle" fill="#0B241B" font-size="${p.fontSize}" font-weight="700" class="m-serif">${rtl(p.n.name)}</text>`);
     } else if (p.isParent) {
       out.push(`<rect x="${(-p.w / 2).toFixed(1)}" y="${(-p.h / 2).toFixed(1)}" width="${p.w}" height="${p.h}" rx="${(p.h / 2).toFixed(1)}" fill="#FFFDF6" stroke="${pal.stroke}" stroke-width="2.6"/>
         <text x="0" y="${(p.fontSize * 0.34).toFixed(1)}" text-anchor="middle" fill="#0B241B" font-size="${p.fontSize}" font-weight="800" class="m-sans">${rtl(p.n.name)}</text>`);
     } else {
-      out.push(`<path d="${leafSvgPath(p.w, p.h)}" fill="${pal.leafFill}" stroke="${pal.stroke}" stroke-width="2.2"/>
+      out.push(`<path d="${leafSvgPath(p.w, p.h)}" fill="${pal.leafFill}" stroke="${pal.stroke}" stroke-width="2.1"/>
         <text x="0" y="${(p.fontSize * 0.34).toFixed(1)}" text-anchor="middle" fill="#0A2118" font-size="${p.fontSize}" font-weight="800" class="m-sans">${rtl(p.n.name)}</text>`);
     }
     out.push(`</g>`);
   }
 
+  // Grand Branch Head Medallion at Base of Stem
+  const spHead = a4Spec(branchNode, 1);
+  out.push(`<g transform="translate(${CX}, ${STEM_BOT_Y})">
+    <rect x="${-spHead.w / 2}" y="${-spHead.h / 2}" width="${spHead.w}" height="${spHead.h}" rx="${spHead.h / 2}" fill="${pal.stroke}" stroke="#E7CD90" stroke-width="4.5"/>
+    <text x="0" y="${(spHead.fontSize * 0.34).toFixed(1)}" text-anchor="middle" fill="#FFFDF8" font-size="${spHead.fontSize}" font-weight="700" class="m-serif">${rtl(branchNode.name)}</text>
+  </g>`);
+
   out.push(`</svg>`);
   return out.join("\n");
 }
 
-// Page 7: Small Branches (Dughaylib 13, Dahran 1, Mudyan 1) + Full Sculpted Trunk to Qahtan + Notes + Seal
 function buildPage7Plate(totalPages) {
   const PW = 2100, PH = 2970;
   const out = [];
   out.push(`<svg xmlns="http://www.w3.org/2000/svg" lang="ar" xml:lang="ar" direction="rtl" viewBox="0 0 ${PW} ${PH}">`);
   out.push(...plateChromeSvg(7, totalPages, "فروع دغيليب ودهران ومضيان وجذع النسب", "الأجداد المتّصلون إلى قحطان وفروع الأبناء الأصغر عدداً", "#12372A"));
 
-  // Left Half: Sculpted Palm Trunk from عويض down to قحطان
   const trunkX = 540;
   const ancOrder = [];
   for (let g = -10; g <= -1; g++) {
@@ -437,8 +467,6 @@ function buildPage7Plate(totalPages) {
   out.push(`<rect x="115" y="275" width="850" height="2480" rx="28" fill="#FFFDF8" stroke="#C9A45A" stroke-width="3.2"/>`);
   out.push(`<text x="${trunkX}" y="355" text-anchor="middle" fill="#12372A" font-size="46" font-weight="700" class="m-serif">${rtl("جذع النسب إلى قحطان")}</text>`);
   out.push(`<line x1="220" y1="388" x2="860" y2="388" stroke="#C9A45A" stroke-width="2.2"/>`);
-
-  // Root عويض at top of trunk
   out.push(`<path d="M ${trunkX - 115} 2645 L ${trunkX - 42} 540 L ${trunkX + 42} 540 L ${trunkX + 115} 2645 Z" fill="url(#a4Trunk_7)" stroke="#C9A45A" stroke-width="3.5"/>`);
   out.push(`<ellipse cx="${trunkX}" cy="2655" rx="230" ry="42" fill="#1E4B35" fill-opacity="0.22"/>`);
 
@@ -450,7 +478,6 @@ function buildPage7Plate(totalPages) {
   const yTop = 740, yBot = 2560;
   const stepY = (yBot - yTop) / Math.max(1, ancOrder.length - 1);
   ancOrder.forEach((anc, idx) => {
-    // ancOrder[0] = Qahtan at bottom, ancOrder[9] = Muslih just under Uwaid
     const y = yBot - idx * stepY;
     const isQ = idx === 0;
     const bw = isQ ? 320 : 250;
@@ -461,12 +488,10 @@ function buildPage7Plate(totalPages) {
     </g>`);
   });
 
-  // Right Top Card: فرع دغيليب (13) drawn clearly as an expanded readable mini-tree
   out.push(`<rect x="1030" y="275" width="955" height="1190" rx="28" fill="#FFFDF8" stroke="#C9A45A" stroke-width="3.2"/>`);
   out.push(`<text x="1930" y="355" text-anchor="start" fill="#315D73" font-size="46" font-weight="700" class="m-serif">${rtl("فرع دغيليب — ١٣ اسماً")}</text>`);
   out.push(`<line x1="1080" y1="388" x2="1930" y2="388" stroke="#C9A45A" stroke-width="2.2"/>`);
 
-  // Lay out دغيليب (G1) -> عبدالله (G2) -> [عمر, فهد] -> ... cleanly by depth columns (right to left)
   const b04Pos = new Map();
   function placeSubtreeRows(id, gen, rowCursorRef) {
     const n = nodesById[id];
@@ -503,7 +528,6 @@ function buildPage7Plate(totalPages) {
     </g>`);
   }
 
-  // Right Middle Card: فرعا دهران ومضيان
   out.push(`<rect x="1030" y="1510" width="955" height="390" rx="28" fill="#FFFDF8" stroke="#C9A45A" stroke-width="3.2"/>`);
   out.push(`<text x="1930" y="1588" text-anchor="start" fill="#12372A" font-size="42" font-weight="700" class="m-serif">${rtl("فرعا دهران ومضيان")}</text>`);
   out.push(`<line x1="1080" y1="1620" x2="1930" y2="1620" stroke="#C9A45A" stroke-width="2.2"/>`);
@@ -517,7 +541,6 @@ function buildPage7Plate(totalPages) {
     <text x="0" y="14" text-anchor="middle" fill="#FFFDF8" font-size="44" font-weight="700" class="m-serif">${rtl("مضيان (١)")}</text>
   </g>`);
 
-  // Right Bottom Card: Documentation + Seal
   out.push(`<rect x="1030" y="1945" width="955" height="810" rx="28" fill="#FFFDF8" stroke="#C9A45A" stroke-width="3.2"/>`);
   out.push(`<text x="1930" y="2025" text-anchor="start" fill="#12372A" font-size="42" font-weight="700" class="m-serif">${rtl("الحاشية والتوثيق المعتمد")}</text>`);
   out.push(`<line x1="1080" y1="2056" x2="1930" y2="2056" stroke="#C9A45A" stroke-width="2.2"/>`);
@@ -540,17 +563,10 @@ function buildPage7Plate(totalPages) {
 async function main() {
   const TOTAL = 7;
   const pages = [];
-
-  // Page 1: Full Mural scaled cleanly onto exact A4 (1:sqrt(2))
   pages.push(`<section class="a4-page">${MURAL_SVG.replace("<svg ", '<svg class="full-mural" ')}</section>`);
-
-  // Pages 2..6: Dedicated High-Clarity A4 Branch Plates
-  const branchOrder = ["B08", "B06", "B07", "B05", "B01"];
-  branchOrder.forEach((bid, idx) => {
+  ["B08", "B06", "B07", "B05", "B01"].forEach((bid, idx) => {
     pages.push(`<section class="a4-page">${buildBranchPlate(bid, idx + 2, TOTAL)}</section>`);
   });
-
-  // Page 7: Smaller Branches + Ancestor Trunk + Notes
   pages.push(`<section class="a4-page">${buildPage7Plate(TOTAL)}</section>`);
 
   const html = `<!doctype html>
@@ -575,7 +591,6 @@ async function main() {
 <body>${pages.join("\n")}</body>
 </html>`;
 
-  // Also save preview single-page routes for verification screenshots of P1, P2, P7
   const server = http.createServer((req, res) => {
     if (req.url === "/booklet") {
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
@@ -592,7 +607,7 @@ async function main() {
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
   const port = server.address().port;
 
-  const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), "edge-a4book-"));
+  const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), "edge-a4book-v3-"));
   const edge = spawn("C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe", [
     "--headless=new", "--disable-gpu", "--no-sandbox", "--remote-debugging-port=0",
     `--user-data-dir=${userDataDir}`, "about:blank"
@@ -641,11 +656,10 @@ async function main() {
     marginTop: 0, marginBottom: 0, marginLeft: 0, marginRight: 0
   });
   fs.writeFileSync(PDF_OUT, Buffer.from(pdf.data, "base64"));
-  console.log("Wrote 7-Page Clear A4 Print Booklet PDF:", PDF_OUT, "size=", fs.statSync(PDF_OUT).size);
+  console.log("Wrote 7-Page Planar A4 Print Booklet PDF:", PDF_OUT, "size=", fs.statSync(PDF_OUT).size);
 
-  // Capture verification screenshots for P1, P2 (densest branch Madi), P7
   await cdp("Emulation.setDeviceMetricsOverride", { width: 794, height: 1123, deviceScaleFactor: 2, mobile: false });
-  for (const [pg, fname] of [[1, "_a4_p1.png"], [2, "_a4_p2_madi.png"], [7, "_a4_p7_ancestors.png"]]) {
+  for (const [pg, fname] of [[1, "_a4_v3_p1.png"], [2, "_a4_v3_p2_madi.png"]]) {
     await cdp("Page.navigate", { url: `http://127.0.0.1:${port}/page/${pg}` });
     await new Promise((r) => setTimeout(r, 900));
     await cdp("Runtime.evaluate", { awaitPromise: true, expression: "document.fonts.ready" });

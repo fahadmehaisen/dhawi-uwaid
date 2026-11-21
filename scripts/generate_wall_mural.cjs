@@ -35,11 +35,11 @@ function loadBrandPaths() {
 
 const TRACED = loadBrandPaths();
 
-// ISO A-Series Aspect Ratio (1 : sqrt(2)) -> 4200 x 5940
+// ISO A-Series Ratio (1 : sqrt(2)) -> 4200 x 5940
 const W = 4200;
 const H = 5940;
 const CX = 2100;
-const CY = 3680;
+const ROOT_Y = 4250; // Grand Root Medallion atop sculpted date-palm trunk
 
 const ARABIC_DIGITS = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"];
 const toArabic = (v) => String(v).replace(/\d/g, (d) => ARABIC_DIGITS[Number(d)]);
@@ -64,349 +64,8 @@ const BRANCH_PALETTE = {
 
 const nodesById = TREE.nodesById;
 
-// 1. Symmetric Crown Ordering:
-//    Right & Upper-Right (372): B02(1), B03(1), B04(13), B01(60), B05(101), B06(196)
-//    Left  & Upper-Left  (377): B07(151), B08(226)
-const BRANCH_ORDER = ["B02", "B03", "B04", "B01", "B05", "B06", "B07", "B08"];
-
-const leafWeights = new Map();
-const totalCounts = new Map();
-const maxDepthBelow = new Map();
-
-function analyzeSubtree(id) {
-  const n = nodesById[id];
-  if (!n) return { leaves: 1, total: 1, maxDepth: 0 };
-  if (!n.childrenIds || n.childrenIds.length === 0) {
-    leafWeights.set(id, 1);
-    totalCounts.set(id, 1);
-    maxDepthBelow.set(id, 0);
-    return { leaves: 1, total: 1, maxDepth: 0 };
-  }
-  let leaves = 0, total = 1, maxD = 0;
-  for (const cid of n.childrenIds) {
-    const r = analyzeSubtree(cid);
-    leaves += r.leaves;
-    total += r.total;
-    if (r.maxDepth + 1 > maxD) maxD = r.maxDepth + 1;
-  }
-  leafWeights.set(id, leaves);
-  totalCounts.set(id, total);
-  maxDepthBelow.set(id, maxD);
-  return { leaves, total, maxDepth: maxD };
-}
-for (const bid of BRANCH_ORDER) analyzeSubtree(bid);
-
-// Minimum sector floor so single/small branches remain balanced and graceful
-const branchSectorWeight = new Map();
-for (const bid of BRANCH_ORDER) {
-  branchSectorWeight.set(bid, Math.max(9, totalCounts.get(bid)));
-}
-const sumBranchWeight = BRANCH_ORDER.reduce((a, b) => a + branchSectorWeight.get(b), 0);
-
-// Canopy sweep: from +46 deg (lower right wing) clockwise up over -90 deg (apex) to -226 deg (lower left wing) = 272 deg span
-const START_DEG = 46;
-const END_DEG = -226;
-const SECTOR_GAP_DEG = 2.0;
-const USABLE_SPAN = (START_DEG - END_DEG) - SECTOR_GAP_DEG * (BRANCH_ORDER.length - 1);
-
-const nodeAngles = new Map();
-function assignAngles(id, aStart, aEnd) {
-  const n = nodesById[id];
-  const aMid = (aStart + aEnd) / 2;
-  nodeAngles.set(id, { deg: aMid, rad: (aMid * Math.PI) / 180, aStart, aEnd });
-  if (!n.childrenIds || n.childrenIds.length === 0) return;
-  const weights = n.childrenIds.map((c) => (totalCounts.get(c) || 1) + 0.35);
-  const wSum = weights.reduce((a, b) => a + b, 0);
-  let cur = aStart;
-  for (let i = 0; i < n.childrenIds.length; i++) {
-    const cid = n.childrenIds[i];
-    const span = ((aEnd - aStart) * weights[i]) / wSum;
-    assignAngles(cid, cur, cur + span);
-    cur += span;
-  }
-}
-
-let curDeg = START_DEG;
-for (const bid of BRANCH_ORDER) {
-  const span = (USABLE_SPAN * branchSectorWeight.get(bid)) / sumBranchWeight;
-  assignAngles(bid, curDeg, curDeg - span);
-  curDeg = curDeg - span - SECTOR_GAP_DEG;
-}
-
-// 2. Space-filling elliptical canopy max radius R_max(theta)
-function canopyBoundary(deg) {
-  const rad = (deg * Math.PI) / 180;
-  const ux = Math.cos(rad);
-  const uy = Math.sin(rad);
-
-  const topYBase = 605;
-  const headerDip = 125;
-  const minRTop = (x) => topYBase + headerDip * Math.exp(-Math.pow((x - CX) / 560, 2));
-
-  let lo = 350, hi = 3850;
-  for (let s = 0; s < 22; s++) {
-    const mid = (lo + hi) / 2;
-    const x = CX + mid * ux;
-    const y = CY + mid * uy;
-    const okX = x >= 145 && x <= W - 145;
-    const okTop = y >= minRTop(x);
-    const okBot = y <= 4815;
-    const okTrunk = y <= 3760 || Math.abs(x - CX) >= 265;
-    const cornerNorm = Math.pow(Math.abs(x - CX) / 1960, 4.4) + Math.pow(Math.max(0, CY - y) / 3060, 4.4);
-    const okDome = uy >= 0 || cornerNorm <= 1.72;
-    if (okX && okTop && okBot && okTrunk && okDome) lo = mid;
-    else hi = mid;
-  }
-  return lo;
-}
-
-// 3. Initial Botanical Positioning & Sizing + Fast 2-Phase Zero-Overlap Solver
-function buildLayout(nodeScale = 1.0) {
-  const items = [];
-  const byId = new Map();
-
-  const allDesc = Object.values(nodesById).filter((n) => n.generation >= 1);
-  const sibIndexMap = new Map();
-  for (const n of Object.values(nodesById)) {
-    if (n.childrenIds) {
-      n.childrenIds.forEach((cid, idx) => sibIndexMap.set(cid, { idx, len: n.childrenIds.length }));
-    }
-  }
-
-  for (const n of allDesc) {
-    const ang = nodeAngles.get(n.id);
-    const deg = ang.deg;
-    const rad = ang.rad;
-    const rMax = canopyBoundary(deg);
-    const isBranch = n.generation === 1;
-    const isParent = n.childrenCount > 0;
-    const sib = sibIndexMap.get(n.id) || { idx: 0, len: 1 };
-
-    let w, h, fontSize, rotDeg = 0;
-    if (isBranch) {
-      w = 216; h = 72; fontSize = 40; rotDeg = 0;
-    } else if (n.generation === 2) {
-      w = 164; h = 56; fontSize = 31; rotDeg = 0;
-    } else if (isParent) {
-      w = Math.min(176, Math.max(118, 86 + n.name.length * 10.5));
-      h = 44; fontSize = 26; rotDeg = 0;
-    } else {
-      w = Math.min(164, Math.max(108, 80 + n.name.length * 9.8));
-      h = 40; fontSize = 24.5;
-      const sideSign = Math.cos(rad);
-      rotDeg = Math.max(-20, Math.min(20, sideSign * -17));
-    }
-
-    w = Math.round(w * nodeScale * 10) / 10;
-    h = Math.round(h * nodeScale * 10) / 10;
-    fontSize = Math.round(fontSize * nodeScale * 10) / 10;
-
-    const rotRad = (rotDeg * Math.PI) / 180;
-    const cosR = Math.abs(Math.cos(rotRad));
-    const sinR = Math.abs(Math.sin(rotRad));
-    const envHW = (w * cosR + h * sinR) / 2;
-    const envHH = (w * sinR + h * cosR) / 2;
-
-    const branchMaxD = Math.max(3, maxDepthBelow.get(n.branchId) + 1);
-    // Compute depth of this node's own lineage tip so Gen 5 leaves aren't squeezed inside by a rare Gen 8 twig
-    const effectiveDepth = Math.min(6, Math.max(4, n.generation + (maxDepthBelow.get(n.id) || 0)));
-    let rTarget;
-    if (isBranch) {
-      rTarget = 340;
-    } else if (n.generation === 2) {
-      rTarget = 605 + (sib.idx % 2) * 105;
-    } else if (n.branchId === "B02" || n.branchId === "B03") {
-      rTarget = 660;
-    } else if (n.branchId === "B04") {
-      rTarget = 600 + ((n.generation - 2) / 3) * (rMax - 650);
-    } else {
-      const tLocal = isParent
-        ? Math.min(0.76, (n.generation - 1.4) / Math.max(2.5, effectiveDepth - 1.0))
-        : 0.56 + ((n.generation - 3) * 0.11) + ((sib.idx % 4) / 3) * 0.24;
-      rTarget = 790 + Math.min(0.98, Math.max(0.14, tLocal)) * (rMax - 820);
-    }
-    rTarget = Math.max(320, Math.min(rMax - 30, rTarget));
-
-    const item = {
-      n, deg, rad, rAnchor: rTarget, rMax,
-      x: CX + rTarget * Math.cos(rad),
-      y: CY + rTarget * Math.sin(rad),
-      w, h, fontSize, rotDeg, rotRad, envHW, envHH,
-      isBranch, isParent,
-    };
-    items.push(item);
-    byId.set(n.id, item);
-  }
-
-  function clampItem(p) {
-    const hw = p.envHW + 10;
-    const hh = p.envHH + 10;
-    p.x = Math.max(130 + hw, Math.min(W - 130 - hw, p.x));
-    const minTop = 595 + 125 * Math.exp(-Math.pow((p.x - CX) / 560, 2)) + hh;
-    p.y = Math.max(minTop, Math.min(4845 - hh, p.y));
-
-    const dx = p.x - CX;
-    const dy = p.y - CY;
-    const dist = Math.hypot(dx, dy);
-    const minRootR = p.isBranch ? 255 : 225 + hw;
-    if (dist < minRootR && dist > 0.01) {
-      p.x = CX + (dx / dist) * minRootR;
-      p.y = CY + (dy / dist) * minRootR;
-    }
-    if (p.y > CY + 125) {
-      const trunkHalfClear = 152 + hw;
-      if (Math.abs(p.x - CX) < trunkHalfClear) {
-        p.x = p.x >= CX ? CX + trunkHalfClear : CX - trunkHalfClear;
-      }
-    }
-  }
-
-  const PAD = 7.0;
-  const MAX_W_ENV = 260;
-
-  for (let iter = 0; iter < 1800; iter++) {
-    const phaseA = iter < 220;
-    const springStrength = phaseA ? (0.055 * (1 - iter / 220)) : 0;
-
-    if (phaseA) {
-      for (const p of items) {
-        if (p.isBranch) {
-          const tx = CX + p.rAnchor * Math.cos(p.rad);
-          const ty = CY + p.rAnchor * Math.sin(p.rad);
-          p.x += (tx - p.x) * 0.16;
-          p.y += (ty - p.y) * 0.16;
-        } else {
-          const par = byId.get(p.n.parentId);
-          if (par) {
-            const ax = CX + p.rAnchor * Math.cos(p.rad);
-            const ay = CY + p.rAnchor * Math.sin(p.rad);
-            p.x += (ax - p.x) * springStrength;
-            p.y += (ay - p.y) * springStrength;
-
-            const dPar = Math.hypot(p.x - par.x, p.y - par.y);
-            const maxChord = p.n.generation === 2 ? 480 : 920;
-            if (dPar > maxChord) {
-              const pull = ((dPar - maxChord) / dPar) * (springStrength * 1.15);
-              p.x += (par.x - p.x) * pull;
-              p.y += (par.y - p.y) * pull;
-            }
-          }
-        }
-      }
-    }
-
-    // Spatial sweep-and-prune by X coordinate
-    items.sort((a, b) => a.x - b.x);
-    let overlapCountIter = 0;
-    const gain = phaseA ? 0.68 : 0.92;
-
-    for (let i = 0; i < items.length; i++) {
-      const A = items[i];
-      const ahw = A.envHW + PAD;
-      const ahh = A.envHH + PAD;
-
-      for (let j = i + 1; j < items.length; j++) {
-        const B = items[j];
-        const dx = B.x - A.x;
-        if (dx > MAX_W_ENV) break;
-
-        const sumW = ahw + B.envHW + PAD;
-        const ox = sumW - dx;
-        if (ox <= 0) continue;
-
-        const dy = B.y - A.y;
-        const sumH = ahh + B.envHH + PAD;
-        const oy = sumH - Math.abs(dy);
-        if (oy <= 0) continue;
-
-        overlapCountIter++;
-        const wA = phaseA ? (A.isBranch ? 0.2 : A.n.generation === 2 ? 0.35 : 0.5) : 0.5;
-        const wB = phaseA ? (B.isBranch ? 0.2 : B.n.generation === 2 ? 0.35 : 0.5) : 0.5;
-        const wSum = wA + wB || 1;
-
-        // Aspect-normalized MTV: compare normalized penetration ox/sumW vs oy/sumH
-        // so boxes spread radially in BOTH X and Y instead of jamming in vertical columns
-        const pushX = (ox / sumW) < (oy / sumH);
-        if (pushX) {
-          const sx = ox * gain + 0.8;
-          if (dx < 0.01) { A.x -= sx * 0.5; B.x += sx * 0.5; }
-          else { A.x -= sx * (wA / wSum); B.x += sx * (wB / wSum); }
-        } else {
-          const sy = oy * gain + 0.8;
-          if (dy >= 0) {
-            A.y -= sy * (wA / wSum);
-            B.y += sy * (wB / wSum);
-          } else {
-            A.y += sy * (wA / wSum);
-            B.y -= sy * (wB / wSum);
-          }
-        }
-      }
-    }
-
-    for (const p of items) clampItem(p);
-    if (!phaseA && overlapCountIter === 0) break;
-  }
-
-  return { items, byId };
-}
-
-function countObbOverlaps(items) {
-  function corners(p) {
-    const c = Math.cos(p.rotRad), s = Math.sin(p.rotRad);
-    const hw = p.w / 2 - 1.5, hh = p.h / 2 - 1.5;
-    return [
-      { x: p.x + hw * c - hh * s, y: p.y + hw * s + hh * c },
-      { x: p.x - hw * c - hh * s, y: p.y - hw * s + hh * c },
-      { x: p.x - hw * c + hh * s, y: p.y - hw * s - hh * c },
-      { x: p.x + hw * c + hh * s, y: p.y + hw * s - hh * c },
-    ];
-  }
-  function sep(aPts, bPts, ax, ay) {
-    let minA = Infinity, maxA = -Infinity, minB = Infinity, maxB = -Infinity;
-    for (const q of aPts) { const pr = q.x * ax + q.y * ay; minA = Math.min(minA, pr); maxA = Math.max(maxA, pr); }
-    for (const q of bPts) { const pr = q.x * ax + q.y * ay; minB = Math.min(minB, pr); maxB = Math.max(maxB, pr); }
-    return maxA <= minB || maxB <= minA;
-  }
-  let overlaps = 0;
-  const polys = items.map((p) => ({ p, pts: corners(p) }));
-  for (let i = 0; i < polys.length; i++) {
-    const A = polys[i];
-    for (let j = i + 1; j < polys.length; j++) {
-      const B = polys[j];
-      if (Math.hypot(A.p.x - B.p.x, A.p.y - B.p.y) > (A.p.w + B.p.w)) continue;
-      const axes = [
-        [Math.cos(A.p.rotRad), Math.sin(A.p.rotRad)],
-        [-Math.sin(A.p.rotRad), Math.cos(A.p.rotRad)],
-        [Math.cos(B.p.rotRad), Math.sin(B.p.rotRad)],
-        [-Math.sin(B.p.rotRad), Math.cos(B.p.rotRad)],
-      ];
-      let separated = false;
-      for (const [ax, ay] of axes) {
-        if (sep(A.pts, B.pts, ax, ay)) { separated = true; break; }
-      }
-      if (!separated) overlaps++;
-    }
-  }
-  return overlaps;
-}
-
-// Run with progressive gentle refinement until ZERO overlaps!
-let chosen = null;
-for (const scaleTry of [1.0, 0.96, 0.92, 0.88]) {
-  const res = buildLayout(scaleTry);
-  const ov = countObbOverlaps(res.items);
-  chosen = { ...res, scaleTry, ov };
-  console.log(`Layout pass scale=${scaleTry}: OBB_overlaps=${ov}, leafFont=${(24.5 * scaleTry).toFixed(1)}px`);
-  if (ov === 0) break;
-}
-
-const descItems = chosen.items;
-const nodePos = chosen.byId;
-nodePos.set("R00", { n: nodesById["R00"], x: CX, y: CY, rAnchor: 0, w: 296, h: 296, fontSize: 74, isRoot: true });
-
-// Helper: Tapered organic Bézier bough polygon
-function taperedBezierPath(x1, y1, cx1, cy1, cx2, cy2, x2, y2, wStart, wEnd, steps = 18) {
+// Tapered organic Bézier bough polygon
+function taperedBezierPath(x1, y1, cx1, cy1, cx2, cy2, x2, y2, wStart, wEnd, steps = 16) {
   const left = [];
   const right = [];
   for (let i = 0; i <= steps; i++) {
@@ -427,17 +86,15 @@ function taperedBezierPath(x1, y1, cx1, cy1, cx2, cy2, x2, y2, wStart, wEnd, ste
   return `M ${left.join(" L ")} L ${right.join(" L ")} Z`;
 }
 
-// Helper: Botanical pointed leaf path centered at (0,0)
+// Pointed botanical palm leaflet SVG path
 function leafSvgPath(w, h) {
-  const hw = w / 2;
-  const hh = h / 2;
+  const hw = w / 2, hh = h / 2;
   return `M ${-hw} 0 C ${(-hw * 0.62).toFixed(1)} ${(-hh * 1.15).toFixed(1)}, ${(hw * 0.62).toFixed(1)} ${(-hh * 1.15).toFixed(1)}, ${hw} 0 C ${(hw * 0.62).toFixed(1)} ${(hh * 1.15).toFixed(1)}, ${(-hw * 0.62).toFixed(1)} ${(hh * 1.15).toFixed(1)}, ${-hw} 0 Z`;
 }
 
-// Helper: Ornate Arabesque Scalloped Heritage Cloud (for Gen 2 fathers)
+// Ornate Scalloped Golden Heritage Cloud (for Gen 2 fathers)
 function heritageCloudPath(w, h) {
-  const hw = w / 2;
-  const hh = h / 2;
+  const hw = w / 2, hh = h / 2;
   return [
     `M ${-hw + 14} ${-hh * 0.45}`,
     `Q ${-hw * 0.55} ${-hh * 1.16}, 0 ${-hh * 0.96}`,
@@ -448,6 +105,455 @@ function heritageCloudPath(w, h) {
     `Q ${-hw - 6} 0, ${-hw + 14} ${-hh * 0.45} Z`,
   ].join(" ");
 }
+
+// =========================================================================
+// PLANAR CURVED PINNATE PALM FROND LAYOUT ENGINE
+// - Strictly disjoint vertical bands per subtree -> ZERO crossing branches!
+// - Bilateral/Inline Pinnate Sprig clusters -> ZERO empty center holes!
+// - Graceful S-boughs + arching sprig spines -> Zero straight stiff lines!
+// =========================================================================
+
+function nodeSizeSpec(n, sc) {
+  const isBranch = n.generation === 1;
+  const isParent = n.childrenCount > 0;
+  const len = n.name.length;
+  let w, h, fontSize;
+  if (isBranch) {
+    w = 216; h = 68; fontSize = 42;
+  } else if (n.generation === 2) {
+    w = Math.max(148, 86 + len * 11.4); h = 46; fontSize = 31;
+  } else if (isParent) {
+    w = Math.min(176, Math.max(106, 68 + len * 10.8)); h = 35; fontSize = 26.5;
+  } else {
+    w = Math.min(158, Math.max(96, 62 + len * 10.0)); h = 34; fontSize = 26.0;
+  }
+  return {
+    w: Math.round(w * sc * 10) / 10,
+    h: Math.round(h * sc * 10) / 10,
+    fontSize: Math.round(fontSize * sc * 10) / 10,
+  };
+}
+
+function subtreeMaxLevels(id) {
+  const n = nodesById[id];
+  if (!n || !n.childrenIds || n.childrenIds.length === 0) return 0;
+  let m = 0;
+  for (const c of n.childrenIds) m = Math.max(m, subtreeMaxLevels(c));
+  return 1 + m;
+}
+
+// Compute outer horizontal width needed by any subtree's deepest leaf sprig (guarantees zero horizontal wrap/back-push!)
+function maxOutwardWidthPx(id, sc) {
+  const n = nodesById[id];
+  const sp = nodeSizeSpec(n, sc);
+  if (!n || !n.childrenIds || n.childrenIds.length === 0) return sp.w;
+  const ch = n.childrenIds;
+  const leaves = ch.filter((c) => !(nodesById[c].childrenIds && nodesById[c].childrenIds.length));
+  const pars = ch.filter((c) => nodesById[c].childrenIds && nodesById[c].childrenIds.length);
+  let need = sp.w + 40;
+  let maxChild = 0;
+  if (leaves.length > 0) {
+    const firstRow = leaves.length >= 6 ? leaves.slice(0, Math.ceil(leaves.length / 2)) : leaves;
+    const lw = firstRow.reduce((s, cid) => s + nodeSizeSpec(nodesById[cid], sc).w + 12 * sc, 45 * sc);
+    maxChild = Math.max(maxChild, lw);
+  }
+  for (const pid of pars) {
+    maxChild = Math.max(maxChild, maxOutwardWidthPx(pid, sc));
+  }
+  return need + maxChild;
+}
+
+// Exact minimum vertical height in pixels needed so NO node or leaf row ever touches vertically!
+function subtreeNeedPx(id, sc, padV = 4.2) {
+  const n = nodesById[id];
+  const selfNeed = nodeSizeSpec(n, sc).h + padV;
+  if (!n || !n.childrenIds || n.childrenIds.length === 0) return selfNeed;
+  const ch = n.childrenIds;
+  const leaves = ch.filter((c) => !(nodesById[c].childrenIds && nodesById[c].childrenIds.length));
+  const pars = ch.filter((c) => nodesById[c].childrenIds && nodesById[c].childrenIds.length);
+  let total = 0;
+  const leafH = 34 * sc + padV;
+  if (leaves.length > 0) {
+    total += leaves.length <= 5 ? leafH + 6 : 2 * leafH + 10;
+  }
+  for (const pid of pars) {
+    total += subtreeNeedPx(pid, sc, padV);
+  }
+  return Math.max(selfNeed, total);
+}
+
+// Compute organic vertical palm-arch warp strictly monotonic across Y so adjacent subtrees never cross!
+function curveY(yLinear, u, yTop, yBot, archCfg) {
+  const { archAmp = 0, droopAmp = 0 } = archCfg || {};
+  const span = Math.max(1, yBot - yTop);
+  const rel = (yLinear - yTop) / span;
+  const wallFade = Math.sin(rel * Math.PI);
+  const wave = (-archAmp * Math.sin(u * Math.PI * 0.9) + droopAmp * Math.pow(u, 1.5)) * (0.25 + 0.75 * wallFade);
+  return Math.max(yTop + 18, Math.min(yBot - 18, yLinear + wave));
+}
+
+function layoutTerritory(branchId, cfg, scale = 1.0) {
+  const { dir, xStart, xEnd, yTop, yBot, stemAnchorY, archAmp = 0, droopAmp = 0 } = cfg;
+  const placedNodes = [];
+  const nodeMap = new Map();
+  const curvedEdges = [];
+
+  const spanX = Math.abs(xEnd - xStart);
+  const uOfX = (x) => Math.max(0, Math.min(1, Math.abs(x - xStart) / spanX));
+
+  function assignSubtree(id, y0, y1, minXEdge) {
+    const n = nodesById[id];
+    const spec = nodeSizeSpec(n, scale);
+    const ch = n.childrenIds || [];
+    const leaves = ch.filter((c) => !(nodesById[c].childrenIds && nodesById[c].childrenIds.length));
+    const pars = ch.filter((c) => nodesById[c].childrenIds && nodesById[c].childrenIds.length);
+
+    let childNeedOutW = 0;
+    if (leaves.length > 0) {
+      const firstRow = leaves.length >= 6 ? leaves.slice(0, Math.ceil(leaves.length / 2)) : leaves;
+      const lw = firstRow.reduce((s, cid) => s + nodeSizeSpec(nodesById[cid], scale).w + 11 * scale, 48 * scale);
+      childNeedOutW = Math.max(childNeedOutW, lw);
+    }
+    for (const pid of pars) {
+      childNeedOutW = Math.max(childNeedOutW, maxOutwardWidthPx(pid, scale));
+    }
+
+    let xSelf;
+    if (n.generation === 1) {
+      xSelf = xStart + dir * (spec.w / 2 + 10);
+    } else {
+      const availAfter = Math.max(40, Math.abs(xEnd - minXEdge) - childNeedOutW - spec.w / 2);
+      const stepNice = Math.min(200, Math.max(24, availAfter * 0.42));
+      xSelf = minXEdge + dir * (spec.w / 2 + stepNice);
+      const maxAllowX = xEnd - dir * (childNeedOutW + spec.w / 2 + 6);
+      if (dir > 0) xSelf = Math.min(maxAllowX, Math.max(minXEdge + spec.w / 2 + 28, xSelf));
+      else xSelf = Math.max(maxAllowX, Math.min(minXEdge - spec.w / 2 - 28, xSelf));
+    }
+    const nextMinEdge = xSelf + dir * (spec.w / 2 + 12);
+
+    const blocks = [];
+    if (leaves.length > 0) {
+      const lNeed = leaves.length <= 5 ? (34 * scale + 4.2 + 6) : (2 * (34 * scale + 4.2) + 10);
+      blocks.push({ type: "leaves", leaves, needPx: lNeed });
+    }
+    for (const pid of pars) {
+      blocks.push({ type: "parent", id: pid, needPx: subtreeNeedPx(pid, scale, 4.2) });
+    }
+
+    if (blocks.length === 0) {
+      const yLin = (y0 + y1) / 2;
+      const yCur = curveY(yLin, uOfX(xSelf), yTop, yBot, { archAmp, droopAmp });
+      const rec = { n, x: xSelf, y: yCur, yLin, ...spec, rotDeg: 0, isBranch: n.generation === 1, isParent: false };
+      placedNodes.push(rec);
+      nodeMap.set(id, rec);
+      return rec;
+    }
+
+    const totNeed = blocks.reduce((a, b) => a + b.needPx, 0);
+    const usableH = Math.max(10, y1 - y0);
+    let curY = y0;
+    const childAnchors = [];
+
+    for (const blk of blocks) {
+      const blkH = (usableH * blk.needPx) / totNeed;
+      const by0 = curY;
+      const by1 = curY + blkH;
+      curY = by1;
+
+      if (blk.type === "parent") {
+        const childRec = assignSubtree(blk.id, by0, by1, nextMinEdge);
+        childAnchors.push({ type: "parent", rec: childRec, yCenter: childRec.yLin });
+      } else {
+        const lSpecs = blk.leaves.map((lid) => ({ lid, n: nodesById[lid], spec: nodeSizeSpec(nodesById[lid], scale) }));
+        const splitTwoRows = blk.leaves.length >= 6;
+        const rowsArr = splitTwoRows
+          ? [lSpecs.slice(0, Math.ceil(lSpecs.length / 2)), lSpecs.slice(Math.ceil(lSpecs.length / 2))]
+          : [lSpecs];
+
+        const sprigFirstEdgeTargets = [];
+        rowsArr.forEach((rowItems, rowIdx) => {
+          const yRowLin = splitTwoRows
+            ? (rowIdx === 0 ? by0 + blkH * 0.27 : by0 + blkH * 0.73)
+            : (by0 + by1) / 2;
+
+          const leafGapStart = nextMinEdge + dir * 32 * scale;
+          const spanAvail = Math.max(10, Math.abs(xEnd - leafGapStart));
+          const totalLeafW = rowItems.reduce((s, it) => s + it.spec.w, 0);
+          const minGap = 11 * scale;
+          const actualGap = rowItems.length > 1
+            ? Math.max(minGap, Math.min(48, (spanAvail - totalLeafW) / rowItems.length))
+            : 0;
+
+          let curX = leafGapStart;
+          const rowPlaced = [];
+          rowItems.forEach((it) => {
+            const lx = curX + dir * (it.spec.w / 2);
+            curX += dir * (it.spec.w + actualGap);
+            const yLeafCur = curveY(yRowLin, uOfX(lx), yTop, yBot, { archAmp, droopAmp });
+            const lRec = {
+              n: it.n, x: lx, y: yLeafCur, yLin: yRowLin,
+              ...it.spec, rotDeg: 0, isBranch: false, isParent: false,
+            };
+            placedNodes.push(lRec);
+            nodeMap.set(it.lid, lRec);
+            rowPlaced.push(lRec);
+          });
+
+          sprigFirstEdgeTargets.push({ rowPlaced, yRowLin });
+        });
+
+        childAnchors.push({ type: "leaves", targets: sprigFirstEdgeTargets, yCenter: (by0 + by1) / 2 });
+      }
+    }
+
+    const ySelfLin = (childAnchors[0].yCenter + childAnchors[childAnchors.length - 1].yCenter) / 2;
+    const ySelfCur = curveY(ySelfLin, uOfX(xSelf), yTop, yBot, { archAmp, droopAmp });
+    const rec = {
+      n, x: xSelf, y: ySelfCur, yLin: ySelfLin, ...spec,
+      rotDeg: 0, isBranch: n.generation === 1, isParent: true,
+    };
+    placedNodes.push(rec);
+    nodeMap.set(id, rec);
+
+    const pal = BRANCH_PALETTE[branchId] || BRANCH_PALETTE.B08;
+    for (const anch of childAnchors) {
+      if (anch.type === "parent") {
+        const chRec = anch.rec;
+        const vx = chRec.x - rec.x;
+        const wS = rec.isBranch ? 15 : rec.n.generation === 2 ? 9 : 5.5;
+        const wE = chRec.n.generation === 2 ? 9 : 4.2;
+        curvedEdges.push({
+          fromId: rec.n.id,
+          toId: chRec.n.id,
+          x1: rec.x, y1: rec.y,
+          cx1: rec.x + vx * 0.54, cy1: rec.y,
+          cx2: rec.x + vx * 0.46, cy2: chRec.y,
+          x2: chRec.x, y2: chRec.y,
+          wStart: wS, wEnd: wE,
+          color: pal.bough, opacity: 0.84,
+        });
+      } else {
+        for (let rIdx = 0; rIdx < anch.targets.length; rIdx++) {
+          const row = anch.targets[rIdx].rowPlaced;
+          if (!row.length) continue;
+
+          if (row.length === 1) {
+            const lf = row[0];
+            const vx = lf.x - rec.x;
+            curvedEdges.push({
+              fromId: rec.n.id,
+              toId: lf.n.id,
+              x1: rec.x, y1: rec.y,
+              cx1: rec.x + vx * 0.55, cy1: rec.y,
+              cx2: rec.x + vx * 0.45, cy2: lf.y,
+              x2: lf.x, y2: lf.y,
+              wStart: rec.isBranch ? 9 : 4.2, wEnd: 1.8,
+              color: pal.bough, opacity: 0.78,
+            });
+          } else {
+            const spineSide = anch.targets.length === 2
+              ? (rIdx === 0 ? 1 : -1)
+              : (row[0].y < rec.y ? -1 : 1);
+            const spineOff = spineSide * (row[0].h * 0.54 + 2);
+            const lastLf = row[row.length - 1];
+            const xEndSpine = lastLf.x;
+            const yEndSpine = lastLf.y + spineOff * 0.65;
+            const entryY = row[0].y + spineOff;
+            // Climb smoothly out of parent in the stem-side clearance gap BEFORE traversing across child columns -> ZERO crossings!
+            const cx1 = rec.x + dir * Math.min(72, Math.abs(row[0].x - rec.x) * 0.35);
+            const cy1 = entryY;
+            const cx2 = row[0].x + (xEndSpine - row[0].x) * 0.48;
+            const cy2 = entryY;
+
+            curvedEdges.push({
+              fromId: rec.n.id,
+              toId: lastLf.n.id,
+              x1: rec.x, y1: rec.y,
+              cx1, cy1, cx2, cy2,
+              x2: xEndSpine, y2: yEndSpine,
+              wStart: rec.isBranch ? 9 : 4.4, wEnd: 1.6,
+              color: pal.bough, opacity: 0.78,
+            });
+
+            for (const lf of row) {
+              const targetX = lf.x - dir * 12;
+              let bestT = 0.5, bestErr = Infinity;
+              for (let k = 0; k <= 20; k++) {
+                const tt = k / 20, mt = 1 - tt;
+                const sx = mt * mt * mt * rec.x + 3 * mt * mt * tt * cx1 + 3 * mt * tt * tt * cx2 + tt * tt * tt * xEndSpine;
+                const err = Math.abs(sx - targetX);
+                if (err < bestErr) { bestErr = err; bestT = tt; }
+              }
+              const mt = 1 - bestT;
+              const sx = mt * mt * mt * rec.x + 3 * mt * mt * bestT * cx1 + 3 * mt * bestT * bestT * cx2 + bestT * bestT * bestT * xEndSpine;
+              const sy = mt * mt * mt * rec.y + 3 * mt * mt * bestT * cy1 + 3 * mt * bestT * bestT * cy2 + bestT * bestT * bestT * yEndSpine;
+              curvedEdges.push({
+                fromId: rec.n.id,
+                toId: lf.n.id,
+                x1: sx, y1: sy,
+                cx1: sx + dir * 4, cy1: (sy + lf.y) * 0.5,
+                cx2: lf.x - dir * 6, cy2: lf.y,
+                x2: lf.x, y2: lf.y,
+                wStart: 2.6, wEnd: 1.4,
+                color: pal.bough, opacity: 0.74,
+              });
+            }
+          }
+        }
+      }
+    }
+
+    return rec;
+  }
+
+  const branchHeadRec = assignSubtree(branchId, yTop, yBot, xStart);
+
+  const pal = BRANCH_PALETTE[branchId] || BRANCH_PALETTE.B08;
+  curvedEdges.push({
+    fromId: "R00",
+    toId: branchId,
+    x1: CX, y1: stemAnchorY,
+    cx1: CX + dir * (stemAnchorY > ROOT_Y - 120 ? 190 : 18), cy1: (stemAnchorY + branchHeadRec.y) * 0.5 - (stemAnchorY > ROOT_Y - 120 ? 15 : 65),
+    cx2: CX + dir * Math.abs(branchHeadRec.x - CX) * 0.45, cy2: branchHeadRec.y,
+    x2: branchHeadRec.x, y2: branchHeadRec.y,
+    wStart: 30, wEnd: 16,
+    color: pal.bough, opacity: 0.9,
+  });
+
+  return { placedNodes, curvedEdges, branchHeadRec };
+}
+
+// Check exact OBB overlap count
+function countObbOverlaps(items) {
+  function corners(p) {
+    const rad = (p.rotDeg * Math.PI) / 180;
+    const c = Math.cos(rad), s = Math.sin(rad);
+    const hw = p.w / 2 - 1, hh = p.h / 2 - 1;
+    return [
+      { x: p.x + hw * c - hh * s, y: p.y + hw * s + hh * c },
+      { x: p.x - hw * c - hh * s, y: p.y - hw * s + hh * c },
+      { x: p.x - hw * c + hh * s, y: p.y - hw * s - hh * c },
+      { x: p.x + hw * c + hh * s, y: p.y + hw * s - hh * c },
+    ];
+  }
+  function sep(aPts, bPts, ax, ay) {
+    let minA = Infinity, maxA = -Infinity, minB = Infinity, maxB = -Infinity;
+    for (const q of aPts) { const pr = q.x * ax + q.y * ay; minA = Math.min(minA, pr); maxA = Math.max(maxA, pr); }
+    for (const q of bPts) { const pr = q.x * ax + q.y * ay; minB = Math.min(minB, pr); maxB = Math.max(maxB, pr); }
+    return maxA <= minB || maxB <= minA;
+  }
+  let overlaps = 0;
+  const polys = items.map((p) => ({ p, pts: corners(p), rRad: (p.rotDeg * Math.PI) / 180 }));
+  for (let i = 0; i < polys.length; i++) {
+    const A = polys[i];
+    for (let j = i + 1; j < polys.length; j++) {
+      const B = polys[j];
+      if (Math.hypot(A.p.x - B.p.x, A.p.y - B.p.y) > (A.p.w + B.p.w)) continue;
+      const axes = [
+        [Math.cos(A.rRad), Math.sin(A.rRad)],
+        [-Math.sin(A.rRad), Math.cos(A.rRad)],
+        [Math.cos(B.rRad), Math.sin(B.rRad)],
+        [-Math.sin(B.rRad), Math.cos(B.rRad)],
+      ];
+      let separated = false;
+      for (const [ax, ay] of axes) {
+        if (sep(A.pts, B.pts, ax, ay)) { separated = true; break; }
+      }
+      if (!separated) overlaps++;
+    }
+  }
+  return overlaps;
+}
+
+// Territory Definitions across [500..5010] height (114 rows Left, 114 rows Right = Identical Symmetry!)
+// Right half: xStart = 2195 -> xEnd = 4075 (span 1880px)
+// Left half:  xStart = 2005 -> xEnd = 125  (span 1880px)
+const TERRITORIES = [
+  // RIGHT HALF (Total 372 nodes, 114 rows)
+  { bid: "B06", dir: 1, xStart: 2155, xEnd: 4075, yTop: 500,  yBot: 2810, stemAnchorY: 1760, archAmp: 38, droopAmp: 40 },
+  { bid: "B05", dir: 1, xStart: 2195, xEnd: 4075, yTop: 2835, yBot: 4075, stemAnchorY: 3440, archAmp: 12, droopAmp: 25 },
+  { bid: "B01", dir: 1, xStart: 2195, xEnd: 4075, yTop: 4095, yBot: 4795, stemAnchorY: 4160, archAmp: 0,  droopAmp: 20 },
+  { bid: "B04", dir: 1, xStart: 2225, xEnd: 4075, yTop: 4815, yBot: 5005, stemAnchorY: 4250, archAmp: 0,  droopAmp: 0 },
+  // LEFT HALF (Total 377 nodes, 114 rows)
+  { bid: "B07", dir: -1, xStart: 2045, xEnd: 125, yTop: 500,  yBot: 2245, stemAnchorY: 1620, archAmp: 38, droopAmp: 35 },
+  { bid: "B08", dir: -1, xStart: 2005, xEnd: 125, yTop: 2270, yBot: 5005, stemAnchorY: 3650, archAmp: 15, droopAmp: 28 },
+];
+
+// Find cleanest scale per territory so EVERY branch hits ZERO overlaps at maximum font size!
+let allPlaced = [];
+let allEdges = [];
+
+for (const tCfg of TERRITORIES) {
+  let bestT = null;
+  for (const sc of [1.0, 0.96, 0.92, 0.88, 0.84]) {
+    const res = layoutTerritory(tCfg.bid, tCfg, sc);
+    const ov = countObbOverlaps(res.placedNodes);
+    bestT = { ...res, ov, sc };
+    if (ov === 0) break;
+  }
+  const lf = bestT.placedNodes.find((x) => !x.isParent && !x.isBranch);
+  console.log(`Territory ${tCfg.bid} (${nodesById[tCfg.bid].name}, n=${bestT.placedNodes.length}): scale=${bestT.sc}, overlaps=${bestT.ov}, leafFont=${lf ? lf.fontSize : "-"}px`);
+  allPlaced.push(...bestT.placedNodes);
+  allEdges.push(...bestT.curvedEdges);
+}
+
+// Add B03 (دهران, 1) & B02 (مضيان, 1) cleanly on the lower-right collar beside root/stem
+const collarSpecs = [
+  { bid: "B03", x: 2430, y: 4520, stemY: 4270 },
+  { bid: "B02", x: 2430, y: 4635, stemY: 4305 },
+];
+for (const cs of collarSpecs) {
+  const n = nodesById[cs.bid];
+  const sp = nodeSizeSpec(n, 0.96);
+  const pal = BRANCH_PALETTE[cs.bid];
+  allPlaced.push({ n, x: cs.x, y: cs.y, ...sp, rotDeg: 0, isBranch: true, isParent: false });
+  allEdges.push({
+    fromId: "R00", toId: cs.bid,
+    x1: CX, y1: cs.stemY,
+    cx1: CX + 130, cy1: cs.stemY + 30,
+    cx2: cs.x - 140, cy2: cs.y,
+    x2: cs.x, y2: cs.y,
+    wStart: 22, wEnd: 12,
+    color: pal.bough, opacity: 0.9,
+  });
+}
+
+const totalObbOverlaps = countObbOverlaps(allPlaced);
+
+// Segment-polyline crossing count across non-sibling edges (geometry check)
+function sampleBezier(e, nPts = 8) {
+  const pts = [];
+  for (let i = 0; i <= nPts; i++) {
+    const t = i / nPts, mt = 1 - t;
+    pts.push({
+      x: mt * mt * mt * e.x1 + 3 * mt * mt * t * e.cx1 + 3 * mt * t * t * e.cx2 + t * t * t * e.x2,
+      y: mt * mt * mt * e.y1 + 3 * mt * mt * t * e.cy1 + 3 * mt * t * t * e.cy2 + t * t * t * e.y2,
+    });
+  }
+  return pts;
+}
+function segCross(a, b, c, d) {
+  const ccw = (p, q, r) => (r.y - p.y) * (q.x - p.x) > (q.y - p.y) * (r.x - p.x);
+  return ccw(a, c, d) !== ccw(b, c, d) && ccw(a, b, c) !== ccw(a, b, d);
+}
+const sampled = allEdges.map((e) => ({ e, pts: sampleBezier(e, 6) }));
+let edgeCrossings = 0;
+for (let i = 0; i < sampled.length; i++) {
+  for (let j = i + 1; j < sampled.length; j++) {
+    const A = sampled[i], B = sampled[j];
+    if (A.e.fromId === B.e.fromId || A.e.toId === B.e.fromId || A.e.fromId === B.e.toId || A.e.toId === B.e.toId) continue;
+    let crossed = false;
+    for (let p = 0; p < A.pts.length - 1 && !crossed; p++) {
+      for (let q = 0; q < B.pts.length - 1 && !crossed; q++) {
+        if (segCross(A.pts[p], A.pts[p + 1], B.pts[q], B.pts[q + 1])) crossed = true;
+      }
+    }
+    if (crossed) edgeCrossings++;
+  }
+}
+const leafFonts = allPlaced.filter((x) => !x.isParent && !x.isBranch).map((x) => x.fontSize);
+const minLeaf = Math.min(...leafFonts);
+console.log(`FINAL PLANAR METRICS: totalPlaced=${allPlaced.length}, OBB_overlaps=${totalObbOverlaps}, edge_crossings=${edgeCrossings}, minLeafFont=${minLeaf}px`);
 
 // Build SVG document
 const out = [];
@@ -464,7 +570,7 @@ out.push(`<defs>
     <stop offset="55%" stop-color="#F7F0DF"/>
     <stop offset="100%" stop-color="#EAE0C8"/>
   </radialGradient>
-  <radialGradient id="sunHalo" cx="50%" cy="44%" r="48%">
+  <radialGradient id="sunHalo" cx="50%" cy="46%" r="50%">
     <stop offset="0%" stop-color="#E8CF92" stop-opacity="0.22"/>
     <stop offset="65%" stop-color="#C9A45A" stop-opacity="0.06"/>
     <stop offset="100%" stop-color="#C9A45A" stop-opacity="0"/>
@@ -500,77 +606,72 @@ out.push(`<defs>
 
 // Background Parchment & Canopy Sunlit Halo
 out.push(`<rect width="${W}" height="${H}" fill="url(#parchmentGlow)"/>`);
-out.push(`<ellipse cx="${CX}" cy="2650" rx="1850" ry="2000" fill="url(#sunHalo)"/>`);
+out.push(`<ellipse cx="${CX}" cy="2750" rx="1900" ry="2200" fill="url(#sunHalo)"/>`);
 
-// Decorative Translucent Palm-Frond Silhouette Watermarks in Canopy Backdrop
-out.push(`<g id="mural-palm-aura" fill="none" stroke="#1E523D" stroke-opacity="0.045" stroke-linecap="round">`);
-for (let a = -205; a <= 25; a += 23) {
-  const rad = (a * Math.PI) / 180;
-  const x2 = CX + 1950 * Math.cos(rad);
-  const y2 = CY + 2350 * Math.sin(rad);
-  const c1x = CX + 900 * Math.cos(rad + 0.08);
-  const c1y = CY + 900 * Math.sin(rad + 0.08);
-  out.push(`<path d="M ${CX} ${CY} Q ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${x2.toFixed(1)} ${y2.toFixed(1)}" stroke-width="46"/>`);
+// Decorative Translucent Palm-Frond Silhouette Watermarks in Backdrop
+out.push(`<g id="mural-palm-aura" fill="none" stroke="#1E523D" stroke-opacity="0.04" stroke-linecap="round">`);
+for (let yArm = 900; yArm <= 4300; yArm += 520) {
+  out.push(`<path d="M ${CX} ${yArm + 320} Q ${CX + 900} ${yArm - 180}, ${CX + 1850} ${yArm + 60}" stroke-width="44"/>`);
+  out.push(`<path d="M ${CX} ${yArm + 320} Q ${CX - 900} ${yArm - 180}, ${CX - 1850} ${yArm + 60}" stroke-width="44"/>`);
 }
 out.push(`</g>`);
 
-// 4. Museum Double Architectural Frame & Illuminated Arabesque Corner Medallions
-out.push(`<rect x="36" y="36" width="${W - 72}" height="${H - 72}" rx="28" fill="none" stroke="#12372A" stroke-width="14"/>`);
-out.push(`<rect x="58" y="58" width="${W - 116}" height="${H - 116}" rx="20" fill="none" stroke="url(#goldSheen)" stroke-width="4.5"/>`);
-out.push(`<rect x="76" y="76" width="${W - 152}" height="${H - 152}" rx="14" fill="none" stroke="#C9A45A" stroke-width="1.5" stroke-dasharray="7 9" stroke-opacity="0.65"/>`);
+// Museum Double Frame & Arabesque Corners
+out.push(`<rect x="34" y="34" width="${W - 68}" height="${H - 68}" rx="28" fill="none" stroke="#12372A" stroke-width="14"/>`);
+out.push(`<rect x="56" y="56" width="${W - 112}" height="${H - 112}" rx="20" fill="none" stroke="url(#goldSheen)" stroke-width="4.5"/>`);
+out.push(`<rect x="74" y="74" width="${W - 148}" height="${H - 148}" rx="14" fill="none" stroke="#C9A45A" stroke-width="1.5" stroke-dasharray="7 9" stroke-opacity="0.65"/>`);
 
 for (const [kx, ky, sx, sy] of [
-  [76, 76, 1, 1],
-  [W - 76, 76, -1, 1],
-  [76, H - 76, 1, -1],
-  [W - 76, H - 76, -1, -1],
+  [74, 74, 1, 1],
+  [W - 74, 74, -1, 1],
+  [74, H - 74, 1, -1],
+  [W - 74, H - 74, -1, -1],
 ]) {
   out.push(`<g transform="translate(${kx},${ky}) scale(${sx},${sy})">
-    <path d="M 0 0 L 145 0 Q 95 25, 80 80 Q 25 95, 0 145 Z" fill="#12372A" stroke="#C9A45A" stroke-width="3"/>
-    <path d="M 10 10 L 105 10 Q 65 32, 55 55 Q 32 65, 10 105 Z" fill="none" stroke="#E7CD90" stroke-width="2"/>
-    <circle cx="32" cy="32" r="14" fill="#C9A45A"/>
-    <polygon points="32,20 44,32 32,44 20,32" fill="#12372A"/>
+    <path d="M 0 0 L 138 0 Q 90 24, 76 76 Q 24 90, 0 138 Z" fill="#12372A" stroke="#C9A45A" stroke-width="3"/>
+    <path d="M 10 10 L 98 10 Q 60 30, 52 52 Q 30 60, 10 98 Z" fill="none" stroke="#E7CD90" stroke-width="2"/>
+    <circle cx="30" cy="30" r="13" fill="#C9A45A"/>
+    <polygon points="30,19 41,30 30,41 19,30" fill="#12372A"/>
   </g>`);
 }
 
-// 5. Compact Header Centerpiece (Wordmark Logo #2 + Subtext)
-const wScale = 920 / TRACED.wordBB.w;
+// Compact Header Centerpiece (Wordmark Logo #2 + Subtext)
+const wScale = 860 / TRACED.wordBB.w;
 const wTx = CX - TRACED.wordBB.cx * wScale;
-const wTy = 265 - TRACED.wordBB.cy * wScale;
-const sScale = 790 / TRACED.subBB.w;
+const wTy = 230 - TRACED.wordBB.cy * wScale;
+const sScale = 740 / TRACED.subBB.w;
 const sTx = CX - TRACED.subBB.cx * sScale;
-const sTy = 515 - TRACED.subBB.cy * sScale;
+const sTy = 445 - TRACED.subBB.cy * sScale;
 
 out.push(`<g id="mural-header">
   <g transform="translate(${wTx.toFixed(1)}, ${wTy.toFixed(1)}) scale(${wScale.toFixed(4)})">
     <path d="${TRACED.wordD}" fill="#12372A" fill-rule="evenodd"/>
   </g>
-  <line x1="1640" y1="435" x2="2074" y2="435" stroke="#C9A45A" stroke-width="3" stroke-linecap="round"/>
-  <line x1="2126" y1="435" x2="2560" y2="435" stroke="#C9A45A" stroke-width="3" stroke-linecap="round"/>
-  <polygon points="2100,421 2114,435 2100,449 2086,435" fill="#C9A45A"/>
+  <line x1="1660" y1="378" x2="2074" y2="378" stroke="#C9A45A" stroke-width="3" stroke-linecap="round"/>
+  <line x1="2126" y1="378" x2="2540" y2="378" stroke="#C9A45A" stroke-width="3" stroke-linecap="round"/>
+  <polygon points="2100,364 2114,378 2100,392 2086,378" fill="#C9A45A"/>
   <g transform="translate(${sTx.toFixed(1)}, ${sTy.toFixed(1)}) scale(${sScale.toFixed(4)})">
     <path d="${TRACED.subD}" fill="#12372A" fill-rule="evenodd"/>
   </g>
 </g>`);
 
-// Compact Illuminated Top Cartouches (Quranic Verse & Hadith)
 function pushTopCartouche(x, y, w, h, title, lines, footerTxt) {
   out.push(`<g>
-    <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="20" fill="#FFFDF8" stroke="#C9A45A" stroke-width="3.2"/>
-    <rect x="${x + 12}" y="${y + 12}" width="${w - 24}" height="${h - 24}" rx="14" fill="none" stroke="#12372A" stroke-width="1.2" stroke-opacity="0.32"/>
-    <rect x="${x + w / 2 - 190}" y="${y - 24}" width="380" height="46" rx="23" fill="#12372A" stroke="#C9A45A" stroke-width="2.4"/>
-    <text x="${x + w / 2}" y="${y + 10}" text-anchor="middle" fill="#E7CD90" font-size="28" font-weight="700" class="m-sans">${rtl(title)}</text>`);
+    <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="20" fill="#FFFDF8" stroke="#C9A45A" stroke-width="3"/>
+    <rect x="${x + 11}" y="${y + 11}" width="${w - 22}" height="${h - 22}" rx="14" fill="none" stroke="#12372A" stroke-width="1.2" stroke-opacity="0.3"/>
+    <rect x="${x + w / 2 - 175}" y="${y - 22}" width="350" height="42" rx="21" fill="#12372A" stroke="#C9A45A" stroke-width="2.2"/>
+    <text x="${x + w / 2}" y="${y + 9}" text-anchor="middle" fill="#E7CD90" font-size="26" font-weight="700" class="m-sans">${rtl(title)}</text>`);
   lines.forEach((ln, idx) => {
-    out.push(`<text x="${x + w / 2}" y="${y + 115 + idx * 72}" text-anchor="middle" fill="#12372A" font-size="37" font-weight="700" class="m-serif">${rtl(ln)}</text>`);
+    out.push(`<text x="${x + w / 2}" y="${y + 102 + idx * 66}" text-anchor="middle" fill="#12372A" font-size="35" font-weight="700" class="m-serif">${rtl(ln)}</text>`);
   });
   if (footerTxt) {
-    out.push(`<text x="${x + w / 2}" y="${y + h - 38}" text-anchor="middle" fill="#8A6826" font-size="26" font-weight="700" class="m-sans">${rtl(footerTxt)}</text>`);
+    out.push(`<text x="${x + w / 2}" y="${y + h - 32}" text-anchor="middle" fill="#8A6826" font-size="24" font-weight="700" class="m-sans">${rtl(footerTxt)}</text>`);
   }
   out.push(`</g>`);
 }
 
 pushTopCartouche(
-  2820, 125, 1245, 405,
+  2840, 108, 1245, 360,
   "الآية الكريمة",
   [
     "﴿ يَا أَيُّهَا النَّاسُ إِنَّا خَلَقْنَاكُمْ مِنْ ذَكَرٍ وَأُنْثَىٰ",
@@ -581,7 +682,7 @@ pushTopCartouche(
 );
 
 pushTopCartouche(
-  135, 125, 1245, 405,
+  115, 108, 1245, 360,
   "الحديث الشريف",
   [
     "روي عن النبي ﷺ أنه قال:",
@@ -591,181 +692,146 @@ pushTopCartouche(
   "حفظ النسب وصلة الأرحام"
 );
 
-// 6. Sculpted Botanical Tapered Organic Boughs (أغصان متدرجة السماكة)
+// Tapered Curved Organic S-Boughs (drawn before trunk so branch roots tuck cleanly behind trunk & root medallion)
 out.push(`<g id="mural-edges">`);
-for (const p of descItems) {
-  const pal = BRANCH_PALETTE[p.n.branchId] || BRANCH_PALETTE.B08;
-  const par = nodePos.get(p.n.parentId);
-  if (!par) continue;
-
-  const isLeaf = !p.isBranch && !p.isParent;
-  let wStart, wEnd, opacity;
-  if (p.isBranch) {
-    wStart = 28; wEnd = 13; opacity = 0.88;
-  } else if (p.n.generation === 2) {
-    wStart = 14; wEnd = 7.5; opacity = 0.85;
-  } else if (p.isParent) {
-    wStart = 7.2; wEnd = 3.8; opacity = 0.78;
-  } else {
-    wStart = 3.8; wEnd = 1.6; opacity = 0.7;
-  }
-
-  // Organic botanical curvature relative to center of palm crown
-  const vx = p.x - par.x;
-  const vy = p.y - par.y;
-  const angP = Math.atan2(par.y - CY, par.x - CX);
-  const sideBend = (Math.cos(angP) >= 0 ? -1 : 1) * Math.min(48, Math.hypot(vx, vy) * 0.14);
-  const cx1 = par.x + vx * 0.36 + Math.cos(angP) * 28;
-  const cy1 = par.y + vy * 0.36 + Math.sin(angP) * 28;
-  const cx2 = p.x - vx * 0.28 + sideBend * 0.2;
-  const cy2 = p.y - vy * 0.28 - Math.abs(sideBend) * 0.45;
-
-  const pathD = taperedBezierPath(par.x, par.y, cx1, cy1, cx2, cy2, p.x, p.y, wStart, wEnd, isLeaf ? 10 : 16);
-  out.push(`<path d="${pathD}" fill="${pal.bough}" fill-opacity="${opacity}"/>`);
+for (const e of allEdges) {
+  const d = taperedBezierPath(e.x1, e.y1, e.cx1, e.cy1, e.cx2, e.cy2, e.x2, e.y2, e.wStart, e.wEnd, 14);
+  out.push(`<path d="${d}" fill="${e.color}" fill-opacity="${e.opacity}"/>`);
 }
 out.push(`</g>`);
 
-// 7. Meadow Base & Sculpted Palm Trunk with Bark Scales (كرب النخلة) + 10 Ancestor Medallions
+// Sculpted Rising Palm Crown Stem + Tapered Woody Trunk with كرب النخلة
 const ancOrder = [];
 for (let g = -10; g <= -1; g++) {
   const found = Object.values(nodesById).find((n) => n.generation === g);
   if (found) ancOrder.push(found);
 }
-const trunkTopY = 3940;
-const trunkBotY = 5690;
-const stepY = (trunkBotY - trunkTopY) / Math.max(1, ancOrder.length - 1);
+const stemTopY = 1280;
+const trunkBotY = 5810;
 
 out.push(`<g id="mural-trunk">
-  <ellipse cx="${CX}" cy="5790" rx="520" ry="95" fill="url(#meadowGrad)"/>
-  <path d="M ${CX - 210} 5790 C ${CX - 140} 5400, ${CX - 94} 4650, ${CX - 64} ${CY + 105} L ${CX + 64} ${CY + 105} C ${CX + 94} 4650, ${CX + 140} 5400, ${CX + 210} 5790 Z" fill="url(#trunkGrad)" stroke="#C9A45A" stroke-width="5"/>`);
+  <ellipse cx="${CX}" cy="5818" rx="480" ry="82" fill="url(#meadowGrad)"/>
+  <path d="M ${CX - 188} ${trunkBotY} C ${CX - 122} 5460, ${CX - 82} 4880, ${CX - 54} ${ROOT_Y} L ${CX - 38} 3200 L ${CX - 18} ${stemTopY} L ${CX + 18} ${stemTopY} L ${CX + 38} 3200 L ${CX + 54} ${ROOT_Y} C ${CX + 82} 4880, ${CX + 122} 5460, ${CX + 188} ${trunkBotY} Z" fill="url(#trunkGrad)" stroke="#C9A45A" stroke-width="4.5"/>`);
 
-// Sculpted interlocking palm-bark diamond scales (كرب جذع النخلة)
-for (let ty = CY + 160; ty <= 5730; ty += 76) {
-  const tNorm = (ty - (CY + 105)) / (5790 - (CY + 105));
-  const halfW = 64 + Math.pow(Math.max(0, tNorm), 1.38) * 144;
-  out.push(`<path d="M ${(CX - halfW + 10).toFixed(1)} ${ty} Q ${CX} ${(ty + 44).toFixed(1)}, ${(CX + halfW - 10).toFixed(1)} ${ty}" fill="none" stroke="#E2C88B" stroke-width="2.4" stroke-opacity="0.45"/>`);
-  out.push(`<path d="M ${(CX - halfW * 0.58).toFixed(1)} ${(ty + 34).toFixed(1)} L ${CX} ${(ty + 70).toFixed(1)} L ${(CX + halfW * 0.58).toFixed(1)} ${(ty + 34).toFixed(1)}" fill="none" stroke="#C9A45A" stroke-width="1.4" stroke-opacity="0.28"/>`);
+// Palm-bark scales from top stem down to meadow base
+for (let ty = stemTopY + 80; ty <= 5765; ty += 72) {
+  const halfW = ty >= ROOT_Y
+    ? 54 + Math.pow((ty - ROOT_Y) / (trunkBotY - ROOT_Y), 1.35) * 132
+    : 18 + ((ty - stemTopY) / (ROOT_Y - stemTopY)) * 36;
+  out.push(`<path d="M ${(CX - halfW + 7).toFixed(1)} ${ty} Q ${CX} ${(ty + 36).toFixed(1)}, ${(CX + halfW - 7).toFixed(1)} ${ty}" fill="none" stroke="#E2C88B" stroke-width="2" stroke-opacity="0.45"/>`);
 }
 
-out.push(`<line x1="${CX}" y1="${CY + 135}" x2="${CX}" y2="${trunkBotY}" stroke="#E7CD90" stroke-width="4" stroke-opacity="0.72"/>`);
-
+// 10 Ancestor Oval Medallions on Lower Trunk (قحطان at y=5725 up to مصلح at y=4505)
+const ancTopY = 4505;
+const ancBotY = 5725;
+const stepAncY = (ancBotY - ancTopY) / Math.max(1, ancOrder.length - 1);
 ancOrder.forEach((anc, idx) => {
-  const y = trunkBotY - idx * stepY;
+  const y = ancBotY - idx * stepAncY;
   const isQahtan = idx === 0;
-  const bw = isQahtan ? 330 : 238;
-  const bh = isQahtan ? 76 : 58;
+  const bw = isQahtan ? 320 : 228;
+  const bh = isQahtan ? 72 : 54;
   out.push(`<g class="mural-node" data-node-id="${anc.id}" data-branch-id="${anc.branchId}" data-name="${esc(anc.name)}" data-lineage="${esc(anc.fullLineage || anc.lineage || anc.name)}" transform="translate(${CX}, ${y.toFixed(1)})">
-    <rect x="${-bw / 2}" y="${-bh / 2}" width="${bw}" height="${bh}" rx="${bh / 2}" fill="${isQahtan ? "#12372A" : "#FFFDF8"}" stroke="#C9A45A" stroke-width="${isQahtan ? 5 : 3.2}"/>
-    <text x="0" y="${isQahtan ? 12 : 10}" text-anchor="middle" fill="${isQahtan ? "#E7CD90" : "#12372A"}" font-size="${isQahtan ? 42 : 33}" font-weight="700" class="m-serif">${rtl(anc.name)}</text>
+    <rect x="${-bw / 2}" y="${-bh / 2}" width="${bw}" height="${bh}" rx="${bh / 2}" fill="${isQahtan ? "#12372A" : "#FFFDF8"}" stroke="#C9A45A" stroke-width="${isQahtan ? 4.8 : 3}"/>
+    <text x="0" y="${isQahtan ? 12 : 9}" text-anchor="middle" fill="${isQahtan ? "#E7CD90" : "#12372A"}" font-size="${isQahtan ? 40 : 31}" font-weight="700" class="m-serif">${rtl(anc.name)}</text>
   </g>`);
 });
 out.push(`</g>`);
 
-// 8. All 749 Botanical Descendant Nodes (Ordered Back-to-Front: Leaves -> Parents -> Gen 2 -> Gen 1)
-const sortedForDraw = [...descItems].sort((a, b) => b.n.generation - a.n.generation);
+// All 749 Planar Nodes Ordered Leaves -> Fathers -> Gen 2 -> Gen 1
+const sortedDraw = [...allPlaced].sort((a, b) => b.n.generation - a.n.generation);
 out.push(`<g id="mural-nodes">`);
-for (const p of sortedForDraw) {
+for (const p of sortedDraw) {
   const pal = BRANCH_PALETTE[p.n.branchId] || BRANCH_PALETTE.B08;
   const lin = p.n.fullLineage || p.n.lineage || p.n.name;
   out.push(`<g class="mural-node" data-node-id="${p.n.id}" data-branch-id="${p.n.branchId}" data-name="${esc(p.n.name)}" data-lineage="${esc(lin)}" transform="translate(${p.x.toFixed(1)}, ${p.y.toFixed(1)}) rotate(${p.rotDeg.toFixed(2)})">`);
 
   if (p.isBranch) {
-    // Gen 1 Royal Emerald Shield Medallion
     out.push(`<rect x="${-p.w / 2}" y="${-p.h / 2}" width="${p.w}" height="${p.h}" rx="${p.h / 2}" fill="${pal.stroke}" stroke="#E7CD90" stroke-width="4.2"/>
       <rect x="${-p.w / 2 + 5}" y="${-p.h / 2 + 5}" width="${p.w - 10}" height="${p.h - 10}" rx="${(p.h - 10) / 2}" fill="none" stroke="#FFFDF8" stroke-width="1.2" stroke-opacity="0.5"/>
       <text x="0" y="${(p.fontSize * 0.34).toFixed(1)}" text-anchor="middle" fill="#FFFDF8" font-size="${p.fontSize}" font-weight="700" class="m-serif">${rtl(p.n.name)}</text>`);
   } else if (p.n.generation === 2) {
-    // Gen 2 Scalloped Golden Heritage Cloud
     const dCloud = heritageCloudPath(p.w, p.h);
     out.push(`<path d="${dCloud}" fill="url(#goldCloudGrad)" stroke="#9B6E1F" stroke-width="3"/>
       <text x="0" y="${(p.fontSize * 0.34).toFixed(1)}" text-anchor="middle" fill="#0B241B" font-size="${p.fontSize}" font-weight="700" class="m-serif">${rtl(p.n.name)}</text>`);
   } else if (p.isParent) {
-    // Gen 3-6 Luminous Ivory-Cream Heritage Cloud
-    out.push(`<rect x="${(-p.w / 2).toFixed(1)}" y="${(-p.h / 2).toFixed(1)}" width="${p.w}" height="${p.h}" rx="${(p.h / 2).toFixed(1)}" fill="#FFFDF6" stroke="${pal.stroke}" stroke-width="2.6"/>
-      <rect x="${(-p.w / 2 + 3.5).toFixed(1)}" y="${(-p.h / 2 + 3.5).toFixed(1)}" width="${(p.w - 7).toFixed(1)}" height="${(p.h - 7).toFixed(1)}" rx="${((p.h - 7) / 2).toFixed(1)}" fill="none" stroke="#C9A45A" stroke-width="1" stroke-opacity="0.5"/>
+    out.push(`<rect x="${(-p.w / 2).toFixed(1)}" y="${(-p.h / 2).toFixed(1)}" width="${p.w}" height="${p.h}" rx="${(p.h / 2).toFixed(1)}" fill="#FFFDF6" stroke="${pal.stroke}" stroke-width="2.5"/>
+      <rect x="${(-p.w / 2 + 3.5).toFixed(1)}" y="${(-p.h / 2 + 3.5).toFixed(1)}" width="${(p.w - 7).toFixed(1)}" height="${(p.h - 7).toFixed(1)}" rx="${((p.h - 7) / 2).toFixed(1)}" fill="none" stroke="#C9A45A" stroke-width="1" stroke-opacity="0.45"/>
       <text x="0" y="${(p.fontSize * 0.34).toFixed(1)}" text-anchor="middle" fill="#0B241B" font-size="${p.fontSize}" font-weight="800" class="m-sans">${rtl(p.n.name)}</text>`);
   } else {
-    // Pointed Botanical Palm Leaflet
     const dLeaf = leafSvgPath(p.w, p.h);
-    out.push(`<path d="${dLeaf}" fill="${pal.leafFill}" stroke="${pal.stroke}" stroke-width="2.1"/>
-      <circle cx="${(-p.w / 2 + 6).toFixed(1)}" cy="0" r="2.2" fill="${pal.stroke}" fill-opacity="0.65"/>
-      <circle cx="${(p.w / 2 - 6).toFixed(1)}" cy="0" r="2.2" fill="${pal.stroke}" fill-opacity="0.65"/>
+    out.push(`<path d="${dLeaf}" fill="${pal.leafFill}" stroke="${pal.stroke}" stroke-width="2"/>
+      <circle cx="${(-p.w / 2 + 5.5).toFixed(1)}" cy="0" r="2.1" fill="${pal.stroke}" fill-opacity="0.65"/>
+      <circle cx="${(p.w / 2 - 5.5).toFixed(1)}" cy="0" r="2.1" fill="${pal.stroke}" fill-opacity="0.65"/>
       <text x="0" y="${(p.fontSize * 0.34).toFixed(1)}" text-anchor="middle" fill="#0A2118" font-size="${p.fontSize}" font-weight="800" class="m-sans">${rtl(p.n.name)}</text>`);
   }
   out.push(`</g>`);
 }
 out.push(`</g>`);
 
-// 9. Central Grand Crown Medallion for عويض (R00) with Floral Gold Collar
-out.push(`<g class="mural-node" data-node-id="R00" data-branch-id="ROOT" data-name="${esc("عويض")}" data-lineage="${esc(nodesById["R00"].fullLineage || nodesById["R00"].lineage || "عويض")}" transform="translate(${CX}, ${CY})">`);
+// Grand Crown Medallion for عويض (R00) atop lower trunk
+out.push(`<g class="mural-node" data-node-id="R00" data-branch-id="ROOT" data-name="${esc("عويض")}" data-lineage="${esc(nodesById["R00"].fullLineage || "عويض")}" transform="translate(${CX}, ${ROOT_Y})">`);
 for (let k = 0; k < 24; k++) {
-  const rot = k * 15;
-  out.push(`<polygon points="0,-168 10,-148 -10,-148" fill="#C9A45A" fill-opacity="0.7" transform="rotate(${rot})"/>`);
+  out.push(`<polygon points="0,-160 9,-142 -9,-142" fill="#C9A45A" fill-opacity="0.7" transform="rotate(${k * 15})"/>`);
 }
-out.push(`<circle r="154" fill="none" stroke="url(#goldSheen)" stroke-width="4.5"/>
-  <circle r="142" fill="url(#emeraldMedallion)" stroke="url(#goldSheen)" stroke-width="7"/>
-  <circle r="127" fill="none" stroke="#E7CD90" stroke-width="1.8" stroke-opacity="0.78"/>
-  <text x="0" y="2" text-anchor="middle" fill="#FFFDF8" font-size="76" font-weight="700" class="m-serif">${rtl("عويض")}</text>
-  <text x="0" y="54" text-anchor="middle" fill="#E7CD90" font-size="22" font-weight="700" class="m-sans">${rtl("جد ذوي عويض • ٧٤٩ ذرية")}</text>
+out.push(`<circle r="148" fill="none" stroke="url(#goldSheen)" stroke-width="4.5"/>
+  <circle r="136" fill="url(#emeraldMedallion)" stroke="url(#goldSheen)" stroke-width="6.5"/>
+  <circle r="121" fill="none" stroke="#E7CD90" stroke-width="1.8" stroke-opacity="0.78"/>
+  <text x="0" y="2" text-anchor="middle" fill="#FFFDF8" font-size="74" font-weight="700" class="m-serif">${rtl("عويض")}</text>
+  <text x="0" y="52" text-anchor="middle" fill="#E7CD90" font-size="21" font-weight="700" class="m-sans">${rtl("جد ذوي عويض • ٧٤٩ ذرية")}</text>
 </g>`);
 
-// 10. Compact Bottom Cartouches (y: 4920..5800) with Proper RTL Text Anchors
-const brX = 2365, brY = 4920, brW = 1715, brH = 880;
-const sealS = 310 / TRACED.sealBB.w;
-const sealCx = brX + 230;
-const sealCy = brY + 390;
-const sealTx = sealCx - TRACED.sealBB.cx * sealS;
-const sealTy = sealCy - TRACED.sealBB.cy * sealS;
-
+// Bottom Cartouches (y: 5045..5835)
+const brX = 2350, brY = 5045, brW = 1735, brH = 790;
+const sealS = 290 / TRACED.sealBB.w;
+const sealCx = brX + 225;
+const sealCy = brY + 355;
 out.push(`<g id="mural-legend-box">
-  <rect x="${brX}" y="${brY}" width="${brW}" height="${brH}" rx="24" fill="#FFFDF8" stroke="#C9A45A" stroke-width="3.6"/>
-  <rect x="${brX + 14}" y="${brY + 14}" width="${brW - 28}" height="${brH - 28}" rx="18" fill="none" stroke="#12372A" stroke-width="1.3" stroke-opacity="0.32"/>
-  <text x="${brX + brW - 48}" y="${brY + 86}" text-anchor="start" fill="#12372A" font-size="46" font-weight="700" class="m-serif">${rtl("مفتاح الفروع الثمانية لذوي عويض")}</text>
-  <line x1="${brX + 440}" y1="${brY + 114}" x2="${brX + brW - 48}" y2="${brY + 114}" stroke="#C9A45A" stroke-width="2.4"/>
-  <g transform="translate(${sealTx.toFixed(1)}, ${sealTy.toFixed(1)}) scale(${sealS.toFixed(4)})">
+  <rect x="${brX}" y="${brY}" width="${brW}" height="${brH}" rx="24" fill="#FFFDF8" stroke="#C9A45A" stroke-width="3.4"/>
+  <rect x="${brX + 13}" y="${brY + 13}" width="${brW - 26}" height="${brH - 26}" rx="18" fill="none" stroke="#12372A" stroke-width="1.2" stroke-opacity="0.32"/>
+  <text x="${brX + brW - 46}" y="${brY + 80}" text-anchor="start" fill="#12372A" font-size="44" font-weight="700" class="m-serif">${rtl("مفتاح الفروع الثمانية لذوي عويض")}</text>
+  <line x1="${brX + 430}" y1="${brY + 106}" x2="${brX + brW - 46}" y2="${brY + 106}" stroke="#C9A45A" stroke-width="2.2"/>
+  <g transform="translate(${(sealCx - TRACED.sealBB.cx * sealS).toFixed(1)}, ${(sealCy - TRACED.sealBB.cy * sealS).toFixed(1)}) scale(${sealS.toFixed(4)})">
     <path d="${TRACED.sealD}" fill="#12372A" fill-rule="evenodd"/>
   </g>
-  <text x="${sealCx}" y="${brY + 620}" text-anchor="middle" fill="#12372A" font-size="24" font-weight="700" class="m-serif">${rtl("من البصصة قبيلة الشدادين بني الحارث")}</text>
+  <text x="${sealCx}" y="${brY + 575}" text-anchor="middle" fill="#12372A" font-size="23" font-weight="700" class="m-serif">${rtl("من البصصة قبيلة الشدادين بني الحارث")}</text>
 `);
-
 TREE.branchStats.forEach((bs, idx) => {
   const colIdx = Math.floor(idx / 4);
   const rowIdx = idx % 4;
-  const px = colIdx === 0 ? brX + brW - 48 : brX + brW - 635;
-  const py = brY + 178 + rowIdx * 156;
+  const px = colIdx === 0 ? brX + brW - 46 : brX + brW - 640;
+  const py = brY + 162 + rowIdx * 142;
   const c = (BRANCH_PALETTE[bs.branchId] || BRANCH_PALETTE.B08).stroke;
   out.push(`<g>
-    <rect x="${px - 545}" y="${py}" width="545" height="106" rx="20" fill="#F8F4EA" stroke="${c}" stroke-width="3"/>
-    <circle cx="${px - 44}" cy="${py + 53}" r="18" fill="${c}"/>
-    <text x="${px - 80}" y="${py + 65}" text-anchor="start" fill="#12372A" font-size="38" font-weight="700" class="m-serif">${rtl(bs.name)}</text>
-    <text x="${px - 518}" y="${py + 63}" text-anchor="end" fill="${c}" font-size="29" font-weight="700" class="m-sans">${rtl(`${toArabic(bs.totalInBranch)} اسماً`)}</text>
+    <rect x="${px - 550}" y="${py}" width="550" height="98" rx="18" fill="#F8F4EA" stroke="${c}" stroke-width="3"/>
+    <circle cx="${px - 42}" cy="${py + 49}" r="17" fill="${c}"/>
+    <text x="${px - 76}" y="${py + 61}" text-anchor="start" fill="#12372A" font-size="37" font-weight="700" class="m-serif">${rtl(bs.name)}</text>
+    <text x="${px - 522}" y="${py + 59}" text-anchor="end" fill="${c}" font-size="28" font-weight="700" class="m-sans">${rtl(`${toArabic(bs.totalInBranch)} اسماً`)}</text>
   </g>`);
 });
 out.push(`</g>`);
 
-// Bottom-Left Documentation & Full Lineage Panel
-const blX = 120, blY = 4920, blW = 1715, blH = 880;
+const blX = 115, blY = 5045, blW = 1735, blH = 790;
 out.push(`<g id="mural-lineage-box">
-  <rect x="${blX}" y="${blY}" width="${blW}" height="${blH}" rx="24" fill="#FFFDF8" stroke="#C9A45A" stroke-width="3.6"/>
-  <rect x="${blX + 14}" y="${blY + 14}" width="${blW - 28}" height="${blH - 28}" rx="18" fill="none" stroke="#12372A" stroke-width="1.3" stroke-opacity="0.32"/>
-  <text x="${blX + blW - 48}" y="${blY + 86}" text-anchor="start" fill="#12372A" font-size="46" font-weight="700" class="m-serif">${rtl("التوثيق وعمود النسب الكامل")}</text>
-  <line x1="${blX + 48}" y1="${blY + 114}" x2="${blX + blW - 48}" y2="${blY + 114}" stroke="#C9A45A" stroke-width="2.4"/>
-  <text x="${blX + blW - 48}" y="${blY + 195}" text-anchor="start" fill="#12372A" font-size="37" font-weight="700" class="m-serif">${rtl("ذوي عويض بن مصلح بن مسفر بن بصيص بن دمشق بن ملفي")}</text>
-  <text x="${blX + blW - 48}" y="${blY + 255}" text-anchor="start" fill="#12372A" font-size="37" font-weight="700" class="m-serif">${rtl("بن مفلح بن عياش بن شداد بن حارث بن قحطان")}</text>
-  <text x="${blX + blW - 48}" y="${blY + 332}" text-anchor="start" fill="#8A6826" font-size="31" font-weight="700" class="m-serif">${rtl("من البصصة قبيلة الشدادين بني الحارث")}</text>
+  <rect x="${blX}" y="${blY}" width="${blW}" height="${blH}" rx="24" fill="#FFFDF8" stroke="#C9A45A" stroke-width="3.4"/>
+  <rect x="${blX + 13}" y="${blY + 13}" width="${blW - 26}" height="${blH - 26}" rx="18" fill="none" stroke="#12372A" stroke-width="1.2" stroke-opacity="0.32"/>
+  <text x="${blX + blW - 46}" y="${blY + 80}" text-anchor="start" fill="#12372A" font-size="44" font-weight="700" class="m-serif">${rtl("التوثيق وعمود النسب الكامل")}</text>
+  <line x1="${blX + 46}" y1="${blY + 106}" x2="${blX + blW - 46}" y2="${blY + 106}" stroke="#C9A45A" stroke-width="2.2"/>
+  <text x="${blX + blW - 46}" y="${blY + 178}" text-anchor="start" fill="#12372A" font-size="36" font-weight="700" class="m-serif">${rtl("ذوي عويض بن مصلح بن مسفر بن بصيص بن دمشق بن ملفي")}</text>
+  <text x="${blX + blW - 46}" y="${blY + 234}" text-anchor="start" fill="#12372A" font-size="36" font-weight="700" class="m-serif">${rtl("بن مفلح بن عياش بن شداد بن حارث بن قحطان")}</text>
+  <text x="${blX + blW - 46}" y="${blY + 305}" text-anchor="start" fill="#8A6826" font-size="30" font-weight="700" class="m-serif">${rtl("من البصصة قبيلة الشدادين بني الحارث")}</text>
 
-  <rect x="${blX + 48}" y="${blY + 382}" width="${blW - 96}" height="218" rx="16" fill="#F8F4EA" stroke="#DED4BE" stroke-width="2.2"/>
-  <text x="${blX + blW - 76}" y="${blY + 436}" text-anchor="start" fill="#12372A" font-size="28" font-weight="700" class="m-sans">${rtl("الحاشية والتوثيق:")}</text>
-  <text x="${blX + blW - 76}" y="${blY + 492}" text-anchor="start" fill="#3D3932" font-size="25" font-weight="500" class="m-sans">${rtl("ذُكر في الحاشية الشفهية عند بعض كبار السن وجود اسم (مسفر) إضافي بين عويض ومصلح،")}</text>
-  <text x="${blX + blW - 76}" y="${blY + 542}" text-anchor="start" fill="#3D3932" font-size="25" font-weight="500" class="m-sans">${rtl("والمعتمد في النسخة المحرّرة التسلسل المثبت في الجذع المتّصل أعلاه إلى قحطان.")}</text>
+  <rect x="${blX + 46}" y="${blY + 348}" width="${blW - 92}" height="202" rx="16" fill="#F8F4EA" stroke="#DED4BE" stroke-width="2.2"/>
+  <text x="${blX + blW - 72}" y="${blY + 400}" text-anchor="start" fill="#12372A" font-size="27" font-weight="700" class="m-sans">${rtl("الحاشية والتوثيق:")}</text>
+  <text x="${blX + blW - 72}" y="${blY + 452}" text-anchor="start" fill="#3D3932" font-size="24.5" font-weight="500" class="m-sans">${rtl("ذُكر في الحاشية الشفهية عند بعض كبار السن وجود اسم (مسفر) إضافي بين عويض ومصلح،")}</text>
+  <text x="${blX + blW - 72}" y="${blY + 500}" text-anchor="start" fill="#3D3932" font-size="24.5" font-weight="500" class="m-sans">${rtl("والمعتمد في النسخة المحرّرة التسلسل المثبت في الجذع المتّصل أعلاه إلى قحطان.")}</text>
 
-  <rect x="${blX + 48}" y="${blY + 648}" width="${blW - 96}" height="158" rx="20" fill="#12372A" stroke="#C9A45A" stroke-width="2.8"/>
-  <text x="${blX + blW / 2}" y="${blY + 712}" text-anchor="middle" fill="#FFFDF8" font-size="32" font-weight="700" class="m-sans">${rtl("إجمالي الموثّق في الشجرة: ٧٦٠ اسماً  •  ٨ فروع رئيسية  •  ١٠ أجداد إلى قحطان")}</text>
-  <text x="${blX + blW / 2}" y="${blY + 766}" text-anchor="middle" fill="#E7CD90" font-size="26" font-weight="700" class="m-sans">${rtl(TREE.meta.editionLabel)}</text>
+  <rect x="${blX + 46}" y="${blY + 585}" width="${blW - 92}" height="150" rx="18" fill="#12372A" stroke="#C9A45A" stroke-width="2.8"/>
+  <text x="${blX + blW / 2}" y="${blY + 648}" text-anchor="middle" fill="#FFFDF8" font-size="31" font-weight="700" class="m-sans">${rtl("إجمالي الموثّق في الشجرة: ٧٦٠ اسماً  •  ٨ فروع رئيسية  •  ١٠ أجداد إلى قحطان")}</text>
+  <text x="${blX + blW / 2}" y="${blY + 700}" text-anchor="middle" fill="#E7CD90" font-size="25" font-weight="700" class="m-sans">${rtl(TREE.meta.editionLabel)}</text>
 </g>`);
 
 out.push(`</svg>`);
 
 const svgPath = path.join(ROOT, "brand", "dhawi-uwaid-wall-mural.svg");
 fs.writeFileSync(svgPath, out.join("\n"), "utf8");
-console.log("Wrote Botanical Palm Wall Mural SVG:", svgPath, "size=", fs.statSync(svgPath).size, "final_overlaps=", chosen.ov);
+console.log("Wrote Planar Curved Pinnate Mural SVG:", svgPath, "size=", fs.statSync(svgPath).size);
