@@ -2,6 +2,7 @@
 audit/tiles/
 audit/skeletons/
 audit/zooms/
+audit/claude-trace/
 audit/*.png
 audit/*.pdf
 .DS_Store
