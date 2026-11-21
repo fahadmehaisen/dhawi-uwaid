@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none" role="img" aria-label="شعار ذوي عويض — وسم الإبل والدرع الصحراوي">
+  <defs>
+    <linearGradient id="goldGrad2" x1="25" y1="20" x2="215" y2="220" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#E7C677"/>
+      <stop offset="50%" stop-color="#C59B43"/>
+      <stop offset="100%" stop-color="#987021"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Minimalist Octagonal Desert Shield (8 sons) -->
+  <polygon points="82,16 158,16 218,76 218,154 158,218 82,218 22,154 22,76"
+           fill="#12372A" stroke="url(#goldGrad2)" stroke-width="5"/>
+  <polygon points="86,26 154,26 208,80 208,150 154,208 86,208 32,150 32,80"
+           fill="none" stroke="url(#goldGrad2)" stroke-width="1.5" stroke-dasharray="4 3" stroke-opacity="0.75"/>
+
+  <!-- Twin Qiya & Basal Mountain Peaks -->
+  <path d="M40 156 L84 114 L112 140 L152 104 L200 156 Z" fill="#1B4D3B"/>
+  <path d="M40 156 L84 114 L112 140 L152 104 L200 156" stroke="url(#goldGrad2)" stroke-width="2" stroke-linejoin="round" fill="none"/>
+
+  <!-- Stylized Arabian Camel Head & Neck Profile (وسم الإبل) -->
+  <path d="M88 164 C92 138 96 112 96 92 C96 72 104 54 122 48 C134 44 148 46 158 51 C166 55 170 61 167 66 C164 71 154 72 146 71 C138 70 132 72 128 79 C123 88 124 106 128 124 C132 140 138 154 146 164 Z"
+        fill="url(#goldGrad2)"/>
+  <!-- Refined ear & brow silhouette detail -->
+  <path d="M116 50 L112 40 L122 47" fill="url(#goldGrad2)"/>
+  <circle cx="144" cy="57" r="2.3" fill="#12372A"/>
+
+  <!-- Desert Dune Horizon & Traditional Geometric Wasm Accent -->
+  <path d="M46 168 C90 158 148 174 194 164" stroke="#F8F4EC" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M74 182 H166" stroke="url(#goldGrad2)" stroke-width="1.6" stroke-opacity="0.8"/>
+  <polygon points="120,175 127,182 120,189 113,182" fill="#12372A" stroke="url(#goldGrad2)" stroke-width="2"/>
+</svg>

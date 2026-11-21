@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none" role="img" aria-label="شعار ذوي عويض — ختم قيا الدائري">
+  <defs>
+    <linearGradient id="goldGrad3" x1="20" y1="20" x2="220" y2="220" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#E7C677"/>
+      <stop offset="50%" stop-color="#C59B43"/>
+      <stop offset="100%" stop-color="#9A7223"/>
+    </linearGradient>
+    <clipPath id="innerSealClip">
+      <circle cx="120" cy="120" r="82"/>
+    </clipPath>
+  </defs>
+
+  <!-- Outer Heritage Medallion -->
+  <circle cx="120" cy="120" r="110" fill="#12372A" stroke="url(#goldGrad3)" stroke-width="5"/>
+  <circle cx="120" cy="120" r="98" fill="none" stroke="url(#goldGrad3)" stroke-width="1.5" stroke-opacity="0.72"/>
+  <circle cx="120" cy="120" r="83" fill="#0E2C21" stroke="url(#goldGrad3)" stroke-width="2.4"/>
+
+  <!-- 8 Compass Dots around ring (8 branches) -->
+  <g fill="url(#goldGrad3)">
+    <circle cx="120" cy="16" r="3.2"/>
+    <circle cx="120" cy="224" r="3.2"/>
+    <circle cx="16" cy="120" r="3.2"/>
+    <circle cx="224" cy="120" r="3.2"/>
+    <circle cx="46.5" cy="46.5" r="2.6"/>
+    <circle cx="193.5" cy="46.5" r="2.6"/>
+    <circle cx="46.5" cy="193.5" r="2.6"/>
+    <circle cx="193.5" cy="193.5" r="2.6"/>
+  </g>
+
+  <g clip-path="url(#innerSealClip)">
+    <!-- Sky crown crescent / 8-point star -->
+    <g transform="translate(154, 68)">
+      <polygon points="0,-11 2.8,-2.8 11,0 2.8,2.8 0,11 -2.8,2.8 -11,0 -2.8,-2.8" fill="url(#goldGrad3)"/>
+      <polygon points="0,-11 2.8,-2.8 11,0 2.8,2.8 0,11 -2.8,2.8 -11,0 -2.8,-2.8" fill="url(#goldGrad3)" transform="rotate(45)"/>
+    </g>
+
+    <!-- Mountain slope & Qiya Watchtower on the left -->
+    <path d="M32 152 L72 118 L112 146 L142 126 L208 158 L208 210 L32 210 Z" fill="#1B4D3B"/>
+    <g>
+      <path d="M62 72 H70 V78 H76 V72 H84 V78 H90 V72 H98 V83 H62 Z" fill="url(#goldGrad3)"/>
+      <polygon points="65,83 95,83 102,150 58,150" fill="#F8F4EC"/>
+      <line x1="63.5" y1="100" x2="96.5" y2="100" stroke="#12372A" stroke-width="1.2" stroke-opacity="0.3"/>
+      <line x1="61.5" y1="118" x2="98.5" y2="118" stroke="#12372A" stroke-width="1.2" stroke-opacity="0.3"/>
+      <rect x="74" y="104" width="3" height="9" rx="1.2" fill="#12372A"/>
+      <rect x="83" y="104" width="3" height="9" rx="1.2" fill="#12372A"/>
+      <path d="M74 150 V134 C74 129 86 129 86 134 V150 Z" fill="#12372A"/>
+    </g>
+
+    <!-- Sweeping desert dunes -->
+    <path d="M32 154 C74 142 122 158 208 144 L208 210 L32 210 Z" fill="url(#goldGrad3)"/>
+    <path d="M32 168 C88 158 144 172 208 160 L208 210 L32 210 Z" fill="#12372A" opacity="0.22"/>
+
+    <!-- Camel caravan silhouette striding across the golden dune -->
+    <g transform="translate(115, 102) scale(0.84)">
+      <path d="M54 4 C56 2 60 2 63 3 C66 4 68 6 67 8 C66 10 62 11 58 11 C55 11 53 14 52 19 C51 25 50 32 45 36 C41 39 36 37 33 32 C29 24 23 19 16 19 C10 19 5 24 2 31 C0 36 -1 41 1 46 C2 48 4 50 4 56 L3 68 L7 68 L9 50 C12 49 16 49 20 50 L22 68 L26 68 L25 49 C30 48 35 46 39 45 L41 68 L45 68 L44 43 C48 41 51 39 53 35 C56 30 58 20 59 13 C61 11 64 9 65 7 Z"
+            fill="#12372A"/>
+    </g>
+  </g>
+</svg>

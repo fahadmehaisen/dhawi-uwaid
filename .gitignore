@@ -1,0 +1,13 @@
+# Large local QA audit tiles & debug renders (keep scripts, data, assets, brand, website)
+audit/tiles/
+audit/skeletons/
+audit/zooms/
+audit/*.png
+audit/*.pdf
+.DS_Store
+Thumbs.db
+__pycache__/
+*.pyc
+.venv/
+venv/
+node_modules/

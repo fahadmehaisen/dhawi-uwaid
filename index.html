@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="الشجرة التفاعلية ومنصة النسب الرقمية لفخذ ذوي عويض من البصصة الشدادين من بني الحارث — ديار قيا جنوب الطائف." />
+  <title>ذوي عويض — الشجرة التفاعلية | قيا — بني الحارث</title>
+  <link rel="icon" type="image/svg+xml" href="assets/logo-qiya-crest.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Top Identity & Utility Bar -->
+    <header class="topbar" role="banner">
+      <div class="topbar-inner">
+        <div class="brand-cluster">
+          <a href="#tree" class="brand-mark-link" id="home-brand-btn" title="العودة إلى جذر الشجرة">
+            <!-- Inline Qiya Watchtower & Camel Crest -->
+            <svg class="brand-crest" viewBox="0 0 240 260" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="hdrGold" x1="20" y1="15" x2="220" y2="245" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#E2BE6E" />
+                  <stop offset="50%" stop-color="#C59B43" />
+                  <stop offset="100%" stop-color="#9A7426" />
+                </linearGradient>
+                <linearGradient id="hdrEmerald" x1="120" y1="10" x2="120" y2="250" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#184737" />
+                  <stop offset="100%" stop-color="#0D291F" />
+                </linearGradient>
+              </defs>
+              <path d="M120 10 L204 42 L224 128 C224 188 176 232 120 250 C64 232 16 188 16 128 L36 42 Z" fill="url(#hdrEmerald)" stroke="url(#hdrGold)" stroke-width="5" />
+              <path d="M120 21 L195 50 L213 128 C213 182 170 221 120 238 C70 221 27 182 27 128 L45 50 Z" fill="none" stroke="url(#hdrGold)" stroke-width="1.8" stroke-opacity="0.78" />
+              <g transform="translate(120, 48)">
+                <polygon points="0,-16 4,-4 16,0 4,4 0,16 -4,4 -16,0 -4,-4" fill="url(#hdrGold)" />
+                <polygon points="0,-16 4,-4 16,0 4,4 0,16 -4,4 -16,0 -4,-4" fill="url(#hdrGold)" transform="rotate(45)" />
+                <circle cx="0" cy="0" r="3.4" fill="#12372A" />
+              </g>
+              <path d="M36 154 L76 112 L104 138 L142 98 L178 134 L204 152 L204 164 L36 164 Z" fill="#1E523F" opacity="0.72" />
+              <path d="M70 84 H80 V91 H87 V84 H97 V91 H104 V84 H114 V96 H70 Z" fill="url(#hdrGold)" />
+              <polygon points="73,96 111,96 118,168 66,168" fill="#F8F4EC" />
+              <polygon points="73,96 111,96 118,168 66,168" fill="none" stroke="url(#hdrGold)" stroke-width="1.8" />
+              <polygon points="72,102 112,102 113,106 71,106" fill="url(#hdrGold)" />
+              <path d="M84 168 V152 C84 147 100 147 100 152 V168 Z" fill="#12372A" />
+              <path d="M32 174 C72 162 118 178 164 164 C185 158 198 161 208 167" stroke="url(#hdrGold)" stroke-width="2.2" stroke-linecap="round" fill="none" />
+              <g transform="translate(110, 108) scale(0.95)">
+                <path d="M54 4 C56 2 60 2 63 3 C66 4 68 6 67 8 C66 10 62 11 58 11 C55 11 53 14 52 19 C51 25 50 32 45 36 C41 39 36 37 33 32 C29 24 23 19 16 19 C10 19 5 24 2 31 C0 36 -1 41 1 46 C2 48 4 50 4 56 L3 68 L7 68 L9 50 C12 49 16 49 20 50 L22 68 L26 68 L25 49 C30 48 35 46 39 45 L41 68 L45 68 L44 43 C48 41 51 39 53 35 C56 30 58 20 59 13 C61 11 64 9 65 7 Z" fill="url(#hdrGold)" />
+              </g>
+            </svg>
+            <div class="brand-copy">
+              <h1 class="brand-title">فخذ ذوي عويض</h1>
+              <p class="brand-subtitle">من البصصة الشدادين من بني الحارث • ديار قيا — جنوب الطائف</p>
+            </div>
+          </a>
+        </div>
+
+        <!-- Global Smart Search -->
+        <div class="global-search-wrap" role="search">
+          <div class="search-input-box">
+            <span class="search-icon" aria-hidden="true">⌕</span>
+            <input
+              type="search"
+              id="global-search-input"
+              class="global-search-input"
+              placeholder="ابحث بالاسم أو بسلسلة النسب (مثال: بندر متعب، متاعب، هباس)..."
+              autocomplete="off"
+              aria-label="بحث شامل في شجرة ذوي عويض"
+            />
+            <button type="button" id="global-search-clear" class="search-clear-btn hidden" aria-label="مسح البحث">✕</button>
+          </div>
+          <div id="global-search-dropdown" class="search-dropdown hidden" role="listbox" aria-label="نتائج البحث السريع"></div>
+        </div>
+
+        <!-- Utility Actions -->
+        <div class="topbar-actions">
+          <button type="button" id="open-update-modal-btn" class="btn btn-gold btn-sm">
+            <span>+ إضافة / تحديث</span>
+          </button>
+          <button type="button" id="theme-toggle-btn" class="btn btn-ghost btn-sm" title="التبديل بين النمط التراثي والمجلس الليلي">
+            <span id="theme-toggle-icon" aria-hidden="true">☾</span>
+            <span id="theme-toggle-label">مجلس ليلي</span>
+          </button>
+          <div class="brand-kit-menu" id="brand-kit-menu">
+            <button type="button" id="brand-kit-toggle" class="btn btn-outline btn-sm" aria-expanded="false">
+              <span>الهوية والترويسات ▾</span>
+            </button>
+            <div class="brand-kit-popover hidden" id="brand-kit-popover">
+              <a href="brand/logo-studio.html" target="_blank" rel="noopener">استوديو الشعارات والألوان</a>
+              <a href="brand/letterhead-clean.html" target="_blank" rel="noopener">ورق المراسلات العام</a>
+              <a href="brand/letterhead-official.html" target="_blank" rel="noopener">ورق المخاطبات الرسمي</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Primary View Tabs & Live Summary Strip -->
+      <div class="nav-strip">
+        <nav class="main-tabs" role="tablist" aria-label="أقسام منصة شجرة ذوي عويض">
+          <button type="button" class="tab-btn active" role="tab" aria-selected="true" data-view="tree">
+            <span class="tab-dot"></span>
+            <span>الشجرة التفاعلية</span>
+          </button>
+          <button type="button" class="tab-btn" role="tab" aria-selected="false" data-view="sunburst">
+            <span>البوصلة النسبية</span>
+          </button>
+          <button type="button" class="tab-btn" role="tab" aria-selected="false" data-view="directory">
+            <span>الدليل والبحث</span>
+          </button>
+          <button type="button" class="tab-btn" role="tab" aria-selected="false" data-view="kinship">
+            <span>وش يقرب لي؟</span>
+          </button>
+          <button type="button" class="tab-btn" role="tab" aria-selected="false" data-view="analytics">
+            <span>الإحصائيات</span>
+          </button>
+        </nav>
+
+        <div class="edition-pill" id="edition-pill">
+          <span class="edition-dot" aria-hidden="true"></span>
+          <span id="edition-label-text">النسخة المعتمدة والمحدّثة</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Views -->
+    <main class="main-stage" id="main-stage">
+      <!-- VIEW 1: Interactive Collapsible SVG Tree -->
+      <section id="view-tree" class="view-panel active" role="tabpanel">
+        <div class="tree-toolbar card-surface">
+          <div class="toolbar-row">
+            <div class="branch-pills-scroll" id="tree-branch-pills" aria-label="التركيز السريع على الفروع"></div>
+            <div class="tree-actions-group">
+              <label class="toggle-chip" for="toggle-ancestors-cb">
+                <input type="checkbox" id="toggle-ancestors-cb" />
+                <span>عمود النسب إلى قحطان</span>
+              </label>
+              <button type="button" id="tree-expand-all-btn" class="btn btn-subtle btn-xs">توسيع الكل</button>
+              <button type="button" id="tree-reset-branches-btn" class="btn btn-subtle btn-xs">طيّ الفروع</button>
+              <button type="button" id="tree-export-poster-btn" class="btn btn-emerald btn-xs">تنزيل صورة الشجرة</button>
+            </div>
+          </div>
+
+          <!-- Highlight / Footnote Banners -->
+          <div id="tree-highlight-banner" class="highlight-banner hidden">
+            <div class="highlight-banner-info">
+              <span class="badge badge-gold">مسار مُضاء</span>
+              <span id="tree-highlight-text"></span>
+            </div>
+            <button type="button" id="clear-highlight-btn" class="btn btn-ghost btn-xs">إلغاء التمييز</button>
+          </div>
+
+          <div id="ancestors-footnote-banner" class="footnote-banner hidden">
+            <strong>ملاحظة نسابة الفخذ:</strong>
+            <span id="ancestors-footnote-text"></span>
+          </div>
+        </div>
+
+        <div class="tree-canvas-shell card-surface" id="tree-canvas-shell">
+          <!-- Floating Pan/Zoom HUD -->
+          <div class="tree-hud" aria-label="أدوات التكبير والتحريك">
+            <button type="button" id="zoom-in-btn" class="hud-btn" title="تكبير">+</button>
+            <button type="button" id="zoom-out-btn" class="hud-btn" title="تصغير">−</button>
+            <button type="button" id="zoom-fit-btn" class="hud-btn hud-btn-wide" title="ملاءمة الشجرة للشاشة">ملاءمة</button>
+            <button type="button" id="zoom-root-btn" class="hud-btn hud-btn-wide" title="التركيز على الجد عويض">عويض</button>
+          </div>
+
+          <div class="tree-hint-bar" id="tree-hint-bar">
+            <span>اضغط على أي اسم لفتح بطاقته الكاملة • اضغط على زر التوسيع أسفل الاسم لفتح أو إغلاق ذريته • اسحب للتحريك</span>
+            <span class="visible-count-pill" id="tree-visible-counter">يُعرض الآن: ...</span>
+          </div>
+
+          <svg id="family-tree-svg" class="family-tree-svg" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="goldGlow" x="-30%" y="-30%" width="160%" height="160%">
+                <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#C59B43" flood-opacity="0.7" />
+              </filter>
+            </defs>
+            <g id="tree-viewport-group">
+              <g id="tree-edges-layer"></g>
+              <g id="tree-nodes-layer"></g>
+            </g>
+          </svg>
+        </div>
+      </section>
+
+      <!-- VIEW 2: Interactive Radial Sunburst Compass -->
+      <section id="view-sunburst" class="view-panel" role="tabpanel">
+        <div class="sunburst-layout">
+          <div class="card-surface sunburst-stage-card">
+            <div class="sunburst-header">
+              <div>
+                <h2 class="section-heading">البوصلة النسبية — التوزّع الدائري لفروع ذوي عويض</h2>
+                <p class="section-desc">اضغط على أي قطاع للدخول إلى ذرية صاحبه، واستخدم مسار التنقل أعلى الدائرة للرجوع إلى الجد الأعلى.</p>
+              </div>
+              <div class="sunburst-controls">
+                <div class="sunburst-breadcrumbs" id="sunburst-breadcrumbs"></div>
+                <button type="button" id="sunburst-reset-btn" class="btn btn-outline btn-xs">العودة إلى عويض</button>
+              </div>
+            </div>
+
+            <div class="sunburst-svg-wrap">
+              <svg id="sunburst-svg" class="sunburst-svg" viewBox="-360 -360 720 720" role="img" aria-label="البوصلة النسبية الدائرية لشجرة ذوي عويض"></svg>
+            </div>
+          </div>
+
+          <aside class="card-surface sunburst-inspector">
+            <div class="inspector-kicker">بطاقة القطاع المحدّد</div>
+            <div id="sunburst-inspector-body" class="inspector-body">
+              <h3 id="sb-insp-name" class="insp-name">عويض بن مصلح</h3>
+              <p id="sb-insp-lineage" class="insp-lineage">جذر الفخذ — تتفرع منه ٨ أفخاذ رئيسية</p>
+              <div class="insp-metrics">
+                <div class="insp-metric">
+                  <span class="metric-val" id="sb-insp-direct">٨</span>
+                  <span class="metric-lbl">الأبناء المباشرون</span>
+                </div>
+                <div class="insp-metric">
+                  <span class="metric-val" id="sb-insp-desc">٧٤٩</span>
+                  <span class="metric-lbl">إجمالي الذرية</span>
+                </div>
+                <div class="insp-metric">
+                  <span class="metric-val" id="sb-insp-gen">الجد</span>
+                  <span class="metric-lbl">الجيل / الفرع</span>
+                </div>
+              </div>
+              <div class="insp-actions">
+                <button type="button" id="sb-open-drawer-btn" class="btn btn-emerald btn-sm">فتح بطاقة العضو</button>
+                <button type="button" id="sb-jump-tree-btn" class="btn btn-outline btn-sm">تتبّع في الشجرة</button>
+              </div>
+              <hr class="soft-divider" />
+              <h4 class="legend-title">مفتاح الفروع الثمانية</h4>
+              <div id="sunburst-branch-legend" class="sunburst-branch-legend"></div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- VIEW 3: Fast Fuzzy Arabic Directory -->
+      <section id="view-directory" class="view-panel" role="tabpanel">
+        <div class="card-surface directory-filters-card">
+          <div class="filters-grid">
+            <div class="field-group field-grow">
+              <label for="dir-query-input">بحث ذكي في الاسم وسلسلة النسب</label>
+              <input
+                type="search"
+                id="dir-query-input"
+                class="text-input"
+                placeholder="مثال: بندر متعب ثويني — أو قنيفذ — أو هباس..."
+              />
+            </div>
+            <div class="field-group">
+              <label for="dir-branch-select">الفرع</label>
+              <select id="dir-branch-select" class="select-input"></select>
+            </div>
+            <div class="field-group">
+              <label for="dir-gen-select">الجيل</label>
+              <select id="dir-gen-select" class="select-input"></select>
+            </div>
+            <div class="field-group">
+              <label for="dir-role-select">التصنيف</label>
+              <select id="dir-role-select" class="select-input">
+                <option value="all">الكل</option>
+                <option value="fathers">ذوو أعقاب / آباء</option>
+                <option value="ancestors">عمود النسب أعلى عويض</option>
+                <option value="no-sons">بدون عقِب مسجّل</option>
+                <option value="notes">ذوو ملاحظات / سير</option>
+              </select>
+            </div>
+          </div>
+          <div class="dir-status-row">
+            <span id="dir-count-label" class="dir-count-label">جاري تحميل الدليل...</span>
+            <button type="button" id="dir-reset-filters-btn" class="btn btn-ghost btn-xs">إعادة ضبط المرشحات</button>
+          </div>
+        </div>
+
+        <div id="directory-cards-grid" class="directory-cards-grid"></div>
+        <div id="directory-load-more-wrap" class="load-more-wrap hidden">
+          <button type="button" id="dir-load-more-btn" class="btn btn-outline btn-sm">عرض المزيد من النتائج</button>
+        </div>
+      </section>
+
+      <!-- VIEW 4: Smart Kinship Calculator ("وش يقرب لي؟") -->
+      <section id="view-kinship" class="view-panel" role="tabpanel">
+        <div class="card-surface kinship-hero-card">
+          <div class="kinship-head">
+            <div>
+              <h2 class="section-heading">وش يقرب لي؟ — حاسبة صلة القرابة والجد الجامع</h2>
+              <p class="section-desc">اختر اسمين من شجرة ذوي عويض ليكشف النظام عن الجد الجامع بينهما، ودرجة القرابة بالتوصيف القبلي الدقيق، مع رسم المسار وتلوينه مباشرة على الشجرة.</p>
+            </div>
+            <div class="kinship-presets" aria-label="أمثلة جاهزة لحساب القرابة">
+              <span class="presets-lbl">أمثلة سريعة:</span>
+              <button type="button" class="btn btn-subtle btn-xs kinship-preset-btn" data-a="L262" data-b="M165">فيصل بن ثويني وبندر بن متعب</button>
+              <button type="button" class="btn btn-subtle btn-xs kinship-preset-btn" data-a="M229" data-b="M024">قليشان بن بجاد وعبدالمحسن بن حمد</button>
+              <button type="button" class="btn btn-subtle btn-xs kinship-preset-btn" data-a="M147" data-b="M152">متاعب بن زايد ومتعب بن زايد</button>
+            </div>
+          </div>
+
+          <div class="kinship-pickers-grid">
+            <div class="kinship-picker-box">
+              <label for="kin-input-a">الطرف الأول</label>
+              <div class="autocomplete-wrap">
+                <input type="search" id="kin-input-a" class="text-input" placeholder="اكتب اسم الطرف الأول وأبيه..." autocomplete="off" />
+                <div id="kin-dropdown-a" class="autocomplete-dropdown hidden"></div>
+              </div>
+              <div id="kin-selected-a" class="selected-person-pill"></div>
+            </div>
+
+            <div class="kinship-swap-col">
+              <button type="button" id="kin-swap-btn" class="btn btn-outline btn-icon" title="تبديل الطرفين">⇄</button>
+            </div>
+
+            <div class="kinship-picker-box">
+              <label for="kin-input-b">الطرف الثاني</label>
+              <div class="autocomplete-wrap">
+                <input type="search" id="kin-input-b" class="text-input" placeholder="اكتب اسم الطرف الثاني وأبيه..." autocomplete="off" />
+                <div id="kin-dropdown-b" class="autocomplete-dropdown hidden"></div>
+              </div>
+              <div id="kin-selected-b" class="selected-person-pill"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="kinship-result-card" class="card-surface kinship-result-card"></div>
+      </section>
+
+      <!-- VIEW 5: Live Census Analytics -->
+      <section id="view-analytics" class="view-panel" role="tabpanel">
+        <div class="kpi-grid" id="analytics-kpis"></div>
+
+        <div class="analytics-two-col">
+          <div class="card-surface analytics-card">
+            <div class="analytics-card-head">
+              <h3>حجم الفروع الثمانية لذرية عويض</h3>
+              <span class="hint-sub">اضغط على أي فرع لفتح ذريته مباشرة في الشجرة</span>
+            </div>
+            <div id="branch-bars-container" class="bars-container"></div>
+          </div>
+
+          <div class="card-surface analytics-card">
+            <div class="analytics-card-head">
+              <h3>التوزيع الجيلي لرجالات الفخذ</h3>
+              <span class="hint-sub">من عمود النسب وحتى الجيل الثامن من الذرية</span>
+            </div>
+            <div id="generation-bars-container" class="bars-container"></div>
+          </div>
+        </div>
+
+        <div class="card-surface analytics-card">
+          <div class="analytics-card-head">
+            <h3>أكثر الأسماء تكراراً في ذوي عويض</h3>
+            <span class="hint-sub">اضغط على أي اسم لعرض جميع حامليه في الدليل مع آبائهم</span>
+          </div>
+          <div id="top-names-chips" class="top-names-chips"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Minimal Footer -->
+    <footer class="app-footer">
+      <div class="footer-inner">
+        <span>منصة فخذ ذوي عويض الرقمية — من البصصة الشدادين من بني الحارث • ديار قيا جنوب الطائف</span>
+        <span id="footer-edition-meta">٧٦٠ اسماً موثقاً عبر ٨ فروع رئيسية</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Slide-Over Profile Drawer -->
+  <div id="drawer-backdrop" class="drawer-backdrop hidden" aria-hidden="true"></div>
+  <aside id="profile-drawer" class="profile-drawer hidden" role="dialog" aria-modal="true" aria-labelledby="drawer-person-name">
+    <div class="drawer-header">
+      <div class="drawer-header-copy">
+        <span id="drawer-branch-badge" class="badge badge-emerald">فرع ...</span>
+        <h2 id="drawer-person-name" class="drawer-name">...</h2>
+        <p id="drawer-tier-sub" class="drawer-sub">...</p>
+      </div>
+      <button type="button" id="drawer-close-btn" class="icon-close-btn" aria-label="إغلاق البطاقة">✕</button>
+    </div>
+
+    <div class="drawer-body">
+      <div id="drawer-bio-box" class="bio-callout hidden"></div>
+
+      <section class="drawer-section">
+        <div class="drawer-section-head">
+          <h3>سلسلة النسب الموثّقة</h3>
+          <button type="button" id="drawer-toggle-full-lineage" class="link-btn">إظهار حتى قحطان</button>
+        </div>
+        <div id="drawer-lineage-chips" class="lineage-chain-chips"></div>
+        <p id="drawer-lineage-text" class="lineage-sentence"></p>
+      </section>
+
+      <section class="drawer-section">
+        <h3>الأسرة المباشرة</h3>
+        <div id="drawer-family-blocks" class="family-blocks"></div>
+      </section>
+
+      <section class="drawer-section drawer-actions-grid">
+        <button type="button" id="drawer-copy-lineage-btn" class="btn btn-outline btn-sm">نسخ عمود النسب</button>
+        <button type="button" id="drawer-locate-tree-btn" class="btn btn-emerald btn-sm">تتبّع في الشجرة</button>
+        <button type="button" id="drawer-kinship-btn" class="btn btn-subtle btn-sm">وش يقرب لـ...؟</button>
+        <button type="button" id="drawer-download-card-btn" class="btn btn-gold btn-sm">تنزيل بطاقة النسب</button>
+        <button type="button" id="drawer-suggest-edit-btn" class="btn btn-ghost btn-sm btn-span-2">اقتراح إضافة ابن أو تعديل معلومة لهذا العضو</button>
+      </section>
+    </div>
+  </aside>
+
+  <!-- Community Feedback / Newborn Addition Modal -->
+  <div id="modal-backdrop" class="modal-backdrop hidden" aria-hidden="true"></div>
+  <div id="update-modal" class="modal-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="update-modal-title">
+    <div class="modal-header">
+      <div>
+        <h2 id="update-modal-title">إضافة مولود أو طلب تحديث بيانات</h2>
+        <p class="modal-sub">تُحفظ الطلبات محلياً للمراجعة وتوليد رسالة جاهزة لإرسالها عبر الواتساب أو تصديرها للجنة الشجرة.</p>
+      </div>
+      <button type="button" id="modal-close-btn" class="icon-close-btn" aria-label="إغلاق النافذة">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <form id="update-request-form" class="update-form">
+        <div class="form-row-2">
+          <div class="field-group">
+            <label for="req-type">نوع الطلب</label>
+            <select id="req-type" class="select-input">
+              <option value="إضافة مولود جديد">إضافة مولود جديد</option>
+              <option value="تصحيح تهجئة اسم">تصحيح تهجئة اسم</option>
+              <option value="إضافة سيرة / توثيق تاريخي">إضافة سيرة / توثيق تاريخي</option>
+              <option value="إضافة ذرية غير مدونة">إضافة ذرية غير مدونة</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="req-branch">الفرع</label>
+            <select id="req-branch" class="select-input"></select>
+          </div>
+        </div>
+
+        <div class="form-row-2">
+          <div class="field-group">
+            <label for="req-target-person">اسم الأب / العضو المعني</label>
+            <input type="text" id="req-target-person" class="text-input" placeholder="مثال: متعب بن زايد بن ثويني" required />
+          </div>
+          <div class="field-group">
+            <label for="req-new-name">الاسم الجديد أو المطلوب إضافته</label>
+            <input type="text" id="req-new-name" class="text-input" placeholder="مثال: فهد" required />
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label for="req-submitter">مقدّم الطلب (من أبناء العمومة)</label>
+          <input type="text" id="req-submitter" class="text-input" placeholder="الاسم الكريم" />
+        </div>
+
+        <div class="field-group">
+          <label for="req-notes">تفاصيل وملاحظات إضافية</label>
+          <textarea id="req-notes" class="text-input textarea-input" rows="3" placeholder="اكتب أي تفاصيل أو سنة ميلاد أو توثيق..." ></textarea>
+        </div>
+
+        <div class="modal-form-actions">
+          <button type="submit" class="btn btn-emerald">حفظ الطلب وتجهيز الرسالة</button>
+          <button type="button" id="copy-all-requests-wa-btn" class="btn btn-gold">نسخ الطلبات بصيغة واتساب</button>
+          <button type="button" id="export-requests-json-btn" class="btn btn-outline">تصدير سجل الطلبات</button>
+        </div>
+      </form>
+
+      <div class="saved-requests-section">
+        <div class="saved-req-head">
+          <h4>الطلبات المسجّلة للمراجعة (<span id="saved-requests-count">0</span>)</h4>
+          <button type="button" id="clear-requests-btn" class="link-btn danger-link">مسح السجل المحلي</button>
+        </div>
+        <div id="saved-requests-list" class="saved-requests-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden High-Resolution Card Canvas for PNG Downloads -->
+  <canvas id="export-canvas" width="1080" height="1350" class="hidden"></canvas>
+
+  <!-- Toast Notification -->
+  <div id="toast-box" class="toast-box hidden" role="status" aria-live="polite"></div>
+
+  <script src="data/tree-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
