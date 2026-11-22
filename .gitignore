@@ -15,9 +15,21 @@ node_modules/
 
 # Private local letterhead archive (with signature & seal slots) - never push to public GitHub
 brand/archive-private/
+# Any letterhead carrying the real signature/seal (concept drafts included)
+brand/concepts/letterhead-with-signature.html
+brand/concepts/*توقيع*
 
 # Local secrets (Supabase secret key, etc.) - NEVER push to public GitHub
 .env
 .env.local
 .env.*.local
+
+# Local-only working files (large / AI session outputs / per-user tool settings)
+*.zip
+Claude outputs/
+.claude/
+.agents/
+skills-lock.json
+.mcp.json
+audit/SECURITY-AUDIT.md
 

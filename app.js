@@ -192,6 +192,12 @@
     drawerNodeId: null,
     drawerFullLineage: false,
     prefillTargetNodeId: null,
+    prefillTargetLabel: "",
+    authSignupMemberId: null,
+    authLinkMemberId: null,
+    memberEnrollFactorId: null,
+    memberVerifyFactorId: null,
+    memberProfile: null,
     sunburstRootId: "R00",
     sunburstInspectorId: "R00",
     directoryPageSize: 48,
@@ -200,6 +206,55 @@
   };
 
   // -------------------- Theme & Topbar Setup --------------------
+
+  function isBiosEnabled() {
+    return Boolean(DATA.meta && DATA.meta.featureBiosEnabled === true);
+  }
+
+  function syncBioFeatureUi() {
+    const biosOn = isBiosEnabled();
+    const dirRoleSel = document.getElementById("dir-role-select");
+    if (dirRoleSel) {
+      const existingNotesOpt = dirRoleSel.querySelector('option[value="notes"]');
+      if (biosOn && !existingNotesOpt) {
+        dirRoleSel.appendChild(el("option", { value: "notes", textContent: "ذوو ملاحظات / سير" }));
+      } else if (!biosOn && existingNotesOpt) {
+        if (dirRoleSel.value === "notes") dirRoleSel.value = "all";
+        existingNotesOpt.remove();
+      }
+    }
+    const reqTypeSel = document.getElementById("req-type");
+    if (reqTypeSel) {
+      const bioTypeVal = "إضافة سيرة / توثيق تاريخي";
+      const existingBioType = [...reqTypeSel.options].find((o) => o.value === bioTypeVal);
+      if (biosOn && !existingBioType) {
+        const opt = el("option", { value: bioTypeVal, textContent: bioTypeVal });
+        const lastOpt = reqTypeSel.querySelector('option[value="إضافة ذرية غير مدونة"]');
+        if (lastOpt) reqTypeSel.insertBefore(opt, lastOpt);
+        else reqTypeSel.appendChild(opt);
+      } else if (!biosOn && existingBioType) {
+        if (reqTypeSel.value === bioTypeVal) reqTypeSel.value = "إضافة مولود جديد";
+        existingBioType.remove();
+      }
+    }
+  }
+
+  async function shareOrCopyLink(url, title, text, fallbackToast) {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text, url });
+        return;
+      } catch (err) {
+        if (err && err.name === "AbortError") return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast(fallbackToast || "تم نسخ الرابط للمشاركة.");
+    } catch (_) {
+      showToast(url);
+    }
+  }
 
   function applyTheme(theme) {
     state.theme = theme;
@@ -1197,7 +1252,7 @@
       if (roleVal === "fathers" && n.childrenCount === 0) return false;
       if (roleVal === "ancestors" && n.generation >= 0) return false;
       if (roleVal === "no-sons" && (n.childrenCount > 0 || n.generation < 0)) return false;
-      if (roleVal === "notes" && !n.bioNote) return false;
+      if (roleVal === "notes" && (!isBiosEnabled() || !n.bioNote)) return false;
 
       if (tokens.length) {
         for (const tok of tokens) {
@@ -1228,7 +1283,7 @@
             }),
           ]),
           el("p", { className: "mc-lineage", textContent: item.shortLineage }),
-          n.bioNote ? el("div", { className: "mc-note", textContent: n.bioNote }) : null,
+          isBiosEnabled() && n.bioNote ? el("div", { className: "mc-note", textContent: n.bioNote }) : null,
         ]),
         el("div", { className: "mc-footer" }, [
           el("span", {
@@ -1379,23 +1434,40 @@
         el("h3", { className: "kin-verdict-title", textContent: desc.headline }),
         el("p", { className: "kin-verdict-sub", textContent: desc.detail }),
       ]),
-      el("button", {
-        type: "button",
-        className: "btn btn-gold",
-        textContent: "تلوين المسار على الشجرة",
-        onClick: () => {
-          const allPathIds = [...res.pathA, ...res.pathB].map((n) => n.id);
-          // Expand branches for both ends so both limbs become visible
-          [...res.pathA, ...res.pathB].forEach((n) => {
-            if (n.generation >= 0) state.expandedIds.add(n.id);
-          });
-          locateNodeInTree(
-            res.lca.id,
-            allPathIds,
-            `مسار القرابة: ${nodeA.name} و ${nodeB.name} (الجد الجامع: ${res.lca.name})`
-          );
-        },
-      }),
+      el("div", { className: "kin-banner-actions" }, [
+        el("button", {
+          type: "button",
+          className: "btn btn-gold",
+          textContent: "تلوين المسار على الشجرة",
+          onClick: () => {
+            const allPathIds = [...res.pathA, ...res.pathB].map((n) => n.id);
+            [...res.pathA, ...res.pathB].forEach((n) => {
+              if (n.generation >= 0) state.expandedIds.add(n.id);
+            });
+            locateNodeInTree(
+              res.lca.id,
+              allPathIds,
+              `مسار القرابة: ${nodeA.name} و ${nodeB.name} (الجد الجامع: ${res.lca.name})`
+            );
+          },
+        }),
+        el("button", {
+          type: "button",
+          className: "btn btn-outline",
+          textContent: "مشاركة النتيجة",
+          onClick: () => {
+            const shareUrl = `${window.location.origin}${window.location.pathname}?view=kinship&a=${encodeURIComponent(
+              nodeA.id
+            )}&b=${encodeURIComponent(nodeB.id)}`;
+            shareOrCopyLink(
+              shareUrl,
+              `صلة القرابة بين ${nodeA.name} و${nodeB.name} — ذوي عويض`,
+              `${desc.headline} — ${desc.detail}`,
+              "تم نسخ رابط صلة القرابة للمشاركة."
+            );
+          },
+        }),
+      ]),
     ]);
     card.appendChild(banner);
 
@@ -1743,8 +1815,14 @@
         : `الجيل ${toArabicDigits(node.generation)} من ذرية عويض • ${branchDesc}`;
 
     const bioBox = document.getElementById("drawer-bio-box");
-    if (node.bioNote) {
-      bioBox.textContent = `توثيق وملاحظة: ${node.bioNote}`;
+    if (isBiosEnabled() && (node.bioNote || node.kunyah || node.isDeceased || node.birthYear || node.deathYear)) {
+      const parts = [];
+      if (node.isDeceased) parts.push("رحمه الله");
+      if (node.kunyah) parts.push(`الكنية: ${node.kunyah}`);
+      if (node.birthYear) parts.push(`الميلاد: ${node.birthYear}`);
+      if (node.deathYear) parts.push(`الوفاة: ${node.deathYear}`);
+      if (node.bioNote) parts.push(node.bioNote);
+      bioBox.textContent = `توثيق وملاحظة: ${parts.join(" • ")}`;
       bioBox.classList.remove("hidden");
     } else {
       bioBox.classList.add("hidden");
@@ -2128,14 +2206,507 @@
     }
   }
 
+  function bindTreeAutocomplete(inputEl, ddEl, onPick) {
+    if (!inputEl || !ddEl) return;
+    function showMatches() {
+      const q = inputEl.value.trim();
+      if (q.length < 1) {
+        ddEl.classList.add("hidden");
+        return;
+      }
+      const hits = searchNodes(q, 14).filter((h) => h.node.generation >= 1);
+      ddEl.textContent = "";
+      if (!hits.length) {
+        ddEl.appendChild(el("div", { className: "search-result-item", textContent: "لا توجد نتائج مطابقة" }));
+      } else {
+        for (const h of hits) {
+          ddEl.appendChild(
+            el(
+              "div",
+              {
+                className: "search-result-item",
+                onClick: () => {
+                  ddEl.classList.add("hidden");
+                  onPick(h.node);
+                },
+              },
+              [
+                el("div", { className: "sr-main" }, [
+                  el("div", { className: "sr-name", textContent: h.node.name }),
+                  el("div", { className: "sr-lineage", textContent: h.shortLineage }),
+                ]),
+                el("span", {
+                  className: "sr-branch-tag",
+                  style: `background:${getBranchColor(h.node.branchId)}`,
+                  textContent: h.node.branchName,
+                }),
+              ]
+            )
+          );
+        }
+      }
+      ddEl.classList.remove("hidden");
+    }
+    inputEl.addEventListener("input", showMatches);
+    inputEl.addEventListener("focus", () => {
+      if (inputEl.value.trim()) showMatches();
+    });
+  }
+
+  function bindUpdateTargetPicker() {
+    const input = document.getElementById("req-target-person");
+    const dd = document.getElementById("req-target-dropdown");
+    const branchSel = document.getElementById("req-branch");
+    if (!input || !dd) return;
+
+    bindTreeAutocomplete(input, dd, (node) => {
+      const label = formatLineageSentence(node.id, false).split(" بن ").slice(0, 3).join(" بن ");
+      state.prefillTargetNodeId = node.id;
+      state.prefillTargetLabel = label;
+      input.value = label;
+      if (branchSel) {
+        for (const opt of branchSel.options) {
+          if (opt.value === node.branchName) {
+            branchSel.value = opt.value;
+            break;
+          }
+        }
+      }
+    });
+
+    input.addEventListener("input", () => {
+      if (state.prefillTargetLabel && input.value.trim() !== state.prefillTargetLabel) {
+        state.prefillTargetNodeId = null;
+        state.prefillTargetLabel = "";
+      }
+    });
+
+    document.addEventListener("click", (ev) => {
+      if (!ev.target.closest(".autocomplete-wrap")) {
+        dd.classList.add("hidden");
+        const ad1 = document.getElementById("auth-member-dropdown");
+        const ad2 = document.getElementById("link-member-dropdown");
+        if (ad1) ad1.classList.add("hidden");
+        if (ad2) ad2.classList.add("hidden");
+      }
+    });
+  }
+
+  function setMemberAuthStatus(msg, isErr) {
+    const box = document.getElementById("member-auth-status");
+    if (!box) return;
+    if (!msg) {
+      box.classList.add("hidden");
+      box.classList.remove("is-error");
+      box.textContent = "";
+      return;
+    }
+    box.textContent = msg;
+    box.classList.toggle("is-error", Boolean(isErr));
+    box.classList.remove("hidden");
+  }
+
+  const CLOUD_STATUS_AR = { pending: "قيد المراجعة", approved: "مقبول", rejected: "مرفوض" };
+
+  async function renderCloudMyRequests() {
+    const section = document.getElementById("cloud-my-requests-section");
+    const wrap = document.getElementById("cloud-requests-list");
+    const countEl = document.getElementById("cloud-requests-count");
+    if (!section || !wrap || !window.DHAWI_UWAID_DB) return;
+
+    const rows = await window.DHAWI_UWAID_DB.fetchMyUpdateRequests();
+    if (!state.memberProfile && !rows.length) {
+      section.classList.add("hidden");
+      return;
+    }
+    section.classList.remove("hidden");
+    if (countEl) countEl.textContent = toArabicDigits(rows.length);
+    wrap.textContent = "";
+    if (!rows.length) {
+      wrap.appendChild(
+        el("p", {
+          className: "hint-sub",
+          textContent: "لم ترسل أي طلبات مسجّلة على هذا الحساب بعد.",
+        })
+      );
+      return;
+    }
+    for (const r of rows) {
+      const dt = r.created_at
+        ? new Date(r.created_at).toLocaleDateString("ar-SA-u-ca-gregory")
+        : "";
+      wrap.appendChild(
+        el("div", { className: "saved-req-item" }, [
+          el("div", null, [
+            el("strong", { textContent: `${r.request_type} — ${r.branch_name}` }),
+            el("span", {
+              className: `cloud-req-pill ${r.status || "pending"}`,
+              textContent: CLOUD_STATUS_AR[r.status] || r.status,
+            }),
+            dt ? el("span", { className: "hint-sub", textContent: ` • ${dt}` }) : null,
+          ]),
+          el("div", {
+            textContent: `المعني: ${r.target_person} | الإضافة/التعديل: ${r.new_name}`,
+          }),
+          r.review_note
+            ? el("div", { className: "hint-sub", textContent: `ملاحظة المراجع: ${r.review_note}` })
+            : null,
+        ])
+      );
+    }
+  }
+
+  async function refreshUpdateModalAuth() {
+    const gate = document.getElementById("member-auth-gate");
+    const verifiedBar = document.getElementById("member-verified-bar");
+    const form = document.getElementById("update-request-form");
+    const authForms = document.getElementById("member-auth-forms");
+    const linkForm = document.getElementById("member-link-form");
+    const enrollBox = document.getElementById("member-mfa-enroll");
+    const verifyBox = document.getElementById("member-mfa-verify");
+    const cloudSection = document.getElementById("cloud-my-requests-section");
+    if (!gate || !form) return;
+
+    const reqAuth = DATA.meta ? DATA.meta.featureRequireMemberAuth !== false : true;
+    const reqMfa = DATA.meta ? DATA.meta.featureRequireMemberMfa !== false : true;
+    const schemaReady = Boolean(DATA.meta && DATA.meta.hasMemberSchema);
+
+    const hideAllSubSteps = () => {
+      if (authForms) authForms.classList.add("hidden");
+      if (linkForm) linkForm.classList.add("hidden");
+      if (enrollBox) enrollBox.classList.add("hidden");
+      if (verifyBox) verifyBox.classList.add("hidden");
+    };
+
+    if (!reqAuth) {
+      gate.classList.add("hidden");
+      if (verifiedBar) verifiedBar.classList.add("hidden");
+      form.classList.remove("hidden");
+      if (cloudSection) cloudSection.classList.add("hidden");
+      return;
+    }
+
+    const client = window.DHAWI_UWAID_DB && window.DHAWI_UWAID_DB.getAuthClient();
+    if (!client || !schemaReady) {
+      gate.classList.remove("hidden");
+      hideAllSubSteps();
+      if (verifiedBar) verifiedBar.classList.add("hidden");
+      form.classList.remove("hidden");
+      setMemberAuthStatus(
+        "ميزة توثيق العضوية والتحقق الثنائي للطلبات بانتظار تشغيل التحديث الأمني في قاعدة البيانات من قِبل المالك؛ لا يزال بإمكانك تجهيز الطلب وحفظه محلياً أو نسخه للواتساب.",
+        false
+      );
+      return;
+    }
+
+    const { data: sess } = await client.auth.getSession();
+    if (!sess || !sess.session) {
+      state.memberProfile = null;
+      gate.classList.remove("hidden");
+      hideAllSubSteps();
+      if (authForms) authForms.classList.remove("hidden");
+      if (verifiedBar) verifiedBar.classList.add("hidden");
+      form.classList.add("hidden");
+      if (cloudSection) cloudSection.classList.add("hidden");
+      return;
+    }
+
+    const user = sess.session.user;
+    const { data: prof, error: profErr } = await client
+      .from("member_profiles")
+      .select("member_id, member_full_lineage, branch_name")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (profErr) {
+      gate.classList.remove("hidden");
+      hideAllSubSteps();
+      form.classList.remove("hidden");
+      setMemberAuthStatus("تعذّر الاتصال بسجل الأعضاء حالياً — يمكنك حفظ الطلب محلياً والمحاولة لاحقاً.", true);
+      return;
+    }
+
+    if (!prof) {
+      const pendingMemberId = localStorage.getItem("dhawi_uwaid_pending_member_id");
+      if (pendingMemberId && DATA.nodesById[pendingMemberId]) {
+        const { data: inserted, error: linkErr } = await client
+          .from("member_profiles")
+          .insert([{ user_id: user.id, member_id: pendingMemberId }])
+          .select("member_id, member_full_lineage, branch_name")
+          .single();
+        if (!linkErr && inserted) {
+          localStorage.removeItem("dhawi_uwaid_pending_member_id");
+          return refreshUpdateModalAuth();
+        }
+      }
+      gate.classList.remove("hidden");
+      hideAllSubSteps();
+      if (linkForm) linkForm.classList.remove("hidden");
+      if (verifiedBar) verifiedBar.classList.add("hidden");
+      form.classList.add("hidden");
+      setMemberAuthStatus("الخطوة الأخيرة لإكمال تسجيلك: اختر اسمك الحقيقي من شجرة ذوي عويض لربطه بحسابك.", false);
+      return;
+    }
+
+    if (reqMfa) {
+      const { data: aal } = await client.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (!aal || aal.currentLevel !== "aal2") {
+        const { data: factors } = await client.auth.mfa.listFactors();
+        const totp = (factors && factors.totp) || [];
+        const verified = totp.find((f) => f.status === "verified");
+        gate.classList.remove("hidden");
+        hideAllSubSteps();
+        if (verifiedBar) verifiedBar.classList.add("hidden");
+        form.classList.add("hidden");
+        if (verified) {
+          state.memberVerifyFactorId = verified.id;
+          if (verifyBox) verifyBox.classList.remove("hidden");
+        } else {
+          for (const f of (factors && factors.all) || []) {
+            if (f.status !== "verified") {
+              await client.auth.mfa.unenroll({ factorId: f.id });
+            }
+          }
+          const { data: enrolled, error: enrErr } = await client.auth.mfa.enroll({
+            factorType: "totp",
+            friendlyName: "Dhawi Uwaid Member",
+          });
+          if (enrErr) {
+            setMemberAuthStatus("تعذّر تجهيز رمز التحقق الثنائي حالياً.", true);
+            return;
+          }
+          state.memberEnrollFactorId = enrolled.id;
+          const qrImg = document.getElementById("member-enroll-qr");
+          const secEl = document.getElementById("member-enroll-secret");
+          if (qrImg) qrImg.src = enrolled.totp.qr_code;
+          if (secEl) secEl.textContent = enrolled.totp.secret;
+          if (enrollBox) enrollBox.classList.remove("hidden");
+        }
+        return;
+      }
+    }
+
+    state.memberProfile = prof;
+    setMemberAuthStatus("", false);
+    gate.classList.add("hidden");
+    if (verifiedBar) {
+      document.getElementById("member-verified-name").textContent = prof.member_full_lineage || "عضو موثّق";
+      document.getElementById("member-verified-branch").textContent = prof.branch_name ? `فرع ${prof.branch_name}` : "";
+      verifiedBar.classList.remove("hidden");
+    }
+    const subInput = document.getElementById("req-submitter");
+    if (subInput && !subInput.value.trim() && prof.member_full_lineage) {
+      subInput.value = prof.member_full_lineage.split(" بن ").slice(0, 3).join(" بن ");
+    }
+    form.classList.remove("hidden");
+    await renderCloudMyRequests();
+  }
+
+  function bindMemberAuthGate() {
+    const tabIn = document.getElementById("auth-tab-signin");
+    const tabUp = document.getElementById("auth-tab-signup");
+    const fIn = document.getElementById("member-signin-form");
+    const fUp = document.getElementById("member-signup-form");
+    const fLink = document.getElementById("member-link-form");
+
+    const switchAuthTab = (mode) => {
+      const isUp = mode === "signup";
+      if (tabIn) {
+        tabIn.classList.toggle("active", !isUp);
+        tabIn.setAttribute("aria-selected", String(!isUp));
+      }
+      if (tabUp) {
+        tabUp.classList.toggle("active", isUp);
+        tabUp.setAttribute("aria-selected", String(isUp));
+      }
+      if (fIn) fIn.classList.toggle("hidden", isUp);
+      if (fUp) fUp.classList.toggle("hidden", !isUp);
+      setMemberAuthStatus("", false);
+    };
+
+    if (tabIn) tabIn.addEventListener("click", () => switchAuthTab("signin"));
+    if (tabUp) tabUp.addEventListener("click", () => switchAuthTab("signup"));
+
+    function setupMemberIdentityPicker(inputId, ddId, pillId, stateKey) {
+      const inp = document.getElementById(inputId);
+      const dd = document.getElementById(ddId);
+      const pill = document.getElementById(pillId);
+      bindTreeAutocomplete(inp, dd, (node) => {
+        state[stateKey] = node.id;
+        if (inp) inp.value = "";
+        if (pill) {
+          pill.textContent = "";
+          pill.appendChild(
+            el("div", null, [
+              el("strong", { textContent: formatLineageSentence(node.id, false) }),
+              el("div", { className: "hint-sub", textContent: `فرع ${node.branchName} • الجيل ${toArabicDigits(node.generation)}` }),
+            ])
+          );
+          pill.classList.remove("hidden");
+        }
+      });
+    }
+
+    setupMemberIdentityPicker("auth-member-search", "auth-member-dropdown", "auth-member-selected", "authSignupMemberId");
+    setupMemberIdentityPicker("link-member-search", "link-member-dropdown", "link-member-selected", "authLinkMemberId");
+
+    if (fIn) {
+      fIn.addEventListener("submit", async (ev) => {
+        ev.preventDefault();
+        const client = window.DHAWI_UWAID_DB && window.DHAWI_UWAID_DB.getAuthClient();
+        if (!client) return;
+        const btn = document.getElementById("member-signin-btn");
+        if (btn) btn.disabled = true;
+        setMemberAuthStatus("", false);
+        const { error } = await client.auth.signInWithPassword({
+          email: document.getElementById("member-signin-email").value.trim(),
+          password: document.getElementById("member-signin-password").value,
+        });
+        if (btn) btn.disabled = false;
+        document.getElementById("member-signin-password").value = "";
+        if (error) {
+          setMemberAuthStatus("تعذّر تسجيل الدخول: تأكد من صحة البريد الإلكتروني وكلمة المرور أو تفعيل البريد.", true);
+          return;
+        }
+        await refreshUpdateModalAuth();
+      });
+    }
+
+    if (fUp) {
+      fUp.addEventListener("submit", async (ev) => {
+        ev.preventDefault();
+        if (!state.authSignupMemberId) {
+          setMemberAuthStatus("يجب البحث عن اسمك واختياره من شجرة ذوي عويض أولاً.", true);
+          return;
+        }
+        const client = window.DHAWI_UWAID_DB && window.DHAWI_UWAID_DB.getAuthClient();
+        if (!client) return;
+        const btn = document.getElementById("member-signup-btn");
+        if (btn) btn.disabled = true;
+        setMemberAuthStatus("", false);
+        const email = document.getElementById("member-signup-email").value.trim();
+        const password = document.getElementById("member-signup-password").value;
+        const chosenId = state.authSignupMemberId;
+
+        localStorage.setItem("dhawi_uwaid_pending_member_id", chosenId);
+        const { data, error } = await client.auth.signUp({
+          email,
+          password,
+          options: { data: { member_id: chosenId } },
+        });
+        if (btn) btn.disabled = false;
+        document.getElementById("member-signup-password").value = "";
+
+        if (error) {
+          setMemberAuthStatus("تعذّر إنشاء الحساب: " + (error.message || "تأكد من البيانات المدخلة."), true);
+          return;
+        }
+        if (data && data.session && data.user) {
+          await client.from("member_profiles").insert([{ user_id: data.user.id, member_id: chosenId }]);
+          localStorage.removeItem("dhawi_uwaid_pending_member_id");
+          await refreshUpdateModalAuth();
+          return;
+        }
+        switchAuthTab("signin");
+        document.getElementById("member-signin-email").value = email;
+        setMemberAuthStatus("تم تسجيل طلب حسابك! افتح بريدك الإلكتروني واضغط رابط التفعيل، ثم ادخل من هنا لتفعيل التحقق الثنائي.", false);
+      });
+    }
+
+    if (fLink) {
+      fLink.addEventListener("submit", async (ev) => {
+        ev.preventDefault();
+        if (!state.authLinkMemberId) {
+          setMemberAuthStatus("اختر اسمك من القائمة المنسدلة أولاً.", true);
+          return;
+        }
+        const client = window.DHAWI_UWAID_DB && window.DHAWI_UWAID_DB.getAuthClient();
+        if (!client) return;
+        const { data: sess } = await client.auth.getSession();
+        if (!sess || !sess.session) return;
+        const { error } = await client
+          .from("member_profiles")
+          .insert([{ user_id: sess.session.user.id, member_id: state.authLinkMemberId }]);
+        if (error) {
+          setMemberAuthStatus("تعذّر ربط الاسم المختار بالحساب، تأكد من اختيار أحد فروع ذوي عويض.", true);
+          return;
+        }
+        await refreshUpdateModalAuth();
+      });
+    }
+
+    const enrollForm = document.getElementById("member-enroll-form");
+    if (enrollForm) {
+      enrollForm.addEventListener("submit", async (ev) => {
+        ev.preventDefault();
+        const client = window.DHAWI_UWAID_DB && window.DHAWI_UWAID_DB.getAuthClient();
+        if (!client || !state.memberEnrollFactorId) return;
+        const clean = document.getElementById("member-enroll-code").value.replace(/\D/g, "");
+        if (clean.length !== 6) {
+          setMemberAuthStatus("أدخل رمز التحقق المكوّن من ٦ أرقام.", true);
+          return;
+        }
+        const { error } = await client.auth.mfa.challengeAndVerify({
+          factorId: state.memberEnrollFactorId,
+          code: clean,
+        });
+        document.getElementById("member-enroll-code").value = "";
+        if (error) {
+          setMemberAuthStatus("رمز التحقق غير صحيح — جرّب الرمز الحالي في تطبيق المصادقة.", true);
+          return;
+        }
+        showToast("تم توثيق حسابك وتفعيل التحقق الثنائي بنجاح.");
+        await refreshUpdateModalAuth();
+      });
+    }
+
+    const verifyForm = document.getElementById("member-verify-form");
+    if (verifyForm) {
+      verifyForm.addEventListener("submit", async (ev) => {
+        ev.preventDefault();
+        const client = window.DHAWI_UWAID_DB && window.DHAWI_UWAID_DB.getAuthClient();
+        if (!client || !state.memberVerifyFactorId) return;
+        const clean = document.getElementById("member-verify-code").value.replace(/\D/g, "");
+        if (clean.length !== 6) {
+          setMemberAuthStatus("أدخل رمز التحقق المكوّن من ٦ أرقام.", true);
+          return;
+        }
+        const { error } = await client.auth.mfa.challengeAndVerify({
+          factorId: state.memberVerifyFactorId,
+          code: clean,
+        });
+        document.getElementById("member-verify-code").value = "";
+        if (error) {
+          setMemberAuthStatus("رمز التحقق غير صحيح — تأكد من الرمز وحاول مرة أخرى.", true);
+          return;
+        }
+        await refreshUpdateModalAuth();
+      });
+    }
+
+    document.querySelectorAll(".member-logout-action").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const client = window.DHAWI_UWAID_DB && window.DHAWI_UWAID_DB.getAuthClient();
+        if (client) await client.auth.signOut();
+        state.memberProfile = null;
+        await refreshUpdateModalAuth();
+      });
+    });
+
+    const refCloudBtn = document.getElementById("refresh-cloud-requests-btn");
+    if (refCloudBtn) refCloudBtn.addEventListener("click", renderCloudMyRequests);
+  }
+
   function openUpdateModal(prefillNodeId) {
     state.prefillTargetNodeId = prefillNodeId && DATA.nodesById[prefillNodeId] ? prefillNodeId : null;
     if (state.prefillTargetNodeId) {
       const n = DATA.nodesById[state.prefillTargetNodeId];
-      document.getElementById("req-target-person").value = formatLineageSentence(n.id, false)
+      const lbl = formatLineageSentence(n.id, false)
         .split(" بن ")
         .slice(0, 3)
         .join(" بن ");
+      state.prefillTargetLabel = lbl;
+      document.getElementById("req-target-person").value = lbl;
       const bSel = document.getElementById("req-branch");
       for (const opt of bSel.options) {
         if (opt.value === n.branchName) {
@@ -2143,14 +2714,24 @@
           break;
         }
       }
+    } else {
+      state.prefillTargetLabel = "";
     }
+    syncBioFeatureUi();
     renderSavedRequests();
+    refreshUpdateModalAuth();
     document.getElementById("modal-backdrop").classList.remove("hidden");
     document.getElementById("update-modal").classList.remove("hidden");
   }
 
   function closeUpdateModal() {
     state.prefillTargetNodeId = null;
+    state.prefillTargetLabel = "";
+    const dds = ["req-target-dropdown", "auth-member-dropdown", "link-member-dropdown"];
+    for (const id of dds) {
+      const dd = document.getElementById(id);
+      if (dd) dd.classList.add("hidden");
+    }
     document.getElementById("modal-backdrop").classList.add("hidden");
     document.getElementById("update-modal").classList.add("hidden");
   }
@@ -2417,11 +2998,30 @@
     document.getElementById("drawer-download-card-btn").addEventListener("click", () => {
       downloadLineageCardPng(state.drawerNodeId);
     });
+    const drawerShareBtn = document.getElementById("drawer-share-link-btn");
+    if (drawerShareBtn) {
+      drawerShareBtn.addEventListener("click", () => {
+        const node = DATA.nodesById[state.drawerNodeId];
+        if (!node) return;
+        const shareUrl = `${window.location.origin}${window.location.pathname}?person=${encodeURIComponent(node.id)}`;
+        const full = formatLineageSentence(node.id, false) || node.name;
+        shareOrCopyLink(
+          shareUrl,
+          `${node.name} — شجرة ذوي عويض`,
+          `بطاقة نسب ${full} في منصة شجرة ذوي عويض`,
+          "تم نسخ رابط العضو للمشاركة."
+        );
+      });
+    }
     document.getElementById("drawer-suggest-edit-btn").addEventListener("click", () => {
       const targetId = state.drawerNodeId;
       closeProfileDrawer();
       openUpdateModal(targetId);
     });
+
+    bindUpdateTargetPicker();
+    bindMemberAuthGate();
+    syncBioFeatureUi();
 
     // Update Requests Modal
     document.getElementById("open-update-modal-btn").addEventListener("click", () => openUpdateModal());
@@ -2468,8 +3068,10 @@
       list.unshift(entry);
       saveRequests(list);
       renderSavedRequests();
+      if (entry.synced) renderCloudMyRequests();
       formEl.reset();
       state.prefillTargetNodeId = null;
+      state.prefillTargetLabel = "";
       showToast(
         entry.synced
           ? "تم إرسال الطلب إلى قاعدة بيانات ذوي عويض وحفظ نسخة محلية للمتابعة."
@@ -2571,6 +3173,7 @@
 
     renderBranchPills();
     populateDirectorySelects();
+    syncBioFeatureUi();
 
     if (state.activeView === "tree") {
       renderTree({ preserveView: true });

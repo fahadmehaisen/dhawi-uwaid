@@ -8,8 +8,26 @@
 
   const SUPABASE_URL = "https://nmsmbcfnlqvnzfprexbh.supabase.co";
   const SUPABASE_KEY = "sb_publishable_nM7K9SCmR-MkwEkE0o-Azg_aqwxB8G9";
-
+  const MEMBER_AUTH_STORAGE_KEY = "dhawi-uwaid-member-auth";
   const BRANCH_ORDER = ["B01", "B02", "B03", "B04", "B05", "B06", "B07", "B08"];
+
+  let authClientInstance = null;
+
+  function getAuthClient() {
+    if (authClientInstance) return authClientInstance;
+    if (!window.supabase || typeof window.supabase.createClient !== "function") {
+      return null;
+    }
+    authClientInstance = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: false,
+        storageKey: MEMBER_AUTH_STORAGE_KEY,
+      },
+    });
+    return authClientInstance;
+  }
 
   function buildPayloadFromRows(rows, metaRow) {
     if (!Array.isArray(rows) || rows.length < 700) return null;
@@ -32,6 +50,10 @@
         cx: r.cx,
         cy: r.cy,
         bioNote: r.bio_note || "",
+        kunyah: r.kunyah || "",
+        isDeceased: Boolean(r.is_deceased),
+        birthYear: r.birth_year || "",
+        deathYear: r.death_year || "",
         descendantCount: 0,
         generation: r.generation,
         childrenIds: [],
@@ -87,6 +109,7 @@
 
     const descendantsOfUwaid = sortedRows.filter((r) => r.generation >= 1).length;
     const ancestorsCount = sortedRows.filter((r) => r.generation < 0).length;
+    const hasMemberSchema = Boolean(metaRow && typeof metaRow.feature_require_member_auth === "boolean");
 
     return {
       meta: {
@@ -100,41 +123,75 @@
         descendantsOfUwaid: (metaRow && metaRow.descendant_count) || descendantsOfUwaid,
         branchesCount: branchMap.size || 8,
         lineageFootnotes: baselineMeta.lineageFootnotes || [],
+        hasMemberSchema,
+        featureBiosEnabled: Boolean(metaRow && metaRow.feature_bios_enabled === true),
+        featureRequireMemberAuth:
+          metaRow && typeof metaRow.feature_require_member_auth === "boolean"
+            ? metaRow.feature_require_member_auth
+            : true,
+        featureRequireMemberMfa:
+          metaRow && typeof metaRow.feature_require_member_mfa === "boolean"
+            ? metaRow.feature_require_member_mfa
+            : true,
       },
       branchStats: [...branchMap.values()],
       nodesById,
     };
   }
 
+  async function fetchAllMembers(selectCols) {
+    const pageSize = 1000;
+    const allRows = [];
+    let offset = 0;
+
+    while (true) {
+      const url = `${SUPABASE_URL}/rest/v1/family_members?select=${selectCols}&order=generation.asc,sort_order.asc&limit=${pageSize}&offset=${offset}`;
+      const res = await fetch(url, {
+        method: "GET",
+        headers: {
+          apikey: SUPABASE_KEY,
+          Range: `${offset}-${offset + pageSize - 1}`,
+        },
+      });
+      if (!res.ok) return { ok: false, status: res.status, rows: [] };
+      const chunk = await res.json();
+      if (!Array.isArray(chunk)) return { ok: false, status: res.status, rows: [] };
+      allRows.push(...chunk);
+      if (chunk.length < pageSize) break;
+      offset += pageSize;
+    }
+
+    return { ok: true, status: 200, rows: allRows };
+  }
+
   async function fetchLiveTreePayload() {
     try {
-      const membersUrl = `${SUPABASE_URL}/rest/v1/family_members?select=id,name,raw_name,parent_id,branch_id,branch_name,generation,tier,tier_label,sort_order,bio_note,full_lineage,cx,cy&order=generation.asc,sort_order.asc&limit=2000`;
-      const metaUrl = `${SUPABASE_URL}/rest/v1/tree_meta?select=*&limit=1`;
+      const metaRes = await fetch(`${SUPABASE_URL}/rest/v1/tree_meta?select=*&limit=1`, {
+        method: "GET",
+        headers: { apikey: SUPABASE_KEY },
+      });
 
-      const [mRes, metaRes] = await Promise.all([
-        fetch(membersUrl, {
-          method: "GET",
-          headers: {
-            apikey: SUPABASE_KEY,
-            Range: "0-1999",
-          },
-        }),
-        fetch(metaUrl, {
-          method: "GET",
-          headers: {
-            apikey: SUPABASE_KEY,
-          },
-        }),
-      ]);
-
-      if (!mRes.ok) return null;
-      const rows = await mRes.json();
       let metaRow = null;
       if (metaRes.ok) {
         const mArr = await metaRes.json();
         if (Array.isArray(mArr) && mArr.length > 0) metaRow = mArr[0];
       }
-      return buildPayloadFromRows(rows, metaRow);
+
+      const baseCols =
+        "id,name,raw_name,parent_id,branch_id,branch_name,generation,tier,tier_label,sort_order,bio_note,full_lineage,cx,cy";
+      const extCols = `${baseCols},kunyah,is_deceased,birth_year,death_year`;
+
+      let mResult =
+        metaRow && metaRow.feature_bios_enabled === true
+          ? await fetchAllMembers(extCols)
+          : await fetchAllMembers(baseCols);
+
+      if (!mResult.ok && metaRow && metaRow.feature_bios_enabled === true) {
+        mResult = await fetchAllMembers(baseCols);
+      }
+      if (!mResult.ok) return null;
+
+      return buildPayloadFromRows(mResult.rows, metaRow);
     } catch (_) {
       return null;
     }
@@ -152,6 +209,23 @@
         notes: String(entry.notes || "").trim(),
         status: "pending",
       };
+
+      const client = getAuthClient();
+      if (client) {
+        const { data: sess } = await client.auth.getSession();
+        if (sess && sess.session) {
+          const { error } = await client.from("update_requests").insert([payload]);
+          if (!error) {
+            return { ok: true, synced: true, status: 201 };
+          }
+          return {
+            ok: false,
+            synced: false,
+            status: error.code ? Number(error.code) || 403 : 403,
+            errorMessage: error.message || "",
+          };
+        }
+      }
 
       const res = await fetch(`${SUPABASE_URL}/rest/v1/update_requests`, {
         method: "POST",
@@ -172,9 +246,32 @@
     }
   }
 
+  async function fetchMyUpdateRequests() {
+    try {
+      const client = getAuthClient();
+      if (!client) return [];
+      const { data: sess } = await client.auth.getSession();
+      if (!sess || !sess.session) return [];
+      const { data, error } = await client
+        .from("update_requests")
+        .select(
+          "id,request_type,branch_name,target_person,target_node_id,new_name,notes,status,review_note,created_at,reviewed_at,submitter_lineage"
+        )
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error || !Array.isArray(data)) return [];
+      return data;
+    } catch (_) {
+      return [];
+    }
+  }
+
   window.DHAWI_UWAID_DB = {
     url: SUPABASE_URL,
+    publishableKey: SUPABASE_KEY,
+    getAuthClient,
     fetchLiveTreePayload,
     submitUpdateRequest,
+    fetchMyUpdateRequests,
   };
 })();

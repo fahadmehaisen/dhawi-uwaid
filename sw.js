@@ -2,7 +2,7 @@
    Offline Service Worker for Dhawi Uwaid PWA
    ========================================================================== */
 
-const CACHE_NAME = "dhawi-uwaid-v6";
+const CACHE_NAME = "dhawi-uwaid-v8";
 const PRECACHE_URLS = [
   "./",
   "./index.html",
@@ -46,6 +46,10 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(req.url);
   if (url.hostname.endsWith(".supabase.co")) return;
+  // Admin panel & gated brand/letterhead studio: always straight from network, never cached.
+  if (/\/admin\.(html|js|css)$/.test(url.pathname)) return;
+  if (/\/brand\/(logo-studio|letterhead-clean|letterhead-official|brand-guard)\.(html|js)$/.test(url.pathname)) return;
+  if (url.hostname === "cdn.jsdelivr.net") return;
 
   const isCacheFirst =
     url.origin !== self.location.origin ||

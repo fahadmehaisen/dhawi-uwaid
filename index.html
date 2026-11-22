@@ -3,7 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="description" content="الشجرة التفاعلية ومنصة النسب الرقمية لذوي عويض من البصصة قبيلة الشدادين بني الحارث." />
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://nmsmbcfnlqvnzfprexbh.supabase.co; base-uri 'self'; form-action 'self'"
+  />
+  <meta name="description" content="الشجرة التفاعلية ومنصة النسب الرقمية لذوي عويض من البصصة قبيلة الشدادين بني الحارث — ٧٦٠ اسماً موثقاً عبر ٨ فروع رئيسية." />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="ar_SA" />
+  <meta property="og:title" content="ذوي عويض — الشجرة التفاعلية | من البصصة قبيلة الشدادين بني الحارث" />
+  <meta property="og:description" content="استكشف شجرة ذوي عويض التفاعلية لسبعمئة وستين اسماً موثقاً، وابحث في الفروع الثمانية وحاسبة القرابة." />
+  <meta property="og:url" content="https://fahadmehaisen.github.io/dhawi-uwaid/" />
+  <meta property="og:image" content="https://fahadmehaisen.github.io/dhawi-uwaid/assets/og-share-card.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="ذوي عويض — الشجرة التفاعلية" />
+  <meta name="twitter:description" content="الشجرة التفاعلية وحاسبة القرابة لذوي عويض — من البصصة قبيلة الشدادين بني الحارث." />
+  <meta name="twitter:image" content="https://fahadmehaisen.github.io/dhawi-uwaid/assets/og-share-card.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -65,13 +81,14 @@
           </button>
           <div class="brand-kit-menu" id="brand-kit-menu">
             <button type="button" id="brand-kit-toggle" class="btn btn-outline btn-sm" aria-expanded="false">
-              <span>الهوية<span class="desktop-only-inline"> والترويسات</span> ▾</span>
+              <span>اللوحة الجدارية<span class="desktop-only-inline"> للطباعة</span> ▾</span>
             </button>
             <div class="brand-kit-popover hidden" id="brand-kit-popover">
-              <a href="brand/wall-mural.html" target="_blank" rel="noopener">اللوحة الجدارية للطباعة (٧٦٠ اسماً)</a>
-              <a href="brand/logo-studio.html" target="_blank" rel="noopener">استوديو الشعار والهوية</a>
-              <a href="brand/letterhead-clean.html" target="_blank" rel="noopener">ورق المراسلات العام</a>
-              <a href="brand/letterhead-official.html" target="_blank" rel="noopener">ورق المخاطبات الرسمي</a>
+              <a href="brand/wall-mural.html" target="_blank" rel="noopener">معاينة اللوحة الجدارية التفاعلية (٧٦٠ اسماً)</a>
+              <a href="brand/شجرة_ذوي_عويض_طباعة_A4_واضحة.pdf" download="شجرة_ذوي_عويض_طباعة_A4_واضحة.pdf">طباعة ورق عادي واضحة (٧ صفحات — PDF)</a>
+              <a href="brand/لوحة_شجرة_ذوي_عويض_الجدارية.pdf" download="لوحة_شجرة_ذوي_عويض_الجدارية.pdf">اللوحة الجدارية الكاملة للمطابع (PDF)</a>
+              <a href="brand/لوحة_شجرة_ذوي_عويض_الجدارية.png" download="لوحة_شجرة_ذوي_عويض_الجدارية.png">صورة اللوحة الجدارية فائقة الدقة (PNG)</a>
+              <a href="brand/dhawi-uwaid-wall-mural.svg" download="شجرة_ذوي_عويض_الجدارية.svg">الملف المتجهي لجميع المقاسات (SVG)</a>
             </div>
           </div>
         </div>
@@ -249,7 +266,6 @@
                 <option value="fathers">ذوو أعقاب / آباء</option>
                 <option value="ancestors">عمود النسب أعلى عويض</option>
                 <option value="no-sons">بدون عقِب مسجّل</option>
-                <option value="notes">ذوو ملاحظات / سير</option>
               </select>
             </div>
           </div>
@@ -428,6 +444,7 @@
         <button type="button" id="drawer-locate-tree-btn" class="btn btn-emerald btn-sm">تتبّع في الشجرة</button>
         <button type="button" id="drawer-kinship-btn" class="btn btn-subtle btn-sm">وش يقرب لـ...؟</button>
         <button type="button" id="drawer-download-card-btn" class="btn btn-gold btn-sm">تنزيل بطاقة النسب</button>
+        <button type="button" id="drawer-share-link-btn" class="btn btn-outline btn-sm btn-span-2">مشاركة رابط العضو</button>
         <button type="button" id="drawer-suggest-edit-btn" class="btn btn-ghost btn-sm btn-span-2">اقتراح إضافة ابن أو تعديل معلومة لهذا العضو</button>
       </section>
     </div>
@@ -446,6 +463,121 @@
     </div>
 
     <div class="modal-body">
+      <div id="member-auth-gate" class="member-auth-gate hidden">
+        <div class="auth-gate-banner">
+          <strong>توثيق العضوية قبل إرسال الطلب</strong>
+          <p class="hint-sub">التصفح مفتوح للجميع دون تسجيل، أما إضافة أو تعديل الأسماء فيتطلب حساباً موثقاً من أبناء ذوي عويض مع اختيار اسمك في الشجرة والتحقق الثنائي.</p>
+        </div>
+
+        <div id="member-auth-status" class="member-auth-status hidden" role="status" aria-live="polite"></div>
+
+        <div id="member-auth-forms">
+          <div class="auth-mode-tabs" role="tablist">
+            <button type="button" id="auth-tab-signin" class="auth-mode-btn active" role="tab" aria-selected="true">تسجيل دخول</button>
+            <button type="button" id="auth-tab-signup" class="auth-mode-btn" role="tab" aria-selected="false">تسجيل جديد (من الشجرة)</button>
+          </div>
+
+          <form id="member-signin-form" class="update-form">
+            <div class="form-row-2">
+              <div class="field-group">
+                <label for="member-signin-email">البريد الإلكتروني</label>
+                <input type="email" id="member-signin-email" class="text-input" dir="ltr" autocomplete="username" required />
+              </div>
+              <div class="field-group">
+                <label for="member-signin-password">كلمة المرور</label>
+                <input type="password" id="member-signin-password" class="text-input" dir="ltr" autocomplete="current-password" required />
+              </div>
+            </div>
+            <div class="modal-form-actions">
+              <button type="submit" id="member-signin-btn" class="btn btn-emerald">دخول ومتابعة</button>
+            </div>
+          </form>
+
+          <form id="member-signup-form" class="update-form hidden">
+            <div class="field-group">
+              <label for="auth-member-search">من أنت في شجرة ذوي عويض؟ (ابحث واختر اسمك)</label>
+              <div class="autocomplete-wrap">
+                <input type="search" id="auth-member-search" class="text-input" placeholder="مثال: فهد بن متعب بن زايد" autocomplete="off" />
+                <div id="auth-member-dropdown" class="autocomplete-dropdown hidden"></div>
+              </div>
+              <div id="auth-member-selected" class="selected-person-pill hidden"></div>
+            </div>
+            <div class="form-row-2">
+              <div class="field-group">
+                <label for="member-signup-email">البريد الإلكتروني</label>
+                <input type="email" id="member-signup-email" class="text-input" dir="ltr" autocomplete="email" required />
+              </div>
+              <div class="field-group">
+                <label for="member-signup-password">كلمة المرور (٦ أحرف فأكثر)</label>
+                <input type="password" id="member-signup-password" class="text-input" dir="ltr" autocomplete="new-password" minlength="6" required />
+              </div>
+            </div>
+            <div class="modal-form-actions">
+              <button type="submit" id="member-signup-btn" class="btn btn-emerald">إنشاء الحساب وربط الاسم</button>
+            </div>
+          </form>
+        </div>
+
+        <form id="member-link-form" class="update-form hidden">
+          <div class="field-group">
+            <label for="link-member-search">اربط حسابك باسمك الصحيح في شجرة ذوي عويض</label>
+            <div class="autocomplete-wrap">
+              <input type="search" id="link-member-search" class="text-input" placeholder="ابحث باسمك الثلاثي في الشجرة..." autocomplete="off" />
+              <div id="link-member-dropdown" class="autocomplete-dropdown hidden"></div>
+            </div>
+            <div id="link-member-selected" class="selected-person-pill hidden"></div>
+          </div>
+          <div class="modal-form-actions">
+            <button type="submit" id="member-link-btn" class="btn btn-emerald">تأكيد ربط الاسم</button>
+            <button type="button" class="btn btn-ghost member-logout-action">تسجيل الخروج</button>
+          </div>
+        </form>
+
+        <div id="member-mfa-enroll" class="member-mfa-box hidden">
+          <h4>تفعيل التحقق الثنائي بتطبيق المصادقة</h4>
+          <p class="hint-sub">امسح الرمز بتطبيق المصادقة في جوالك (أو كلمات المرور بالآيفون) ثم أدخل الرمز المكوّن من ٦ أرقام.</p>
+          <div class="member-qr-wrap"><img id="member-enroll-qr" alt="رمز التحقق الثنائي" width="180" height="180" /></div>
+          <code id="member-enroll-secret" class="member-secret-code" dir="ltr"></code>
+          <form id="member-enroll-form" class="update-form">
+            <div class="form-row-2">
+              <div class="field-group">
+                <label for="member-enroll-code">رمز التحقق (٦ أرقام)</label>
+                <input type="text" id="member-enroll-code" class="text-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" required />
+              </div>
+              <div class="field-group field-align-end">
+                <button type="submit" class="btn btn-emerald">تأكيد التفعيل</button>
+                <button type="button" class="btn btn-ghost member-logout-action">خروج</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div id="member-mfa-verify" class="member-mfa-box hidden">
+          <h4>أدخل رمز التحقق الثنائي للمتابعة</h4>
+          <p class="hint-sub">افتح تطبيق المصادقة في جوالك واكتب الرمز المكوّن من ٦ أرقام.</p>
+          <form id="member-verify-form" class="update-form">
+            <div class="form-row-2">
+              <div class="field-group">
+                <label for="member-verify-code">رمز التحقق</label>
+                <input type="text" id="member-verify-code" class="text-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" required />
+              </div>
+              <div class="field-group field-align-end">
+                <button type="submit" class="btn btn-emerald">تحقق ومتابعة</button>
+                <button type="button" class="btn btn-ghost member-logout-action">خروج</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div id="member-verified-bar" class="member-verified-bar hidden">
+        <div>
+          <strong id="member-verified-name">عضو موثّق</strong>
+          <span id="member-verified-branch" class="hint-sub"></span>
+        </div>
+        <button type="button" id="member-logout-btn" class="link-btn danger-link member-logout-action">تسجيل الخروج</button>
+      </div>
+
       <form id="update-request-form" class="update-form">
         <div class="form-row-2">
           <div class="field-group">
@@ -453,7 +585,6 @@
             <select id="req-type" class="select-input">
               <option value="إضافة مولود جديد">إضافة مولود جديد</option>
               <option value="تصحيح تهجئة اسم">تصحيح تهجئة اسم</option>
-              <option value="إضافة سيرة / توثيق تاريخي">إضافة سيرة / توثيق تاريخي</option>
               <option value="إضافة ذرية غير مدونة">إضافة ذرية غير مدونة</option>
             </select>
           </div>
@@ -465,8 +596,11 @@
 
         <div class="form-row-2">
           <div class="field-group">
-            <label for="req-target-person">اسم الأب / العضو المعني</label>
-            <input type="text" id="req-target-person" class="text-input" placeholder="مثال: متعب بن زايد بن ثويني" required />
+            <label for="req-target-person">اسم الأب / العضو المعني (اختر من القائمة)</label>
+            <div class="autocomplete-wrap">
+              <input type="text" id="req-target-person" class="text-input" placeholder="ابحث واختر الأب من الشجرة: متعب بن زايد" autocomplete="off" required />
+              <div id="req-target-dropdown" class="autocomplete-dropdown hidden"></div>
+            </div>
           </div>
           <div class="field-group">
             <label for="req-new-name">الاسم الجديد أو المطلوب إضافته</label>
@@ -481,7 +615,7 @@
 
         <div class="field-group">
           <label for="req-notes">تفاصيل وملاحظات إضافية</label>
-          <textarea id="req-notes" class="text-input textarea-input" rows="3" placeholder="اكتب أي تفاصيل أو سنة ميلاد أو توثيق..." ></textarea>
+          <textarea id="req-notes" class="text-input textarea-input" rows="3" placeholder="اكتب أي تفاصيل أو سنة ميلاد..." ></textarea>
         </div>
 
         <div class="modal-form-actions">
@@ -491,9 +625,17 @@
         </div>
       </form>
 
+      <div id="cloud-my-requests-section" class="saved-requests-section hidden">
+        <div class="saved-req-head">
+          <h4>طلباتي المرسلة في قاعدة البيانات (<span id="cloud-requests-count">0</span>)</h4>
+          <button type="button" id="refresh-cloud-requests-btn" class="link-btn">تحديث الحالة</button>
+        </div>
+        <div id="cloud-requests-list" class="saved-requests-list"></div>
+      </div>
+
       <div class="saved-requests-section">
         <div class="saved-req-head">
-          <h4>الطلبات المسجّلة للمراجعة (<span id="saved-requests-count">0</span>)</h4>
+          <h4>الطلبات المسجّلة محلياً (<span id="saved-requests-count">0</span>)</h4>
           <button type="button" id="clear-requests-btn" class="link-btn danger-link">مسح السجل المحلي</button>
         </div>
         <div id="saved-requests-list" class="saved-requests-list"></div>
@@ -508,6 +650,11 @@
   <div id="toast-box" class="toast-box hidden" role="status" aria-live="polite"></div>
 
   <script src="data/tree-data.js"></script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"
+    integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK"
+    crossorigin="anonymous"
+  ></script>
   <script src="supabase-client.js"></script>
   <script src="app.js"></script>
 </body>

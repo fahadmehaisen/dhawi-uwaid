@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="referrer" content="no-referrer" />
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'none'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://nmsmbcfnlqvnzfprexbh.supabase.co; base-uri 'none'; form-action 'none'; manifest-src 'none'"
+  />
+  <title>لوحة الإدارة — ذوي عويض</title>
+  <link rel="icon" type="image/svg+xml" href="assets/logo-seal-clean.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+  <header class="adm-top">
+    <div class="adm-top-inner">
+      <a href="./" class="adm-brand" title="العودة إلى الشجرة">
+        <img src="assets/logo-wordmark-clean.svg" alt="ذوي عويض" class="adm-wordmark" />
+        <span>
+          <strong>لوحة الإدارة</strong>
+          <small>من البصصة قبيلة الشدادين بني الحارث</small>
+        </span>
+      </a>
+      <div class="adm-user" id="user-box" hidden>
+        <span id="user-label"></span>
+        <button type="button" class="btn btn-ghost" id="backup-btn" hidden title="تحميل نسخة احتياطية كاملة للأسماء والطلبات">نسخة احتياطية</button>
+        <button type="button" class="btn btn-ghost" id="logout-btn">تسجيل الخروج</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="adm-main">
+    <div class="adm-status" id="status" role="status" aria-live="polite"></div>
+
+    <!-- Step 1: Sign in -->
+    <section class="card narrow" id="view-login" hidden>
+      <h1>دخول المشرفين</h1>
+      <p class="muted">هذه الصفحة خاصة بمالك الموقع والمشرفين المعتمدين فقط.</p>
+      <form id="login-form" novalidate>
+        <label for="login-email">البريد الإلكتروني</label>
+        <input id="login-email" type="email" autocomplete="username" dir="ltr" required />
+        <label for="login-password">كلمة المرور</label>
+        <input id="login-password" type="password" autocomplete="current-password" dir="ltr" required />
+        <button type="submit" class="btn btn-primary">دخول</button>
+      </form>
+    </section>
+
+    <!-- Step 2a: Enroll MFA -->
+    <section class="card narrow" id="view-enroll" hidden>
+      <h1>تفعيل التحقق الثنائي</h1>
+      <p class="muted">
+        امسح الرمز بتطبيق المصادقة في جوالك، ثم اكتب الرقم المكوّن من ستة أرقام.
+        هذه الخطوة إلزامية لكل مشرف.
+      </p>
+      <div class="qr-wrap"><img id="enroll-qr" alt="رمز التفعيل" width="200" height="200" /></div>
+      <p class="muted small">أو أدخل المفتاح يدوياً:</p>
+      <code class="secret" id="enroll-secret" dir="ltr"></code>
+      <form id="enroll-form" novalidate>
+        <label for="enroll-code">رمز التحقق</label>
+        <input id="enroll-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" required />
+        <button type="submit" class="btn btn-primary">تأكيد التفعيل</button>
+      </form>
+    </section>
+
+    <!-- Step 2b: Verify MFA -->
+    <section class="card narrow" id="view-verify" hidden>
+      <h1>رمز التحقق</h1>
+      <p class="muted">افتح تطبيق المصادقة واكتب الرمز الحالي.</p>
+      <form id="verify-form" novalidate>
+        <label for="verify-code">رمز التحقق</label>
+        <input id="verify-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" required />
+        <button type="submit" class="btn btn-primary">تحقق</button>
+      </form>
+    </section>
+
+    <!-- Not authorized -->
+    <section class="card narrow" id="view-denied" hidden>
+      <h1>غير مصرّح</h1>
+      <p class="muted">هذا الحساب غير مدرج في قائمة المشرفين. تواصل مع مالك الموقع.</p>
+    </section>
+
+    <!-- Step 3: Dashboard -->
+    <section id="view-dash" hidden>
+      <nav class="tabs" role="tablist">
+        <button type="button" role="tab" class="tab" data-tab="requests" aria-selected="true">
+          الطلبات <span class="badge" id="pending-count">0</span>
+        </button>
+        <button type="button" role="tab" class="tab" data-tab="members" aria-selected="false">الأسماء</button>
+        <button type="button" role="tab" class="tab" data-tab="brand" id="tab-btn-brand" aria-selected="false" hidden>الهوية والورق الرسمي</button>
+        <button type="button" role="tab" class="tab" data-tab="audit" aria-selected="false">سجل التعديلات</button>
+        <button type="button" role="tab" class="tab" data-tab="admins" aria-selected="false">المشرفون</button>
+      </nav>
+
+      <!-- Requests -->
+      <div class="panel" id="tab-requests">
+        <div class="toolbar">
+          <label for="req-filter" class="sr-only">تصفية الطلبات</label>
+          <select id="req-filter">
+            <option value="pending">المعلّقة</option>
+            <option value="approved">المقبولة</option>
+            <option value="rejected">المرفوضة</option>
+            <option value="all">الكل</option>
+          </select>
+          <button type="button" class="btn btn-ghost" id="req-refresh">تحديث</button>
+        </div>
+        <div id="req-list" class="list"></div>
+      </div>
+
+      <!-- Members -->
+      <div class="panel" id="tab-members" hidden>
+        <div class="members-grid">
+          <div class="card">
+            <label for="mem-search">ابحث عن اسم</label>
+            <input id="mem-search" type="search" placeholder="مثال: محمد بن سعد" autocomplete="off" />
+            <div id="mem-results" class="results"></div>
+          </div>
+          <div class="card" id="mem-editor">
+            <p class="muted" id="mem-empty">اختر اسماً من نتائج البحث لعرضه وتعديله.</p>
+            <div id="mem-form" hidden>
+              <p class="lineage" id="mem-lineage"></p>
+              <p class="muted small" id="mem-meta"></p>
+
+              <form id="rename-form" class="inline-form" novalidate>
+                <label for="mem-name">الاسم</label>
+                <div class="row">
+                  <input id="mem-name" maxlength="60" required />
+                  <button type="submit" class="btn btn-primary">حفظ الاسم</button>
+                </div>
+              </form>
+
+              <form id="bio-form" class="inline-form" novalidate>
+                <label for="mem-bio">الملاحظة أو السيرة (خاصة — مخفية عن الزوار ما لم يفعّلها المالك)</label>
+                <textarea id="mem-bio" rows="3" maxlength="1000"></textarea>
+                <div class="bio-extras-row">
+                  <div>
+                    <label for="mem-kunyah">الكنية أو اللقب (اختياري)</label>
+                    <input id="mem-kunyah" maxlength="80" placeholder="مثال: أبو متعب" />
+                  </div>
+                  <label class="perm-check bio-deceased-lbl">
+                    <input type="checkbox" id="mem-deceased" />
+                    <span>رحمه الله</span>
+                  </label>
+                </div>
+                <button type="submit" class="btn btn-primary">حفظ السيرة واللقب</button>
+              </form>
+
+              <form id="child-form" class="inline-form" novalidate>
+                <label for="child-name">إضافة ابن لهذا الاسم</label>
+                <div class="row">
+                  <input id="child-name" maxlength="60" placeholder="اسم الابن" required />
+                  <button type="submit" class="btn btn-primary">إضافة</button>
+                </div>
+              </form>
+
+              <div id="mem-children" class="children"></div>
+
+              <div class="danger-zone">
+                <button type="button" class="btn btn-danger" id="delete-btn">حذف هذا الاسم</button>
+                <p class="muted small">الحذف متاح فقط للاسم الذي ليس له أبناء مسجّلون.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Brand & Official Letterheads (Owner + Authorized Moderators Only) -->
+      <div class="panel" id="tab-brand" hidden>
+        <div class="brand-grid">
+          <article class="card">
+            <h2>استوديو الشعار والهوية البصرية</h2>
+            <p class="muted small">دليل استخدام شعار المخطوطة الرأسي والختم الدائري مع ملفات المتجهات المعتمدة للمطبوعات والمنصات.</p>
+            <div class="brand-actions">
+              <a class="btn btn-primary" href="brand/logo-studio.html" target="_blank" rel="noopener">فتح استوديو الهوية البصرية</a>
+              <a class="btn btn-ghost" href="assets/logo-wordmark-clean.svg" download>شعار المخطوطة الذهبي</a>
+              <a class="btn btn-ghost" href="assets/logo-wordmark-emerald.svg" download>شعار المخطوطة الزمردي</a>
+              <a class="btn btn-ghost" href="assets/logo-seal-clean.svg" download>الختم الدائري الذهبي</a>
+              <a class="btn btn-ghost" href="assets/logo-seal-emerald.svg" download>الختم الدائري الزمردي</a>
+            </div>
+          </article>
+
+          <article class="card">
+            <h2>ورق المخاطبات الرسمي المعتمد</h2>
+            <p class="muted small">ترويسة الخطابات والمخاطبات الرسمية لذوي عويض جاهزة للتحرير المباشر والطباعة أو التصدير.</p>
+            <div class="brand-actions">
+              <a class="btn btn-primary" href="brand/letterhead-official.html" target="_blank" rel="noopener">فتح محرر ورق المخاطبات الرسمي</a>
+              <a class="btn btn-ghost" href="brand/ترويسة_ذوي_عويض_مخاطبات_رسمية.pdf" download>تحميل القالب الجاهز (PDF)</a>
+            </div>
+          </article>
+
+          <article class="card">
+            <h2>ورق المراسلات العام</h2>
+            <p class="muted small">ترويسة المراسلات العامة والدعوات والبيانات الداخلية بدون حقول التوقيع والختم.</p>
+            <div class="brand-actions">
+              <a class="btn btn-primary" href="brand/letterhead-clean.html" target="_blank" rel="noopener">فتح محرر ورق المراسلات العام</a>
+              <a class="btn btn-ghost" href="brand/ترويسة_ذوي_عويض_مراسلات_عامة.pdf" download>تحميل القالب العام (PDF)</a>
+            </div>
+          </article>
+
+          <article class="card">
+            <h2>اللوحة الجدارية ونسخ الطباعة (متاحة للزوار أيضاً)</h2>
+            <p class="muted small">جميع مقاسات طباعة شجرة ذوي عويض من مقاس الورق العادي الموضح وحتى اللوحات الجدارية الكبيرة.</p>
+            <div class="brand-actions">
+              <a class="btn btn-primary" href="brand/wall-mural.html" target="_blank" rel="noopener">المعاينة التفاعلية للوحة</a>
+              <a class="btn btn-ghost" href="brand/شجرة_ذوي_عويض_طباعة_A4_واضحة.pdf" download>كتيّب الطباعة الواضح (٧ صفحات)</a>
+              <a class="btn btn-ghost" href="brand/لوحة_شجرة_ذوي_عويض_الجدارية.pdf" download>اللوحة الجدارية الكاملة (PDF)</a>
+              <a class="btn btn-ghost" href="brand/لوحة_شجرة_ذوي_عويض_الجدارية.png" download>صورة عالية الدقة (PNG)</a>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <!-- Audit -->
+      <div class="panel" id="tab-audit" hidden>
+        <div class="toolbar">
+          <button type="button" class="btn btn-ghost" id="audit-refresh">تحديث</button>
+        </div>
+        <div id="audit-list" class="list"></div>
+      </div>
+
+      <!-- Admins -->
+      <div class="panel" id="tab-admins" hidden>
+        <div class="card" id="owner-settings-card" hidden>
+          <h2>إعدادات ومزايا المنصة (للمالك فقط)</h2>
+          <p class="muted small">تحكم كامل في إظهار السير أو إخفائها عن العامة، وفي ضوابط التحقق على طلبات التعديل.</p>
+          <div class="owner-settings-list">
+            <label class="setting-row">
+              <input type="checkbox" id="set-bios-enabled" />
+              <span>
+                <strong>إظهار السير والملاحظات التاريخية والألقاب في الموقع العام</strong>
+                <small class="muted">عند التعطيل (الوضع الافتراضي) تختفي السير تماماً ولا يظهر أي خيار لها لدى الزوار لضمان حيادية الشجرة.</small>
+              </span>
+            </label>
+            <label class="setting-row">
+              <input type="checkbox" id="set-req-auth" />
+              <span>
+                <strong>اشتراط تسجيل الدخول واختيار الاسم من الشجرة لرفع طلب تعديل</strong>
+                <small class="muted">يبقى تصفح الشجرة والبحث وحاسبة القرابة مفتوحاً للجميع، ويُشترط التوثيق لرفع الطلبات فقط.</small>
+              </span>
+            </label>
+            <label class="setting-row">
+              <input type="checkbox" id="set-req-mfa" />
+              <span>
+                <strong>اشتراط التحقق الثنائي بتطبيق المصادقة عند رفع الطلبات</strong>
+                <small class="muted">حماية إضافية تمنع إرسال طلبات باسم قريب عند تسرب كلمة المرور وحدها.</small>
+              </span>
+            </label>
+          </div>
+          <button type="button" class="btn btn-primary" id="save-site-settings-btn">حفظ إعدادات المنصة</button>
+        </div>
+
+        <div id="admins-list" class="list"></div>
+        <div class="card">
+          <h2>إدارة المشرفين وصلاحياتهم</h2>
+          <p class="muted">
+            يستطيع <strong>المالك</strong> من القائمة أعلاه تحديد صلاحيات كل مشرف بدقة (مراجعة الطلبات، تعديل الشجرة، والوصول للهوية البصرية والورق الرسمي) وحفظها مباشرة.
+            ولإضافة مشرف جديد لأول مرة: أنشئ حسابه من قسم المستخدمين في لوحة سوبابيس، ثم أضفه لجدول المشرفين من محرر الاستعلامات بالأمر الموجود في آخر ملف الصلاحيات.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"
+    integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK"
+    crossorigin="anonymous"
+  ></script>
+  <script src="admin.js"></script>
+</body>
+</html>
