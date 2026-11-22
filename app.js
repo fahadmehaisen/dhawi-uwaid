@@ -198,6 +198,10 @@
     memberEnrollFactorId: null,
     memberVerifyFactorId: null,
     memberProfile: null,
+    account: null,
+    authNext: null,
+    authReturnToUpdateModal: false,
+    authReturnTargetNodeId: null,
     sunburstRootId: "R00",
     sunburstInspectorId: "R00",
     directoryPageSize: 48,
@@ -2306,6 +2310,20 @@
   }
 
   function setMemberAuthStatus(msg, isErr) {
+    const box = document.getElementById("auth-portal-status");
+    if (!box) return;
+    if (!msg) {
+      box.classList.add("hidden");
+      box.classList.remove("is-error");
+      box.textContent = "";
+      return;
+    }
+    box.textContent = msg;
+    box.classList.toggle("is-error", Boolean(isErr));
+    box.classList.remove("hidden");
+  }
+
+  function setUpdateGateStatus(msg, isErr) {
     const box = document.getElementById("member-auth-status");
     if (!box) return;
     if (!msg) {
@@ -2369,14 +2387,300 @@
     }
   }
 
-  async function refreshUpdateModalAuth() {
-    const gate = document.getElementById("member-auth-gate");
-    const verifiedBar = document.getElementById("member-verified-bar");
-    const form = document.getElementById("update-request-form");
+  const PERM_LABELS_AR = {
+    review: "مراجعة الطلبات",
+    add: "إضافة أسماء",
+    edit: "تعديل الأسماء والسير",
+    del: "حذف أسماء",
+    brand: "الهوية والورق الرسمي",
+    audit: "سجل التعديلات",
+    backup: "النسخة الاحتياطية",
+  };
+
+  function getShortAccountName(ctx) {
+    if (!ctx || !ctx.signedIn) return "دخول / تسجيل";
+    if (ctx.adminRow && ctx.adminRow.display_name) return ctx.adminRow.display_name;
+    if (ctx.memberProfile && ctx.memberProfile.member_full_lineage) {
+      return ctx.memberProfile.member_full_lineage.split(" بن ").slice(0, 2).join(" بن ");
+    }
+    const email = (ctx.user && ctx.user.email) || "";
+    return email.split("@")[0] || "حسابي";
+  }
+
+  function renderAuthPortalHub(ctx) {
+    const hub = document.getElementById("auth-portal-hub");
+    if (!hub) return;
+    const roleBadge = document.getElementById("auth-hub-role-badge");
+    const nameEl = document.getElementById("auth-hub-name");
+    const lineageEl = document.getElementById("auth-hub-lineage");
+    const emailEl = document.getElementById("auth-hub-email");
+    const permsEl = document.getElementById("auth-hub-perms");
+    const adminBtn = document.getElementById("auth-hub-admin-btn");
+    const locateBtn = document.getElementById("auth-hub-locate-btn");
+
+    const isOwner = ctx.role === "owner";
+    const isMod = ctx.role === "moderator";
+    const isAdmin = isOwner || isMod;
+
+    if (roleBadge) {
+      roleBadge.className = "auth-role-badge " + (isOwner ? "is-owner" : isMod ? "is-moderator" : "is-member");
+      roleBadge.textContent = isOwner ? "مدير النظام (حساب وحيد)" : isMod ? "منسّق ومشرف" : "عضو موثّق في الشجرة";
+    }
+
+    if (nameEl) {
+      nameEl.textContent = getShortAccountName(ctx);
+    }
+    if (lineageEl) {
+      lineageEl.textContent =
+        (ctx.memberProfile && ctx.memberProfile.member_full_lineage) ||
+        (isAdmin ? "مرتبط بحساب الإدارة" : "");
+      lineageEl.classList.toggle("hidden", !lineageEl.textContent);
+    }
+    if (emailEl) {
+      emailEl.textContent = (ctx.user && ctx.user.email) || "";
+    }
+
+    if (permsEl) {
+      permsEl.textContent = "";
+      if (isOwner) {
+        permsEl.classList.remove("hidden");
+        permsEl.appendChild(el("span", { className: "auth-perm-chip is-owner", textContent: "كامل صلاحيات إدارة المنصة والأعضاء" }));
+      } else if (isMod) {
+        permsEl.classList.remove("hidden");
+        const activePerms = Object.entries(PERM_LABELS_AR)
+          .filter(([k]) => Boolean(ctx.perms && ctx.perms[k]))
+          .map(([, label]) => label);
+        if (activePerms.length) {
+          for (const lbl of activePerms) {
+            permsEl.appendChild(el("span", { className: "auth-perm-chip", textContent: lbl }));
+          }
+        } else {
+          permsEl.appendChild(
+            el("span", {
+              className: "auth-perm-chip is-muted",
+              textContent: "لا توجد صلاحيات مفعّلة حالياً — بانتظار تفعيلها من مدير النظام",
+            })
+          );
+        }
+      } else {
+        permsEl.classList.add("hidden");
+      }
+    }
+
+    if (adminBtn) adminBtn.classList.toggle("hidden", !isAdmin);
+    if (locateBtn) locateBtn.classList.toggle("hidden", !(ctx.memberProfile && ctx.memberProfile.member_id));
+
+    hub.classList.remove("hidden");
+  }
+
+  function updateTopbarAccountUi(ctx) {
+    const adminLink = document.getElementById("topbar-admin-link");
+    const portalBtn = document.getElementById("open-auth-portal-btn");
+    const portalLbl = document.getElementById("open-auth-portal-label");
+    const isAdmin = Boolean(ctx && ctx.signedIn && (ctx.role === "owner" || ctx.role === "moderator"));
+
+    if (adminLink) {
+      adminLink.classList.toggle("hidden", !isAdmin);
+    }
+    if (portalBtn && portalLbl) {
+      if (!ctx || !ctx.signedIn) {
+        portalLbl.textContent = "دخول / تسجيل";
+        portalBtn.classList.remove("is-signed-in");
+      } else {
+        const shortName = getShortAccountName(ctx);
+        const roleTag = ctx.role === "owner" ? "مدير النظام" : ctx.role === "moderator" ? "منسّق" : "";
+        portalLbl.textContent = roleTag ? `${shortName} • ${roleTag}` : shortName;
+        portalBtn.classList.add("is-signed-in");
+      }
+    }
+  }
+
+  async function renderAuthPortalState(ctx) {
+    const portalModal = document.getElementById("auth-portal-modal");
     const authForms = document.getElementById("member-auth-forms");
     const linkForm = document.getElementById("member-link-form");
     const enrollBox = document.getElementById("member-mfa-enroll");
     const verifyBox = document.getElementById("member-mfa-verify");
+    const hub = document.getElementById("auth-portal-hub");
+    const nextNote = document.getElementById("auth-portal-next-note");
+    if (!portalModal) return;
+
+    const portalOpen = !portalModal.classList.contains("hidden");
+    const hideAll = () => {
+      if (authForms) authForms.classList.add("hidden");
+      if (linkForm) linkForm.classList.add("hidden");
+      if (enrollBox) enrollBox.classList.add("hidden");
+      if (verifyBox) verifyBox.classList.add("hidden");
+      if (hub) hub.classList.add("hidden");
+    };
+
+    hideAll();
+    if (nextNote) nextNote.classList.toggle("hidden", state.authNext !== "admin");
+
+    if (!ctx || !ctx.signedIn) {
+      if (authForms) authForms.classList.remove("hidden");
+      return;
+    }
+
+    const client = window.DHAWI_UWAID_DB && window.DHAWI_UWAID_DB.getAuthClient();
+    const isAdmin = ctx.role === "owner" || ctx.role === "moderator";
+    const reqMfa = DATA.meta ? DATA.meta.featureRequireMemberMfa !== false : true;
+
+    if (!isAdmin && !ctx.memberProfile) {
+      if (linkForm) linkForm.classList.remove("hidden");
+      setMemberAuthStatus("الخطوة الأخيرة لإكمال تسجيلك: اختر اسمك الحقيقي من شجرة ذوي عويض وأدخل رقم جوالك لربطه بحسابك.", false);
+      return;
+    }
+
+    if ((isAdmin || reqMfa) && ctx.aal !== "aal2" && client) {
+      setMemberAuthStatus("", false);
+      const { data: factors } = await client.auth.mfa.listFactors();
+      const totp = (factors && factors.totp) || [];
+      const verified = totp.find((f) => f.status === "verified");
+      if (verified) {
+        state.memberVerifyFactorId = verified.id;
+        if (verifyBox) verifyBox.classList.remove("hidden");
+      } else {
+        for (const f of (factors && factors.all) || []) {
+          if (f.status !== "verified") {
+            await client.auth.mfa.unenroll({ factorId: f.id });
+          }
+        }
+        const { data: enrolled, error: enrErr } = await client.auth.mfa.enroll({
+          factorType: "totp",
+          friendlyName: isAdmin ? "Dhawi Uwaid Admin" : "Dhawi Uwaid Member",
+        });
+        if (enrErr) {
+          setMemberAuthStatus("تعذّر تجهيز رمز التحقق الثنائي حالياً.", true);
+          return;
+        }
+        state.memberEnrollFactorId = enrolled.id;
+        const qrImg = document.getElementById("member-enroll-qr");
+        const secEl = document.getElementById("member-enroll-secret");
+        if (qrImg) qrImg.src = enrolled.totp.qr_code;
+        if (secEl) secEl.textContent = enrolled.totp.secret;
+        if (enrollBox) enrollBox.classList.remove("hidden");
+      }
+      return;
+    }
+
+    if (portalOpen && state.authNext === "admin") {
+      state.authNext = null;
+      if (nextNote) nextNote.classList.add("hidden");
+      if (isAdmin) {
+        window.location.href = "admin.html";
+        return;
+      }
+      setMemberAuthStatus(
+        "تم تسجيل دخولك كعضو في شجرة ذوي عويض. صلاحيات لوحة الإدارة تُفعَّل من قِبل مدير النظام عند اختيارك كمنسّق.",
+        false
+      );
+      renderAuthPortalHub(ctx);
+      return;
+    }
+
+    if (portalOpen && state.authReturnToUpdateModal) {
+      const targetId = state.authReturnTargetNodeId || null;
+      state.authReturnToUpdateModal = false;
+      state.authReturnTargetNodeId = null;
+      closeAuthPortal();
+      openUpdateModal(targetId);
+      return;
+    }
+
+    renderAuthPortalHub(ctx);
+  }
+
+  async function refreshAccountUi() {
+    if (!window.DHAWI_UWAID_DB || typeof window.DHAWI_UWAID_DB.fetchMyAccountContext !== "function") {
+      return null;
+    }
+    const client = window.DHAWI_UWAID_DB.getAuthClient();
+    let ctx = await window.DHAWI_UWAID_DB.fetchMyAccountContext();
+
+    if (ctx.signedIn && client) {
+      try {
+        const pendingInvRaw = localStorage.getItem("dhawi_uwaid_pending_invite");
+        if (pendingInvRaw) {
+          const pendingInv = JSON.parse(pendingInvRaw);
+          if (pendingInv && pendingInv.code && pendingInv.phone) {
+            const { data: claimOk, error: claimErr } = await client.rpc("claim_member_invite", {
+              p_temp_password: pendingInv.code,
+              p_phone: pendingInv.phone,
+            });
+            if (!claimErr && claimOk && claimOk.ok) {
+              localStorage.removeItem("dhawi_uwaid_pending_invite");
+              ctx = await window.DHAWI_UWAID_DB.fetchMyAccountContext();
+            }
+          }
+        }
+      } catch (_) {}
+
+      if (!ctx.memberProfile) {
+        const meta = (ctx.user && ctx.user.user_metadata) || {};
+        const pendingMemberId = localStorage.getItem("dhawi_uwaid_pending_member_id") || meta.member_id || "";
+        const rawPhone = localStorage.getItem("dhawi_uwaid_pending_phone") || meta.phone || "";
+        const pendingPhone = String(rawPhone).replace(/[^0-9+]/g, "");
+        if (pendingMemberId && DATA.nodesById[pendingMemberId] && pendingPhone.replace(/\D/g, "").length >= 8) {
+          const { data: inserted, error: linkErr } = await client
+            .from("member_profiles")
+            .insert([{ user_id: ctx.user.id, member_id: pendingMemberId, phone: pendingPhone }])
+            .select("member_id, member_full_lineage, branch_name, phone")
+            .maybeSingle();
+          if (!linkErr && inserted) {
+            try {
+              localStorage.removeItem("dhawi_uwaid_pending_member_id");
+              localStorage.removeItem("dhawi_uwaid_pending_phone");
+            } catch (_) {}
+            ctx = await window.DHAWI_UWAID_DB.fetchMyAccountContext();
+          }
+        }
+      }
+    }
+
+    state.account = ctx;
+    state.memberProfile = ctx.memberProfile || null;
+    updateTopbarAccountUi(ctx);
+    await renderAuthPortalState(ctx);
+    return ctx;
+  }
+
+  function openAuthPortal(options) {
+    const opts = options || {};
+    state.authNext = opts.next !== undefined ? opts.next : null;
+    state.authReturnToUpdateModal = Boolean(opts.returnToUpdateModal);
+    if (!state.authReturnToUpdateModal) {
+      state.authReturnTargetNodeId = null;
+    }
+    if (opts.tab && typeof window.__duSwitchAuthTab === "function") {
+      window.__duSwitchAuthTab(opts.tab);
+    }
+    setMemberAuthStatus("", false);
+    const backdrop = document.getElementById("auth-portal-backdrop");
+    const modal = document.getElementById("auth-portal-modal");
+    if (backdrop) backdrop.classList.remove("hidden");
+    if (modal) modal.classList.remove("hidden");
+    refreshAccountUi();
+  }
+
+  function closeAuthPortal() {
+    state.authReturnToUpdateModal = false;
+    state.authReturnTargetNodeId = null;
+    for (const id of ["auth-member-dropdown", "link-member-dropdown"]) {
+      const dd = document.getElementById(id);
+      if (dd) dd.classList.add("hidden");
+    }
+    const backdrop = document.getElementById("auth-portal-backdrop");
+    const modal = document.getElementById("auth-portal-modal");
+    if (backdrop) backdrop.classList.add("hidden");
+    if (modal) modal.classList.add("hidden");
+  }
+
+  async function refreshUpdateModalAuth() {
+    const gate = document.getElementById("member-auth-gate");
+    const verifiedBar = document.getElementById("member-verified-bar");
+    const form = document.getElementById("update-request-form");
+    const ctaRow = document.getElementById("update-auth-cta-row");
     const cloudSection = document.getElementById("cloud-my-requests-section");
     if (!gate || !form) return;
 
@@ -2384,151 +2688,94 @@
     const reqMfa = DATA.meta ? DATA.meta.featureRequireMemberMfa !== false : true;
     const schemaReady = Boolean(DATA.meta && DATA.meta.hasMemberSchema);
 
-    const hideAllSubSteps = () => {
-      if (authForms) authForms.classList.add("hidden");
-      if (linkForm) linkForm.classList.add("hidden");
-      if (enrollBox) enrollBox.classList.add("hidden");
-      if (verifyBox) verifyBox.classList.add("hidden");
-    };
-
     if (!reqAuth) {
       gate.classList.add("hidden");
       if (verifiedBar) verifiedBar.classList.add("hidden");
       form.classList.remove("hidden");
       if (cloudSection) cloudSection.classList.add("hidden");
+      setUpdateGateStatus("", false);
       return;
     }
 
     const client = window.DHAWI_UWAID_DB && window.DHAWI_UWAID_DB.getAuthClient();
     if (!client || !schemaReady) {
       gate.classList.remove("hidden");
-      hideAllSubSteps();
+      if (ctaRow) ctaRow.classList.add("hidden");
       if (verifiedBar) verifiedBar.classList.add("hidden");
       form.classList.remove("hidden");
-      setMemberAuthStatus(
-        "ميزة توثيق العضوية والتحقق الثنائي للطلبات بانتظار تشغيل التحديث الأمني في قاعدة البيانات من قِبل المالك؛ لا يزال بإمكانك تجهيز الطلب وحفظه محلياً أو نسخه للواتساب.",
+      setUpdateGateStatus(
+        "ميزة توثيق العضوية والتحقق الثنائي للطلبات بانتظار تشغيل التحديث الأمني في قاعدة البيانات من قِبل مدير النظام؛ لا يزال بإمكانك تجهيز الطلب وحفظه محلياً أو نسخه للواتساب.",
         false
       );
       return;
     }
 
-    const { data: sess } = await client.auth.getSession();
-    if (!sess || !sess.session) {
-      state.memberProfile = null;
+    const ctx = await refreshAccountUi();
+    if (!ctx || !ctx.signedIn) {
       gate.classList.remove("hidden");
-      hideAllSubSteps();
-      if (authForms) authForms.classList.remove("hidden");
+      if (ctaRow) ctaRow.classList.remove("hidden");
       if (verifiedBar) verifiedBar.classList.add("hidden");
       form.classList.add("hidden");
       if (cloudSection) cloudSection.classList.add("hidden");
+      setUpdateGateStatus("", false);
       return;
     }
 
-    const user = sess.session.user;
-    try {
-      const pendingInvRaw = localStorage.getItem("dhawi_uwaid_pending_invite");
-      if (pendingInvRaw) {
-        const pendingInv = JSON.parse(pendingInvRaw);
-        if (pendingInv && pendingInv.code && pendingInv.phone) {
-          const { data: claimOk, error: claimErr } = await client.rpc("claim_member_invite", {
-            p_temp_password: pendingInv.code,
-            p_phone: pendingInv.phone,
-          });
-          if (!claimErr && claimOk && claimOk.ok) {
-            localStorage.removeItem("dhawi_uwaid_pending_invite");
-          }
-        }
-      }
-    } catch (_) {}
+    const isAdmin = ctx.role === "owner" || ctx.role === "moderator";
+    const needsLink = !isAdmin && !ctx.memberProfile;
+    const needsMfa = (isAdmin || reqMfa) && ctx.aal !== "aal2";
 
-    const { data: prof, error: profErr } = await client
-      .from("member_profiles")
-      .select("member_id, member_full_lineage, branch_name, phone")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (profErr) {
+    if (needsLink || needsMfa) {
       gate.classList.remove("hidden");
-      hideAllSubSteps();
-      form.classList.remove("hidden");
-      setMemberAuthStatus("تعذّر الاتصال بسجل الأعضاء حالياً — يمكنك حفظ الطلب محلياً والمحاولة لاحقاً.", true);
-      return;
-    }
-
-    if (!prof) {
-      const pendingMemberId = localStorage.getItem("dhawi_uwaid_pending_member_id");
-      const pendingPhone = (localStorage.getItem("dhawi_uwaid_pending_phone") || "").replace(/[^0-9+]/g, "");
-      if (pendingMemberId && DATA.nodesById[pendingMemberId] && pendingPhone.replace(/\D/g, "").length >= 8) {
-        const { data: inserted, error: linkErr } = await client
-          .from("member_profiles")
-          .insert([{ user_id: user.id, member_id: pendingMemberId, phone: pendingPhone }])
-          .select("member_id, member_full_lineage, branch_name, phone")
-          .single();
-        if (!linkErr && inserted) {
-          localStorage.removeItem("dhawi_uwaid_pending_member_id");
-          localStorage.removeItem("dhawi_uwaid_pending_phone");
-          return refreshUpdateModalAuth();
-        }
-      }
-      gate.classList.remove("hidden");
-      hideAllSubSteps();
-      if (linkForm) linkForm.classList.remove("hidden");
+      if (ctaRow) ctaRow.classList.remove("hidden");
       if (verifiedBar) verifiedBar.classList.add("hidden");
       form.classList.add("hidden");
-      setMemberAuthStatus("الخطوة الأخيرة لإكمال تسجيلك: اختر اسمك الحقيقي من شجرة ذوي عويض وأدخل رقم جوالك لربطه بحسابك.", false);
+      if (cloudSection) cloudSection.classList.add("hidden");
+      setUpdateGateStatus(
+        needsLink
+          ? "حسابك مسجّل دخولاً — أكمل ربط اسمك في الشجرة عبر البوابة الموحّدة للمتابعة."
+          : "حسابك بحاجة لإتمام التحقق الثنائي عبر البوابة الموحّدة للمتابعة.",
+        false
+      );
       return;
     }
 
-    if (reqMfa) {
-      const { data: aal } = await client.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (!aal || aal.currentLevel !== "aal2") {
-        const { data: factors } = await client.auth.mfa.listFactors();
-        const totp = (factors && factors.totp) || [];
-        const verified = totp.find((f) => f.status === "verified");
-        gate.classList.remove("hidden");
-        hideAllSubSteps();
-        if (verifiedBar) verifiedBar.classList.add("hidden");
-        form.classList.add("hidden");
-        if (verified) {
-          state.memberVerifyFactorId = verified.id;
-          if (verifyBox) verifyBox.classList.remove("hidden");
-        } else {
-          for (const f of (factors && factors.all) || []) {
-            if (f.status !== "verified") {
-              await client.auth.mfa.unenroll({ factorId: f.id });
-            }
-          }
-          const { data: enrolled, error: enrErr } = await client.auth.mfa.enroll({
-            factorType: "totp",
-            friendlyName: "Dhawi Uwaid Member",
-          });
-          if (enrErr) {
-            setMemberAuthStatus("تعذّر تجهيز رمز التحقق الثنائي حالياً.", true);
-            return;
-          }
-          state.memberEnrollFactorId = enrolled.id;
-          const qrImg = document.getElementById("member-enroll-qr");
-          const secEl = document.getElementById("member-enroll-secret");
-          if (qrImg) qrImg.src = enrolled.totp.qr_code;
-          if (secEl) secEl.textContent = enrolled.totp.secret;
-          if (enrollBox) enrollBox.classList.remove("hidden");
-        }
-        return;
-      }
-    }
-
-    state.memberProfile = prof;
-    setMemberAuthStatus("", false);
+    setUpdateGateStatus("", false);
     gate.classList.add("hidden");
+
     if (verifiedBar) {
-      document.getElementById("member-verified-name").textContent = prof.member_full_lineage || "عضو موثّق";
-      document.getElementById("member-verified-branch").textContent = prof.branch_name ? `فرع ${prof.branch_name}` : "";
+      const displayLineage =
+        (ctx.memberProfile && ctx.memberProfile.member_full_lineage) ||
+        (ctx.adminRow && ctx.adminRow.display_name) ||
+        "عضو موثّق";
+      const roleEl = document.getElementById("member-verified-role");
+      const admLink = document.getElementById("member-verified-admin-link");
+      document.getElementById("member-verified-name").textContent = displayLineage;
+      document.getElementById("member-verified-branch").textContent =
+        ctx.memberProfile && ctx.memberProfile.branch_name ? `فرع ${ctx.memberProfile.branch_name}` : "";
+      if (roleEl) {
+        roleEl.className =
+          "auth-role-badge " + (ctx.role === "owner" ? "is-owner" : ctx.role === "moderator" ? "is-moderator" : "is-member");
+        roleEl.textContent = ctx.role === "owner" ? "مدير النظام" : ctx.role === "moderator" ? "منسّق" : "عضو موثّق";
+        roleEl.classList.remove("hidden");
+      }
+      if (admLink) {
+        admLink.classList.toggle("hidden", !isAdmin);
+      }
       verifiedBar.classList.remove("hidden");
     }
+
     const subInput = document.getElementById("req-submitter");
-    if (subInput && !subInput.value.trim() && prof.member_full_lineage) {
-      subInput.value = prof.member_full_lineage.split(" بن ").slice(0, 3).join(" بن ");
+    if (subInput && !subInput.value.trim()) {
+      const defName =
+        (ctx.memberProfile && ctx.memberProfile.member_full_lineage
+          ? ctx.memberProfile.member_full_lineage.split(" بن ").slice(0, 3).join(" بن ")
+          : "") ||
+        (ctx.adminRow && ctx.adminRow.display_name) ||
+        "";
+      if (defName) subInput.value = defName;
     }
+
     form.classList.remove("hidden");
     await renderCloudMyRequests();
   }
@@ -2648,7 +2895,7 @@
           setMemberAuthStatus("تعذّر تسجيل الدخول: تأكد من صحة البريد الإلكتروني وكلمة المرور أو تفعيل البريد.", true);
           return;
         }
-        await refreshUpdateModalAuth();
+        await refreshAccountUi();
       });
     }
 
@@ -2691,7 +2938,7 @@
           await client.from("member_profiles").insert([{ user_id: data.user.id, member_id: chosenId, phone: rawPhone }]);
           localStorage.removeItem("dhawi_uwaid_pending_member_id");
           localStorage.removeItem("dhawi_uwaid_pending_phone");
-          await refreshUpdateModalAuth();
+          await refreshAccountUi();
           return;
         }
         switchAuthTab("signin");
@@ -2763,7 +3010,7 @@
             return;
           }
           localStorage.removeItem("dhawi_uwaid_pending_invite");
-          await refreshUpdateModalAuth();
+          await refreshAccountUi();
           return;
         }
 
@@ -2800,7 +3047,8 @@
           setMemberAuthStatus("تعذّر ربط الاسم المختار بالحساب، تأكد من اختيار أحد فروع ذوي عويض ومن صحة رقم الجوال.", true);
           return;
         }
-        await refreshUpdateModalAuth();
+        setMemberAuthStatus("", false);
+        await refreshAccountUi();
       });
     }
 
@@ -2825,7 +3073,7 @@
           return;
         }
         showToast("تم توثيق حسابك وتفعيل التحقق الثنائي بنجاح.");
-        await refreshUpdateModalAuth();
+        await refreshAccountUi();
       });
     }
 
@@ -2849,7 +3097,7 @@
           setMemberAuthStatus("رمز التحقق غير صحيح — تأكد من الرمز وحاول مرة أخرى.", true);
           return;
         }
-        await refreshUpdateModalAuth();
+        await refreshAccountUi();
       });
     }
 
@@ -2858,12 +3106,72 @@
         const client = window.DHAWI_UWAID_DB && window.DHAWI_UWAID_DB.getAuthClient();
         if (client) await client.auth.signOut();
         state.memberProfile = null;
-        await refreshUpdateModalAuth();
+        state.account = null;
+        state.authNext = null;
+        state.authReturnToUpdateModal = false;
+        setMemberAuthStatus("", false);
+        await refreshAccountUi();
+        const updModal = document.getElementById("update-modal");
+        if (updModal && !updModal.classList.contains("hidden")) {
+          await refreshUpdateModalAuth();
+        }
       });
     });
 
+    const openAuthBtn = document.getElementById("open-auth-portal-btn");
+    if (openAuthBtn) {
+      openAuthBtn.addEventListener("click", () => openAuthPortal());
+    }
+    const authCloseBtn = document.getElementById("auth-portal-close-btn");
+    if (authCloseBtn) authCloseBtn.addEventListener("click", closeAuthPortal);
+    const authBackdrop = document.getElementById("auth-portal-backdrop");
+    if (authBackdrop) authBackdrop.addEventListener("click", closeAuthPortal);
+
+    const updOpenAuthBtn = document.getElementById("update-open-auth-btn");
+    if (updOpenAuthBtn) {
+      updOpenAuthBtn.addEventListener("click", () => {
+        state.authReturnTargetNodeId = state.prefillTargetNodeId || null;
+        closeUpdateModal();
+        openAuthPortal({ tab: "signin", returnToUpdateModal: true });
+      });
+    }
+
+    const hubUpdateBtn = document.getElementById("auth-hub-update-btn");
+    if (hubUpdateBtn) {
+      hubUpdateBtn.addEventListener("click", () => {
+        closeAuthPortal();
+        openUpdateModal();
+      });
+    }
+
+    const hubLocateBtn = document.getElementById("auth-hub-locate-btn");
+    if (hubLocateBtn) {
+      hubLocateBtn.addEventListener("click", () => {
+        const memId = state.account && state.account.memberProfile && state.account.memberProfile.member_id;
+        closeAuthPortal();
+        if (memId && DATA.nodesById[memId]) {
+          locateNodeInTree(memId);
+          openProfileDrawer(memId);
+        }
+      });
+    }
+
     const refCloudBtn = document.getElementById("refresh-cloud-requests-btn");
     if (refCloudBtn) refCloudBtn.addEventListener("click", renderCloudMyRequests);
+
+    const authClient = window.DHAWI_UWAID_DB && window.DHAWI_UWAID_DB.getAuthClient();
+    if (authClient) {
+      authClient.auth.onAuthStateChange((event) => {
+        if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "TOKEN_REFRESHED") {
+          refreshAccountUi().then(() => {
+            const updModal = document.getElementById("update-modal");
+            if (updModal && !updModal.classList.contains("hidden")) {
+              refreshUpdateModalAuth();
+            }
+          });
+        }
+      });
+    }
   }
 
   function openUpdateModal(prefillNodeId) {
@@ -3291,6 +3599,7 @@
       if (ev.key === "Escape") {
         closeProfileDrawer();
         closeUpdateModal();
+        closeAuthPortal();
       }
     });
 
@@ -3314,10 +3623,11 @@
       openProfileDrawer(qPerson);
     }
 
+    const qAuth = params.get("auth");
+    const qNext = params.get("next") === "admin" ? "admin" : null;
     const qInvite = params.get("invite");
     if (qInvite && qInvite.trim()) {
-      openUpdateModal();
-      if (typeof window.__duSwitchAuthTab === "function") window.__duSwitchAuthTab("invite");
+      openAuthPortal({ tab: "invite", next: qNext });
       const invInput = document.getElementById("member-invite-code");
       if (invInput) {
         invInput.value = qInvite.trim();
@@ -3325,6 +3635,10 @@
           window.__duPreviewPublicInvite(invInput.value);
         }
       }
+    } else if (qAuth === "login" || qAuth === "signup") {
+      openAuthPortal({ tab: qAuth === "signup" ? "signup" : "signin", next: qNext });
+    } else {
+      refreshAccountUi();
     }
 
     // Non-blocking background sync with dedicated Dhawi Uwaid Supabase project
@@ -3372,6 +3686,15 @@
     const drawerEl = document.getElementById("profile-drawer");
     if (drawerEl && !drawerEl.classList.contains("hidden") && state.drawerNodeId && DATA.nodesById[state.drawerNodeId]) {
       renderProfileDrawer();
+    }
+
+    const portalEl = document.getElementById("auth-portal-modal");
+    if (portalEl && !portalEl.classList.contains("hidden")) {
+      refreshAccountUi();
+    }
+    const updEl = document.getElementById("update-modal");
+    if (updEl && !updEl.classList.contains("hidden")) {
+      refreshUpdateModalAuth();
     }
   }
 

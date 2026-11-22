@@ -10,7 +10,8 @@
 
   const SUPABASE_URL = "https://nmsmbcfnlqvnzfprexbh.supabase.co";
   const SUPABASE_KEY = "sb_publishable_nM7K9SCmR-MkwEkE0o-Azg_aqwxB8G9";
-  const STORAGE_KEY = "dhawi-uwaid-admin-auth";
+  const STORAGE_KEY = "dhawi-uwaid-auth";
+  const LEGACY_STORAGE_KEY = "dhawi-uwaid-admin-auth";
 
   document.documentElement.style.visibility = "hidden";
 
@@ -57,8 +58,8 @@
       actions.style.cssText = "display:flex;gap:10px;justify-content:center;flex-wrap:wrap;";
 
       const loginLink = document.createElement("a");
-      loginLink.href = "../admin.html";
-      loginLink.textContent = "دخول لوحة المشرفين";
+      loginLink.href = "../index.html?auth=login&next=admin";
+      loginLink.textContent = "بوابة الدخول الموحّدة";
       loginLink.style.cssText =
         "background:#12372A;color:#F8F4EC;text-decoration:none;font-weight:700;padding:10px 18px;border-radius:10px;";
 
@@ -83,7 +84,7 @@
 
   async function verifyAccess() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
       if (!raw) return renderDenied();
       const parsed = JSON.parse(raw);
       const token = parsed && (parsed.access_token || (parsed.currentSession && parsed.currentSession.access_token));

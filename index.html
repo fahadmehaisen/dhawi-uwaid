@@ -72,6 +72,10 @@
           <button type="button" id="mobile-search-trigger" class="btn btn-ghost btn-sm mobile-only-btn topbar-icon-btn" aria-label="بحث في الشجرة" title="بحث">
             <span aria-hidden="true">⌕</span>
           </button>
+          <a href="admin.html" id="topbar-admin-link" class="btn btn-outline btn-sm topbar-admin-pill hidden" title="الانتقال إلى لوحة الإدارة">لوحة الإدارة</a>
+          <button type="button" id="open-auth-portal-btn" class="btn btn-outline btn-sm topbar-account-btn" title="بوابة الدخول والتسجيل الموحّدة">
+            <span id="open-auth-portal-label">دخول / تسجيل</span>
+          </button>
           <button type="button" id="open-update-modal-btn" class="btn btn-gold btn-sm" title="إضافة مولود أو طلب تحديث">
             <span>+ إضافة<span class="desktop-only-inline"> / تحديث</span></span>
           </button>
@@ -466,151 +470,28 @@
       <div id="member-auth-gate" class="member-auth-gate hidden">
         <div class="auth-gate-banner">
           <strong>توثيق العضوية قبل إرسال الطلب</strong>
-          <p class="hint-sub">التصفح مفتوح للجميع دون تسجيل، أما إضافة أو تعديل الأسماء فيتطلب حساباً موثقاً من أبناء ذوي عويض مع اختيار اسمك في الشجرة والتحقق الثنائي.</p>
+          <p class="hint-sub">التصفح مفتوح للجميع دون تسجيل، أما إضافة أو تعديل الأسماء فيتطلب الدخول أو التسجيل عبر بوابة الدخول الموحّدة لربط اسمك في الشجرة.</p>
         </div>
 
         <div id="member-auth-status" class="member-auth-status hidden" role="status" aria-live="polite"></div>
 
-        <div id="member-auth-forms">
-          <div class="auth-mode-tabs" role="tablist">
-            <button type="button" id="auth-tab-signin" class="auth-mode-btn active" role="tab" aria-selected="true">تسجيل دخول</button>
-            <button type="button" id="auth-tab-signup" class="auth-mode-btn" role="tab" aria-selected="false">تسجيل جديد (من الشجرة)</button>
-            <button type="button" id="auth-tab-invite" class="auth-mode-btn" role="tab" aria-selected="false">كلمة مرور مؤقتة</button>
-          </div>
-
-          <form id="member-signin-form" class="update-form">
-            <div class="form-row-2">
-              <div class="field-group">
-                <label for="member-signin-email">البريد الإلكتروني</label>
-                <input type="email" id="member-signin-email" class="text-input" dir="ltr" autocomplete="username" required />
-              </div>
-              <div class="field-group">
-                <label for="member-signin-password">كلمة المرور</label>
-                <input type="password" id="member-signin-password" class="text-input" dir="ltr" autocomplete="current-password" required />
-              </div>
-            </div>
-            <div class="modal-form-actions">
-              <button type="submit" id="member-signin-btn" class="btn btn-emerald">دخول ومتابعة</button>
-            </div>
-          </form>
-
-          <form id="member-signup-form" class="update-form hidden">
-            <div class="field-group">
-              <label for="auth-member-search">من أنت في شجرة ذوي عويض؟ (ابحث واختر اسمك)</label>
-              <div class="autocomplete-wrap">
-                <input type="search" id="auth-member-search" class="text-input" placeholder="مثال: فهد بن متعب بن زايد" autocomplete="off" />
-                <div id="auth-member-dropdown" class="autocomplete-dropdown hidden"></div>
-              </div>
-              <div id="auth-member-selected" class="selected-person-pill hidden"></div>
-            </div>
-            <div class="form-row-2">
-              <div class="field-group">
-                <label for="member-signup-email">البريد الإلكتروني</label>
-                <input type="email" id="member-signup-email" class="text-input" dir="ltr" autocomplete="email" required />
-              </div>
-              <div class="field-group">
-                <label for="member-signup-phone">رقم الجوال (إجباري)</label>
-                <input type="tel" id="member-signup-phone" class="text-input" dir="ltr" inputmode="tel" placeholder="05xxxxxxxx" autocomplete="tel" required />
-              </div>
-            </div>
-            <div class="field-group">
-              <label for="member-signup-password">كلمة المرور (٦ أحرف فأكثر)</label>
-              <input type="password" id="member-signup-password" class="text-input" dir="ltr" autocomplete="new-password" minlength="6" required />
-            </div>
-            <div class="modal-form-actions">
-              <button type="submit" id="member-signup-btn" class="btn btn-emerald">إنشاء الحساب وربط الاسم</button>
-            </div>
-          </form>
-
-          <form id="member-invite-form" class="update-form hidden">
-            <p class="hint-sub">أدخل كلمة المرور المؤقتة المرسلة لك من مدير النظام لمرة واحدة، ثم أكمل بريدك ورقم جوالك وكلمة مرورك الخاصة.</p>
-            <div class="field-group">
-              <label for="member-invite-code">كلمة المرور المؤقتة</label>
-              <input type="text" id="member-invite-code" class="text-input" dir="ltr" placeholder="DU-XXXX-XXXX" autocomplete="off" required />
-              <div id="member-invite-preview" class="invite-preview-box hidden"></div>
-            </div>
-            <div class="form-row-2">
-              <div class="field-group">
-                <label for="member-invite-email">البريد الإلكتروني الشخصي</label>
-                <input type="email" id="member-invite-email" class="text-input" dir="ltr" autocomplete="email" required />
-              </div>
-              <div class="field-group">
-                <label for="member-invite-phone">رقم الجوال (إجباري)</label>
-                <input type="tel" id="member-invite-phone" class="text-input" dir="ltr" inputmode="tel" placeholder="05xxxxxxxx" autocomplete="tel" required />
-              </div>
-            </div>
-            <div class="field-group">
-              <label for="member-invite-password">كلمة المرور الجديدة (١٠ خانات على الأقل)</label>
-              <input type="password" id="member-invite-password" class="text-input" dir="ltr" autocomplete="new-password" minlength="10" required />
-            </div>
-            <div class="modal-form-actions">
-              <button type="submit" id="member-invite-btn" class="btn btn-emerald">إنشاء الحساب وتفعيل الدعوة</button>
-            </div>
-          </form>
-        </div>
-
-        <form id="member-link-form" class="update-form hidden">
-          <div class="field-group">
-            <label for="link-member-search">اربط حسابك باسمك الصحيح في شجرة ذوي عويض</label>
-            <div class="autocomplete-wrap">
-              <input type="search" id="link-member-search" class="text-input" placeholder="ابحث باسمك الثلاثي في الشجرة..." autocomplete="off" />
-              <div id="link-member-dropdown" class="autocomplete-dropdown hidden"></div>
-            </div>
-            <div id="link-member-selected" class="selected-person-pill hidden"></div>
-          </div>
-          <div class="field-group">
-            <label for="member-link-phone">رقم الجوال (إجباري)</label>
-            <input type="tel" id="member-link-phone" class="text-input" dir="ltr" inputmode="tel" placeholder="05xxxxxxxx" autocomplete="tel" required />
-          </div>
-          <div class="modal-form-actions">
-            <button type="submit" id="member-link-btn" class="btn btn-emerald">تأكيد ربط الاسم</button>
-            <button type="button" class="btn btn-ghost member-logout-action">تسجيل الخروج</button>
-          </div>
-        </form>
-
-        <div id="member-mfa-enroll" class="member-mfa-box hidden">
-          <h4>تفعيل التحقق الثنائي بتطبيق المصادقة</h4>
-          <p class="hint-sub">امسح الرمز بتطبيق المصادقة في جوالك (أو كلمات المرور بالآيفون) ثم أدخل الرمز المكوّن من ٦ أرقام.</p>
-          <div class="member-qr-wrap"><img id="member-enroll-qr" alt="رمز التحقق الثنائي" width="180" height="180" /></div>
-          <code id="member-enroll-secret" class="member-secret-code" dir="ltr"></code>
-          <form id="member-enroll-form" class="update-form">
-            <div class="form-row-2">
-              <div class="field-group">
-                <label for="member-enroll-code">رمز التحقق (٦ أرقام)</label>
-                <input type="text" id="member-enroll-code" class="text-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" required />
-              </div>
-              <div class="field-group field-align-end">
-                <button type="submit" class="btn btn-emerald">تأكيد التفعيل</button>
-                <button type="button" class="btn btn-ghost member-logout-action">خروج</button>
-              </div>
-            </div>
-          </form>
-        </div>
-
-        <div id="member-mfa-verify" class="member-mfa-box hidden">
-          <h4>أدخل رمز التحقق الثنائي للمتابعة</h4>
-          <p class="hint-sub">افتح تطبيق المصادقة في جوالك واكتب الرمز المكوّن من ٦ أرقام.</p>
-          <form id="member-verify-form" class="update-form">
-            <div class="form-row-2">
-              <div class="field-group">
-                <label for="member-verify-code">رمز التحقق</label>
-                <input type="text" id="member-verify-code" class="text-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" required />
-              </div>
-              <div class="field-group field-align-end">
-                <button type="submit" class="btn btn-emerald">تحقق ومتابعة</button>
-                <button type="button" class="btn btn-ghost member-logout-action">خروج</button>
-              </div>
-            </div>
-          </form>
+        <div id="update-auth-cta-row" class="modal-form-actions">
+          <button type="button" id="update-open-auth-btn" class="btn btn-emerald">الدخول أو التسجيل عبر البوابة الموحّدة</button>
         </div>
       </div>
 
       <div id="member-verified-bar" class="member-verified-bar hidden">
         <div>
-          <strong id="member-verified-name">عضو موثّق</strong>
+          <div class="verified-bar-head">
+            <strong id="member-verified-name">عضو موثّق</strong>
+            <span id="member-verified-role" class="auth-role-badge is-member hidden"></span>
+          </div>
           <span id="member-verified-branch" class="hint-sub"></span>
         </div>
-        <button type="button" id="member-logout-btn" class="link-btn danger-link member-logout-action">تسجيل الخروج</button>
+        <div class="verified-bar-actions">
+          <a href="admin.html" id="member-verified-admin-link" class="link-btn hidden">لوحة الإدارة</a>
+          <button type="button" id="member-logout-btn" class="link-btn danger-link member-logout-action">تسجيل الخروج</button>
+        </div>
       </div>
 
       <form id="update-request-form" class="update-form">
@@ -674,6 +555,178 @@
           <button type="button" id="clear-requests-btn" class="link-btn danger-link">مسح السجل المحلي</button>
         </div>
         <div id="saved-requests-list" class="saved-requests-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Unified Auth Portal Modal (System Admin, Coordinators, and Family Members) -->
+  <div id="auth-portal-backdrop" class="modal-backdrop hidden" aria-hidden="true"></div>
+  <div id="auth-portal-modal" class="modal-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="auth-portal-title">
+    <div class="sheet-grab-bar" aria-hidden="true"><span></span></div>
+    <div class="modal-header">
+      <div>
+        <h2 id="auth-portal-title">بوابة الدخول الموحّدة — ذوي عويض</h2>
+        <p class="modal-sub">بوابة واحدة لدخول مدير النظام والمنسّقين وأعضاء العائلة (التسجيل اختياري، التصفح مفتوح للجميع).</p>
+      </div>
+      <button type="button" id="auth-portal-close-btn" class="icon-close-btn" aria-label="إغلاق البوابة">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div id="auth-portal-next-note" class="member-auth-status hidden">
+        سجّل دخولك أولاً للمتابعة مباشرة إلى لوحة الإدارة.
+      </div>
+      <div id="auth-portal-status" class="member-auth-status hidden" role="status" aria-live="polite"></div>
+
+      <div id="member-auth-forms">
+        <div class="auth-mode-tabs" role="tablist">
+          <button type="button" id="auth-tab-signin" class="auth-mode-btn active" role="tab" aria-selected="true">تسجيل الدخول</button>
+          <button type="button" id="auth-tab-signup" class="auth-mode-btn" role="tab" aria-selected="false">تسجيل عضو جديد</button>
+          <button type="button" id="auth-tab-invite" class="auth-mode-btn" role="tab" aria-selected="false">كلمة مرور مؤقتة</button>
+        </div>
+
+        <form id="member-signin-form" class="update-form">
+          <div class="form-row-2">
+            <div class="field-group">
+              <label for="member-signin-email">البريد الإلكتروني</label>
+              <input type="email" id="member-signin-email" class="text-input" dir="ltr" autocomplete="username" required />
+            </div>
+            <div class="field-group">
+              <label for="member-signin-password">كلمة المرور</label>
+              <input type="password" id="member-signin-password" class="text-input" dir="ltr" autocomplete="current-password" required />
+            </div>
+          </div>
+          <div class="modal-form-actions">
+            <button type="submit" id="member-signin-btn" class="btn btn-emerald">دخول ومتابعة</button>
+          </div>
+        </form>
+
+        <form id="member-signup-form" class="update-form hidden">
+          <p class="hint-sub">التسجيل اختياري لأعضاء الشجرة، ويمكن لمدير النظام لاحقاً ترقية أي عضو مسجّل إلى منسّق وتفعيل صلاحياته من لوحة الإدارة.</p>
+          <div class="field-group">
+            <label for="auth-member-search">من أنت في شجرة ذوي عويض؟ (ابحث واختر اسمك)</label>
+            <div class="autocomplete-wrap">
+              <input type="search" id="auth-member-search" class="text-input" placeholder="مثال: فهد بن متعب بن زايد" autocomplete="off" />
+              <div id="auth-member-dropdown" class="autocomplete-dropdown hidden"></div>
+            </div>
+            <div id="auth-member-selected" class="selected-person-pill hidden"></div>
+          </div>
+          <div class="form-row-2">
+            <div class="field-group">
+              <label for="member-signup-email">البريد الإلكتروني</label>
+              <input type="email" id="member-signup-email" class="text-input" dir="ltr" autocomplete="email" required />
+            </div>
+            <div class="field-group">
+              <label for="member-signup-phone">رقم الجوال (إجباري)</label>
+              <input type="tel" id="member-signup-phone" class="text-input" dir="ltr" inputmode="tel" placeholder="05xxxxxxxx" autocomplete="tel" required />
+            </div>
+          </div>
+          <div class="field-group">
+            <label for="member-signup-password">كلمة المرور (٦ أحرف فأكثر)</label>
+            <input type="password" id="member-signup-password" class="text-input" dir="ltr" autocomplete="new-password" minlength="6" required />
+          </div>
+          <div class="modal-form-actions">
+            <button type="submit" id="member-signup-btn" class="btn btn-emerald">إنشاء الحساب وربط الاسم</button>
+          </div>
+        </form>
+
+        <form id="member-invite-form" class="update-form hidden">
+          <p class="hint-sub">أدخل كلمة المرور المؤقتة المرسلة لك من مدير النظام لمرة واحدة، ثم أكمل بريدك ورقم جوالك وكلمة مرورك الخاصة.</p>
+          <div class="field-group">
+            <label for="member-invite-code">كلمة المرور المؤقتة</label>
+            <input type="text" id="member-invite-code" class="text-input" dir="ltr" placeholder="DU-XXXX-XXXX" autocomplete="off" required />
+            <div id="member-invite-preview" class="invite-preview-box hidden"></div>
+          </div>
+          <div class="form-row-2">
+            <div class="field-group">
+              <label for="member-invite-email">البريد الإلكتروني الشخصي</label>
+              <input type="email" id="member-invite-email" class="text-input" dir="ltr" autocomplete="email" required />
+            </div>
+            <div class="field-group">
+              <label for="member-invite-phone">رقم الجوال (إجباري)</label>
+              <input type="tel" id="member-invite-phone" class="text-input" dir="ltr" inputmode="tel" placeholder="05xxxxxxxx" autocomplete="tel" required />
+            </div>
+          </div>
+          <div class="field-group">
+            <label for="member-invite-password">كلمة المرور الجديدة (١٠ خانات على الأقل)</label>
+            <input type="password" id="member-invite-password" class="text-input" dir="ltr" autocomplete="new-password" minlength="10" required />
+          </div>
+          <div class="modal-form-actions">
+            <button type="submit" id="member-invite-btn" class="btn btn-emerald">إنشاء الحساب وتفعيل الدعوة</button>
+          </div>
+        </form>
+      </div>
+
+      <form id="member-link-form" class="update-form hidden">
+        <div class="field-group">
+          <label for="link-member-search">اربط حسابك باسمك الصحيح في شجرة ذوي عويض</label>
+          <div class="autocomplete-wrap">
+            <input type="search" id="link-member-search" class="text-input" placeholder="ابحث باسمك الثلاثي في الشجرة..." autocomplete="off" />
+            <div id="link-member-dropdown" class="autocomplete-dropdown hidden"></div>
+          </div>
+          <div id="link-member-selected" class="selected-person-pill hidden"></div>
+        </div>
+        <div class="field-group">
+          <label for="member-link-phone">رقم الجوال (إجباري)</label>
+          <input type="tel" id="member-link-phone" class="text-input" dir="ltr" inputmode="tel" placeholder="05xxxxxxxx" autocomplete="tel" required />
+        </div>
+        <div class="modal-form-actions">
+          <button type="submit" id="member-link-btn" class="btn btn-emerald">تأكيد ربط الاسم</button>
+          <button type="button" class="btn btn-ghost member-logout-action">تسجيل الخروج</button>
+        </div>
+      </form>
+
+      <div id="member-mfa-enroll" class="member-mfa-box hidden">
+        <h4>تفعيل التحقق الثنائي بتطبيق المصادقة</h4>
+        <p class="hint-sub">امسح الرمز بتطبيق المصادقة في جوالك (أو كلمات المرور بالآيفون) ثم أدخل الرمز المكوّن من ٦ أرقام.</p>
+        <div class="member-qr-wrap"><img id="member-enroll-qr" alt="رمز التحقق الثنائي" width="180" height="180" /></div>
+        <code id="member-enroll-secret" class="member-secret-code" dir="ltr"></code>
+        <form id="member-enroll-form" class="update-form">
+          <div class="form-row-2">
+            <div class="field-group">
+              <label for="member-enroll-code">رمز التحقق (٦ أرقام)</label>
+              <input type="text" id="member-enroll-code" class="text-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" required />
+            </div>
+            <div class="field-group field-align-end">
+              <button type="submit" class="btn btn-emerald">تأكيد التفعيل</button>
+              <button type="button" class="btn btn-ghost member-logout-action">خروج</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div id="member-mfa-verify" class="member-mfa-box hidden">
+        <h4>أدخل رمز التحقق الثنائي للمتابعة</h4>
+        <p class="hint-sub">افتح تطبيق المصادقة في جوالك واكتب الرمز المكوّن من ٦ أرقام.</p>
+        <form id="member-verify-form" class="update-form">
+          <div class="form-row-2">
+            <div class="field-group">
+              <label for="member-verify-code">رمز التحقق</label>
+              <input type="text" id="member-verify-code" class="text-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" required />
+            </div>
+            <div class="field-group field-align-end">
+              <button type="submit" class="btn btn-emerald">تحقق ومتابعة</button>
+              <button type="button" class="btn btn-ghost member-logout-action">خروج</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div id="auth-portal-hub" class="auth-hub-card hidden">
+        <div class="auth-hub-top">
+          <div>
+            <span id="auth-hub-role-badge" class="auth-role-badge is-member">عضو موثّق</span>
+            <h3 id="auth-hub-name" class="auth-hub-name">...</h3>
+            <p id="auth-hub-lineage" class="hint-sub"></p>
+            <p id="auth-hub-email" class="hint-sub" dir="ltr"></p>
+          </div>
+        </div>
+        <div id="auth-hub-perms" class="auth-perm-chips hidden"></div>
+        <div class="auth-hub-actions">
+          <a href="admin.html" id="auth-hub-admin-btn" class="btn btn-emerald hidden">الانتقال إلى لوحة الإدارة</a>
+          <button type="button" id="auth-hub-update-btn" class="btn btn-gold">إضافة مولود / طلب تحديث</button>
+          <button type="button" id="auth-hub-locate-btn" class="btn btn-outline hidden">موقعي في الشجرة</button>
+          <button type="button" id="auth-hub-logout-btn" class="btn btn-ghost member-logout-action">تسجيل الخروج</button>
+        </div>
       </div>
     </div>
   </div>

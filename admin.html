@@ -40,33 +40,14 @@
   <main class="adm-main">
     <div class="adm-status" id="status" role="status" aria-live="polite"></div>
 
-    <!-- Step 1: Sign in -->
+    <!-- Step 1: Unified Auth Portal Redirect Bridge -->
     <section class="card narrow" id="view-login" hidden>
-      <h1>دخول المشرفين</h1>
-      <p class="muted">هذه الصفحة خاصة بمالك الموقع والمشرفين المعتمدين فقط.</p>
-      <form id="login-form" novalidate>
-        <label for="login-email">البريد الإلكتروني</label>
-        <input id="login-email" type="email" autocomplete="username" dir="ltr" required />
-        <label for="login-password">كلمة المرور</label>
-        <input id="login-password" type="password" autocomplete="current-password" dir="ltr" required />
-        <button type="submit" class="btn btn-primary">دخول</button>
-      </form>
-      <div class="adm-invite-switch">
-        <button type="button" class="btn btn-ghost" id="admin-invite-toggle" aria-expanded="false">لدي كلمة مرور مؤقتة — تفعيل حسابي لأول مرة</button>
+      <h1>بوابة الدخول الموحّدة</h1>
+      <p class="muted">يتم تسجيل الدخول إلى لوحة الإدارة عبر بوابة الدخول الموحّدة المشتركة لمدير النظام والمنسّقين وأعضاء العائلة.</p>
+      <div class="row-actions">
+        <a href="./?auth=login&next=admin" id="goto-unified-portal-link" class="btn btn-primary">الانتقال إلى بوابة الدخول الموحّدة</a>
+        <a href="./" class="btn btn-ghost">العودة إلى الشجرة</a>
       </div>
-      <form id="admin-invite-form" class="adm-invite-box" hidden novalidate>
-        <p class="muted">أدخل كلمة المرور المؤقتة المرسلة لك من المالك لإعداد حسابك الشخصي ورقم جوالك بشكل إجباري، ثم تفعيل التحقق الثنائي.</p>
-        <label for="adm-inv-code">كلمة المرور المؤقتة</label>
-        <input id="adm-inv-code" type="text" dir="ltr" placeholder="DU-XXXX-XXXX" autocomplete="off" required />
-        <div id="adm-inv-preview" class="adm-inv-preview" hidden></div>
-        <label for="adm-inv-email">البريد الإلكتروني الشخصي</label>
-        <input id="adm-inv-email" type="email" dir="ltr" autocomplete="email" required />
-        <label for="adm-inv-phone">رقم الجوال (إجباري)</label>
-        <input id="adm-inv-phone" type="tel" dir="ltr" inputmode="tel" placeholder="05xxxxxxxx" autocomplete="tel" required />
-        <label for="adm-inv-password">كلمة المرور الدائمة الجديدة (١٠ خانات على الأقل)</label>
-        <input id="adm-inv-password" type="password" dir="ltr" minlength="10" autocomplete="new-password" required />
-        <button type="submit" class="btn btn-primary" id="adm-inv-submit">إنشاء الحساب وتفعيل الدعوة</button>
-      </form>
     </section>
 
     <!-- Step 2a: Enroll MFA -->
@@ -99,21 +80,29 @@
 
     <!-- Not authorized -->
     <section class="card narrow" id="view-denied" hidden>
-      <h1>غير مصرّح</h1>
-      <p class="muted">هذا الحساب غير مدرج في قائمة المشرفين. تواصل مع مالك الموقع.</p>
+      <h1>حساب عضو — بدون صلاحية إشراف</h1>
+      <p class="muted">حسابك مسجّل كعضو في شجرة ذوي عويض ولا يملك صلاحيات التنسيق والإدارة حالياً. إذا كنت من المنسّقين، اطلب من مدير النظام اختيار اسمك وتفعيل صلاحياتك من لوحة الإدارة.</p>
+      <div class="row-actions">
+        <a href="./" class="btn btn-primary">العودة إلى الشجرة</a>
+      </div>
     </section>
 
     <!-- Step 3: Dashboard -->
     <section id="view-dash" hidden>
       <nav class="tabs" role="tablist">
-        <button type="button" role="tab" class="tab" data-tab="requests" aria-selected="true">
+        <button type="button" role="tab" class="tab" id="tab-btn-requests" data-tab="requests" aria-selected="true">
           الطلبات <span class="badge" id="pending-count">0</span>
         </button>
-        <button type="button" role="tab" class="tab" data-tab="members" aria-selected="false">الأسماء</button>
-        <button type="button" role="tab" class="tab" data-tab="brand" id="tab-btn-brand" aria-selected="false" hidden>الهوية والورق الرسمي</button>
-        <button type="button" role="tab" class="tab" data-tab="audit" aria-selected="false">سجل التعديلات</button>
-        <button type="button" role="tab" class="tab" data-tab="admins" aria-selected="false">المشرفون</button>
+        <button type="button" role="tab" class="tab" id="tab-btn-members" data-tab="members" aria-selected="false">الأسماء</button>
+        <button type="button" role="tab" class="tab" id="tab-btn-brand" data-tab="brand" aria-selected="false" hidden>الهوية والورق الرسمي</button>
+        <button type="button" role="tab" class="tab" id="tab-btn-audit" data-tab="audit" aria-selected="false">سجل التعديلات</button>
+        <button type="button" role="tab" class="tab" id="tab-btn-admins" data-tab="admins" aria-selected="false" hidden>المنسّقون والأعضاء</button>
       </nav>
+
+      <div id="no-perms-notice" class="card" hidden>
+        <h2>لا توجد صلاحيات مفعّلة حالياً</h2>
+        <p class="muted">تم تعيينك كمنسّق في المنصة، وبانتظار تفعيل المزايا المخصّصة لك من قِبل مدير النظام.</p>
+      </div>
 
       <!-- Requests -->
       <div class="panel" id="tab-requests">
@@ -178,7 +167,7 @@
 
               <div id="mem-children" class="children"></div>
 
-              <div class="danger-zone">
+              <div class="danger-zone" id="mem-danger-zone">
                 <button type="button" class="btn btn-danger" id="delete-btn">حذف هذا الاسم</button>
                 <p class="muted small">الحذف متاح فقط للاسم الذي ليس له أبناء مسجّلون.</p>
               </div>
@@ -246,10 +235,39 @@
         <div id="audit-list" class="list"></div>
       </div>
 
-      <!-- Admins -->
+      <!-- Admins & Coordinators (Owner Only) -->
       <div class="panel" id="tab-admins" hidden>
+        <div class="card" id="coordinators-card">
+          <h2>مدير النظام والمنسّقون الحاليون</h2>
+          <p class="muted small">حساب مدير النظام واحد فقط بصلاحيات كاملة لا تتأثر بأي تعطيل. يمكنك من هنا تشغيل أو إطفاء كل ميزة لكل منسّق بشكل فوري، أو إزالة صفة الإشراف عنه.</p>
+          <div id="migration-warning" class="adm-status show info" hidden>
+            تنبيه: ميزات إدارة المنسّقين التفصيلية تتطلب تشغيل ملف الترقية الأخير في محرر استعلامات سوبابيس:
+            <code dir="ltr">supabase/migrations/20261122000004_unified_auth_and_coordinators.sql</code>
+          </div>
+          <div id="admins-list" class="list"></div>
+        </div>
+
+        <div class="card" id="promote-member-card" hidden>
+          <div class="reg-head">
+            <div>
+              <h2>الأعضاء المسجّلون — اختيار وترقية منسّق</h2>
+              <p class="muted small">يظهر هنا كل من سجّل في البوابة الموحّدة باختياره. ابحث عن أي عضو أو اختره من القائمة لتعيينه منسّقاً وتحديد مزاياه فوراً.</p>
+            </div>
+            <span class="pill" id="reg-members-count">0</span>
+          </div>
+          <div class="reg-toolbar">
+            <input id="reg-member-search" type="search" placeholder="ابحث بالاسم أو النسب أو الفرع أو الجوال أو البريد..." autocomplete="off" />
+            <select id="reg-member-filter">
+              <option value="all">جميع المسجّلين</option>
+              <option value="member">أعضاء عاديون (مرشّحون للإشراف)</option>
+              <option value="moderator">المنسّقون الحاليون</option>
+            </select>
+          </div>
+          <div id="registered-members-list" class="list"></div>
+        </div>
+
         <div class="card" id="owner-settings-card" hidden>
-          <h2>إعدادات ومزايا المنصة (للمالك فقط)</h2>
+          <h2>إعدادات ومزايا المنصة (لمدير النظام فقط)</h2>
           <p class="muted small">تحكم كامل في إظهار السير أو إخفائها عن العامة، وفي ضوابط التحقق على طلبات التعديل.</p>
           <div class="owner-settings-list">
             <label class="setting-row">
@@ -277,67 +295,59 @@
           <button type="button" class="btn btn-primary" id="save-site-settings-btn">حفظ إعدادات المنصة</button>
         </div>
 
-        <div class="card" id="owner-invite-card" hidden>
-          <h2>إضافة عضو أو مشرف بكلمة مرور مؤقتة (للمالك فقط)</h2>
-          <p class="muted">ابحث عن اسم العضو في الشجرة واختر نوع صلاحيته، ثم أنشئ كلمة مرور مؤقتة صالحة لدخول واحد فقط تُلغى تلقائياً فور إعداده لحسابه الشخصي وإدخال رقم جواله.</p>
-          <div class="invite-form-grid">
-            <div class="inv-search-wrap">
-              <label for="inv-member-search">ابحث عن الاسم في الشجرة</label>
-              <input id="inv-member-search" type="search" placeholder="اكتب الاسم للبحث من ٧٦٠ اسماً..." autocomplete="off" />
-              <div id="inv-member-dropdown" class="dropdown" hidden></div>
-              <div id="inv-member-selected" class="inv-selected-badge" hidden></div>
-            </div>
-            <div>
-              <label for="inv-role">نوع الحساب والصلاحية</label>
-              <select id="inv-role">
-                <option value="member">عضو موثّق (رفع طلبات التعديل والتوثيق)</option>
-                <option value="moderator">مشرف بلوحة الإدارة</option>
-              </select>
-              <div id="inv-perms-box" class="perm-row" hidden>
-                <label class="perm-check"><input type="checkbox" id="inv-perm-review" /> <span>مراجعة الطلبات</span></label>
-                <label class="perm-check"><input type="checkbox" id="inv-perm-tree" /> <span>تعديل الأسماء والشجرة</span></label>
-                <label class="perm-check"><input type="checkbox" id="inv-perm-brand" /> <span>الهوية والورق الرسمي</span></label>
+        <details class="card collapsible-card" id="owner-invite-details" hidden>
+          <summary class="collapsible-summary">دعوة عضو أو منسّق بكلمة مرور مؤقتة (اختياري)</summary>
+          <div id="owner-invite-card" class="collapsible-body" hidden>
+            <p class="muted">ابحث عن اسم العضو في الشجرة واختر نوع صلاحيته، ثم أنشئ كلمة مرور مؤقتة صالحة لدخول واحد فقط تُلغى تلقائياً فور إعداده لحسابه الشخصي وإدخال رقم جواله.</p>
+            <div class="invite-form-grid">
+              <div class="inv-search-wrap">
+                <label for="inv-member-search">ابحث عن الاسم في الشجرة</label>
+                <input id="inv-member-search" type="search" placeholder="اكتب الاسم للبحث من ٧٦٠ اسماً..." autocomplete="off" />
+                <div id="inv-member-dropdown" class="dropdown" hidden></div>
+                <div id="inv-member-selected" class="inv-selected-badge" hidden></div>
+              </div>
+              <div>
+                <label for="inv-role">نوع الحساب والصلاحية</label>
+                <select id="inv-role">
+                  <option value="member">عضو موثّق (رفع طلبات التعديل والتوثيق)</option>
+                  <option value="moderator">منسّق بلوحة الإدارة</option>
+                </select>
+                <div id="inv-perms-box" class="perm-row" hidden>
+                  <label class="perm-check"><input type="checkbox" id="inv-perm-review" /> <span>مراجعة الطلبات</span></label>
+                  <label class="perm-check"><input type="checkbox" id="inv-perm-tree" /> <span>تعديل الأسماء والشجرة</span></label>
+                  <label class="perm-check"><input type="checkbox" id="inv-perm-brand" /> <span>الهوية والورق الرسمي</span></label>
+                </div>
+              </div>
+              <div>
+                <label for="inv-expires-days">مدة صلاحية الكلمة المؤقتة</label>
+                <select id="inv-expires-days">
+                  <option value="7">٧ أيام</option>
+                  <option value="14" selected>١٤ يوماً</option>
+                  <option value="30">٣٠ يوماً</option>
+                </select>
+              </div>
+              <div>
+                <label for="inv-note">ملاحظة داخلية اختيارية</label>
+                <input id="inv-note" type="text" placeholder="مثال: فرع الدباس — للتنسيق..." />
               </div>
             </div>
-            <div>
-              <label for="inv-expires-days">مدة صلاحية الكلمة المؤقتة</label>
-              <select id="inv-expires-days">
-                <option value="7">٧ أيام</option>
-                <option value="14" selected>١٤ يوماً</option>
-                <option value="30">٣٠ يوماً</option>
-              </select>
-            </div>
-            <div>
-              <label for="inv-note">ملاحظة داخلية اختيارية</label>
-              <input id="inv-note" type="text" placeholder="مثال: فرع الدباس — للتنسيق..." />
-            </div>
-          </div>
-          <div class="row-actions inv-actions-row">
-            <button type="button" class="btn btn-primary" id="inv-create-btn">توليد كلمة مرور مؤقتة</button>
-          </div>
-          <div id="inv-result-box" class="inv-result-box" hidden>
-            <div class="inv-result-head">كلمة المرور المؤقتة جاهزة — تظهر مرة واحدة فقط:</div>
-            <div class="inv-code-display" id="inv-code-output" dir="ltr"></div>
-            <div class="muted inv-link-preview" id="inv-link-preview" dir="ltr"></div>
             <div class="row-actions inv-actions-row">
-              <button type="button" class="btn btn-primary" id="inv-copy-wa-btn">نسخ دعوة واتساب جاهزة</button>
-              <button type="button" class="btn btn-ghost" id="inv-copy-code-btn">نسخ الكلمة المؤقتة</button>
-              <button type="button" class="btn btn-ghost" id="inv-copy-link-btn">نسخ الرابط المباشر</button>
+              <button type="button" class="btn btn-primary" id="inv-create-btn">توليد كلمة مرور مؤقتة</button>
             </div>
+            <div id="inv-result-box" class="inv-result-box" hidden>
+              <div class="inv-result-head">كلمة المرور المؤقتة جاهزة — تظهر مرة واحدة فقط:</div>
+              <div class="inv-code-display" id="inv-code-output" dir="ltr"></div>
+              <div class="muted inv-link-preview" id="inv-link-preview" dir="ltr"></div>
+              <div class="row-actions inv-actions-row">
+                <button type="button" class="btn btn-primary" id="inv-copy-wa-btn">نسخ دعوة واتساب جاهزة</button>
+                <button type="button" class="btn btn-ghost" id="inv-copy-code-btn">نسخ الكلمة المؤقتة</button>
+                <button type="button" class="btn btn-ghost" id="inv-copy-link-btn">نسخ الرابط المباشر</button>
+              </div>
+            </div>
+            <h3 class="sub-card-title">الدعوات الصادرة وحالتها</h3>
+            <div id="invites-list" class="list"></div>
           </div>
-          <h3 class="sub-card-title">الدعوات الصادرة وحالتها</h3>
-          <div id="invites-list" class="list"></div>
-          <h3 class="sub-card-title">الأعضاء الموثّقون وأرقام جوالاتهم</h3>
-          <div id="verified-members-list" class="list"></div>
-        </div>
-        <div id="admins-list" class="list"></div>
-        <div class="card">
-          <h2>إدارة المشرفين وصلاحياتهم</h2>
-          <p class="muted">
-            يستطيع <strong>المالك</strong> من القائمة أعلاه تحديد صلاحيات كل مشرف بدقة (مراجعة الطلبات، تعديل الشجرة، والوصول للهوية البصرية والورق الرسمي) وحفظها مباشرة.
-            ولإضافة مشرف جديد لأول مرة: أنشئ حسابه من قسم المستخدمين في لوحة سوبابيس، ثم أضفه لجدول المشرفين من محرر الاستعلامات بالأمر الموجود في آخر ملف الصلاحيات.
-          </p>
-        </div>
+        </details>
       </div>
     </section>
   </main>

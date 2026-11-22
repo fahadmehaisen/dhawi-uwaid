@@ -2059,6 +2059,14 @@ a {
     padding: 5px 9px;
     font-size: 0.75rem;
   }
+  #open-auth-portal-btn,
+  #topbar-admin-link {
+    padding: 5px 8px;
+    font-size: 0.73rem;
+    max-width: 112px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   #brand-kit-toggle {
     padding: 5px 8px;
     font-size: 0.75rem;
@@ -2533,4 +2541,155 @@ a {
   background: rgba(180, 48, 36, 0.08);
   color: #b43024;
   border-color: rgba(180, 48, 36, 0.25);
+}
+
+/* ---------------- Unified Auth Portal & Topbar Account ---------------- */
+
+.topbar-account-btn {
+  border-color: rgba(226, 190, 110, 0.55);
+  background: rgba(11, 36, 27, 0.45);
+  color: #f8f4ec;
+}
+
+.topbar-account-btn.is-signed-in {
+  border-color: var(--gold-light);
+  background: rgba(197, 155, 67, 0.2);
+  color: var(--gold-light);
+}
+
+.topbar-admin-pill {
+  background: rgba(226, 190, 110, 0.22);
+  border-color: var(--gold-light);
+  color: #fffdf8;
+  font-weight: 700;
+}
+
+.topbar-admin-pill:hover {
+  background: rgba(226, 190, 110, 0.35);
+}
+
+.verified-bar-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.verified-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.auth-hub-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+}
+
+.auth-hub-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.auth-hub-name {
+  margin: 6px 0 4px;
+  font-family: "Amiri", serif;
+  font-size: 1.35rem;
+  color: var(--emerald);
+}
+
+[data-theme="dark"] .auth-hub-name {
+  color: var(--gold-light);
+}
+
+.auth-role-badge {
+  display: inline-block;
+  padding: 3px 11px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.auth-role-badge.is-owner {
+  background: rgba(197, 155, 67, 0.25);
+  color: #78520d;
+  border: 1px solid rgba(197, 155, 67, 0.6);
+}
+
+.auth-role-badge.is-moderator {
+  background: rgba(31, 122, 77, 0.16);
+  color: #16603b;
+  border: 1px solid rgba(31, 122, 77, 0.38);
+}
+
+.auth-role-badge.is-member {
+  background: var(--surface);
+  color: var(--ink-muted);
+  border: 1px solid var(--border);
+}
+
+[data-theme="dark"] .auth-role-badge.is-owner {
+  color: var(--gold-light);
+}
+
+[data-theme="dark"] .auth-role-badge.is-moderator {
+  color: #7ae2ac;
+}
+
+.auth-perm-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.auth-perm-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--ink);
+}
+
+.auth-perm-chip.is-owner {
+  background: rgba(197, 155, 67, 0.18);
+  border-color: rgba(197, 155, 67, 0.5);
+}
+
+.auth-perm-chip.is-muted {
+  color: var(--ink-muted);
+  border-style: dashed;
+}
+
+.auth-hub-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 760px) {
+  .auth-mode-tabs {
+    flex-wrap: wrap;
+  }
+  .auth-mode-btn {
+    flex: 1 1 auto;
+    font-size: 0.82rem;
+    padding: 7px 10px;
+  }
+  .auth-hub-actions .btn {
+    flex: 1 1 auto;
+  }
 }

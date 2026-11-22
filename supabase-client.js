@@ -8,22 +8,37 @@
 
   const SUPABASE_URL = "https://nmsmbcfnlqvnzfprexbh.supabase.co";
   const SUPABASE_KEY = "sb_publishable_nM7K9SCmR-MkwEkE0o-Azg_aqwxB8G9";
-  const MEMBER_AUTH_STORAGE_KEY = "dhawi-uwaid-member-auth";
+  const AUTH_STORAGE_KEY = "dhawi-uwaid-auth";
+  const LEGACY_AUTH_KEYS = ["dhawi-uwaid-admin-auth", "dhawi-uwaid-member-auth"];
   const BRANCH_ORDER = ["B01", "B02", "B03", "B04", "B05", "B06", "B07", "B08"];
 
   let authClientInstance = null;
+
+  function migrateLegacyAuthStorage() {
+    try {
+      if (localStorage.getItem(AUTH_STORAGE_KEY)) return;
+      for (const oldKey of LEGACY_AUTH_KEYS) {
+        const val = localStorage.getItem(oldKey);
+        if (val) {
+          localStorage.setItem(AUTH_STORAGE_KEY, val);
+          break;
+        }
+      }
+    } catch (_) {}
+  }
 
   function getAuthClient() {
     if (authClientInstance) return authClientInstance;
     if (!window.supabase || typeof window.supabase.createClient !== "function") {
       return null;
     }
+    migrateLegacyAuthStorage();
     authClientInstance = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: false,
-        storageKey: MEMBER_AUTH_STORAGE_KEY,
+        detectSessionInUrl: true,
+        storageKey: AUTH_STORAGE_KEY,
       },
     });
     return authClientInstance;
@@ -266,12 +281,90 @@
     }
   }
 
+  function computeAccountPermissions(adminRow) {
+    if (!adminRow) {
+      return {
+        review: false,
+        add: false,
+        edit: false,
+        del: false,
+        brand: false,
+        audit: false,
+        backup: false,
+      };
+    }
+    const isOwner = adminRow.role === "owner";
+    const hasGranular = typeof adminRow.can_add_members === "boolean";
+    return {
+      review: isOwner || adminRow.can_review_requests === true,
+      add: isOwner || (hasGranular ? adminRow.can_add_members === true : adminRow.can_edit_tree === true),
+      edit: isOwner || (hasGranular ? adminRow.can_edit_members === true : adminRow.can_edit_tree === true),
+      del: isOwner || (hasGranular ? adminRow.can_delete_members === true : adminRow.can_edit_tree === true),
+      brand: isOwner || adminRow.can_access_brand === true,
+      audit: isOwner || (typeof adminRow.can_view_audit === "boolean" ? adminRow.can_view_audit === true : true),
+      backup: isOwner || adminRow.can_export_backup === true,
+    };
+  }
+
+  async function fetchMyAccountContext() {
+    const emptyCtx = {
+      signedIn: false,
+      session: null,
+      user: null,
+      adminRow: null,
+      memberProfile: null,
+      role: "guest",
+      perms: computeAccountPermissions(null),
+      aal: "aal1",
+    };
+    try {
+      const client = getAuthClient();
+      if (!client) return emptyCtx;
+      const { data: sess } = await client.auth.getSession();
+      if (!sess || !sess.session || !sess.session.user) return emptyCtx;
+
+      const user = sess.session.user;
+      const [admRes, profRes, aalRes] = await Promise.all([
+        client.from("admins").select("*").eq("user_id", user.id).maybeSingle(),
+        client
+          .from("member_profiles")
+          .select("member_id, member_full_lineage, branch_name, phone")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+        client.auth.mfa.getAuthenticatorAssuranceLevel(),
+      ]);
+
+      const adminRow = admRes && !admRes.error ? admRes.data || null : null;
+      const memberProfile = profRes && !profRes.error ? profRes.data || null : null;
+      const aal =
+        aalRes && !aalRes.error && aalRes.data && aalRes.data.currentLevel
+          ? aalRes.data.currentLevel
+          : "aal1";
+      const role = adminRow ? (adminRow.role === "owner" ? "owner" : "moderator") : "member";
+
+      return {
+        signedIn: true,
+        session: sess.session,
+        user,
+        adminRow,
+        memberProfile,
+        role,
+        perms: computeAccountPermissions(adminRow),
+        aal,
+      };
+    } catch (_) {
+      return emptyCtx;
+    }
+  }
+
   window.DHAWI_UWAID_DB = {
     url: SUPABASE_URL,
     publishableKey: SUPABASE_KEY,
+    authStorageKey: AUTH_STORAGE_KEY,
     getAuthClient,
     fetchLiveTreePayload,
     submitUpdateRequest,
     fetchMyUpdateRequests,
+    fetchMyAccountContext,
   };
 })();

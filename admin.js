@@ -13,9 +13,26 @@
 
   const SUPABASE_URL = "https://nmsmbcfnlqvnzfprexbh.supabase.co";
   const SUPABASE_KEY = "sb_publishable_nM7K9SCmR-MkwEkE0o-Azg_aqwxB8G9";
+  const AUTH_STORAGE_KEY = "dhawi-uwaid-auth";
+  const LEGACY_AUTH_KEYS = ["dhawi-uwaid-admin-auth", "dhawi-uwaid-member-auth"];
   const IDLE_LIMIT_MS = 30 * 60 * 1000;
   const STORAGE_THEME_KEY = "dhawi_uwaid_theme_v1";
   const PENDING_INVITE_KEY = "dhawi_uwaid_pending_invite";
+
+  function migrateLegacyAuthStorage() {
+    try {
+      if (localStorage.getItem(AUTH_STORAGE_KEY)) return;
+      for (const oldKey of LEGACY_AUTH_KEYS) {
+        const val = localStorage.getItem(oldKey);
+        if (val) {
+          localStorage.setItem(AUTH_STORAGE_KEY, val);
+          break;
+        }
+      }
+    } catch (_) {}
+  }
+
+  migrateLegacyAuthStorage();
 
   function applyAdminTheme(theme) {
     const clean = theme === "dark" ? "dark" : "light";
@@ -47,15 +64,23 @@
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: false,
-      storageKey: "dhawi-uwaid-admin-auth",
+      detectSessionInUrl: true,
+      storageKey: AUTH_STORAGE_KEY,
     },
   });
 
   const state = {
     user: null,
     role: null,
-    perms: { review: false, edit: false, brand: false },
+    perms: {
+      review: false,
+      add: false,
+      edit: false,
+      del: false,
+      brand: false,
+      audit: false,
+      backup: false,
+    },
     members: [],
     byId: new Map(),
     selectedId: null,
@@ -64,6 +89,8 @@
     invMemberId: null,
     invMemberName: "",
     lastInvite: null,
+    registeredMembers: [],
+    migrationMissing: false,
   };
 
   // ---------- DOM helpers ----------
@@ -115,7 +142,9 @@
     "note too long": "الملاحظة أطول من المسموح.",
     "Invalid login credentials": "البريد أو كلمة المرور غير صحيحة.",
     "Invalid TOTP code entered": "رمز التحقق غير صحيح.",
-    "Owner privileges required": "هذا الإجراء مخصّص للمالك فقط.",
+    "Owner privileges required": "هذا الإجراء مخصّص لمدير النظام فقط.",
+    "owner account is protected": "حساب مدير النظام محمي ولا يمكن تعديله أو إزالته.",
+    "only one system admin account is allowed": "لا يُسمح بأكثر من حساب واحد لمدير النظام.",
     "Temporary password": "تحقق من صحة وحالة كلمة المرور المؤقتة.",
     "A valid mobile phone number": "يرجى إدخال رقم جوال صحيح (٨ إلى ١٦ رقماً).",
     "User already registered": "البريد الإلكتروني مسجّل مسبقاً — سجّل دخولك من النموذج أعلاه لإكمال التفعيل.",
@@ -156,7 +185,64 @@
     for (const v of VIEWS) $(v).hidden = v !== viewId;
     $("user-box").hidden = viewId === "view-login";
     const backupBtn = $("backup-btn");
-    if (backupBtn) backupBtn.hidden = viewId !== "view-dash";
+    if (backupBtn) backupBtn.hidden = viewId !== "view-dash" || !state.perms.backup;
+  }
+
+  function computePerms(me) {
+    if (!me) {
+      return { review: false, add: false, edit: false, del: false, brand: false, audit: false, backup: false };
+    }
+    const isOwner = me.role === "owner";
+    const hasGranular = typeof me.can_add_members === "boolean";
+    return {
+      review: isOwner || me.can_review_requests === true,
+      add: isOwner || (hasGranular ? me.can_add_members === true : me.can_edit_tree === true),
+      edit: isOwner || (hasGranular ? me.can_edit_members === true : me.can_edit_tree === true),
+      del: isOwner || (hasGranular ? me.can_delete_members === true : me.can_edit_tree === true),
+      brand: isOwner || me.can_access_brand === true,
+      audit: isOwner || (typeof me.can_view_audit === "boolean" ? me.can_view_audit === true : true),
+      backup: isOwner || me.can_export_backup === true,
+    };
+  }
+
+  function canAccessTab(name) {
+    const p = state.perms;
+    if (name === "requests") return Boolean(p.review);
+    if (name === "members") return Boolean(p.add || p.edit || p.del);
+    if (name === "brand") return Boolean(p.brand);
+    if (name === "audit") return Boolean(p.audit);
+    if (name === "admins") return state.role === "owner";
+    return false;
+  }
+
+  function syncDashboardTabsVisibility() {
+    const tabNames = ["requests", "members", "brand", "audit", "admins"];
+    let firstAllowed = null;
+    for (const name of tabNames) {
+      const ok = canAccessTab(name);
+      const btn = $("tab-btn-" + name);
+      if (btn) btn.hidden = !ok;
+      if (ok && !firstAllowed) firstAllowed = name;
+    }
+    const noPerms = $("no-perms-notice");
+    if (!firstAllowed) {
+      for (const name of tabNames) {
+        const panel = $("tab-" + name);
+        if (panel) panel.hidden = true;
+      }
+      if (noPerms) noPerms.hidden = false;
+      return null;
+    }
+    if (noPerms) noPerms.hidden = true;
+    return firstAllowed;
+  }
+
+  function buildUnifiedPortalLoginUrl() {
+    const qInvite = new URLSearchParams(window.location.search).get("invite");
+    if (qInvite && qInvite.trim()) {
+      return "./?invite=" + encodeURIComponent(qInvite.trim()) + "&next=admin";
+    }
+    return "./?auth=login&next=admin";
   }
 
   // ---------- Auth flow ----------
@@ -183,7 +269,12 @@
     const { data: sess } = await sb.auth.getSession();
     if (!sess.session) {
       state.user = null;
+      state.role = null;
+      const portalUrl = buildUnifiedPortalLoginUrl();
+      const linkEl = $("goto-unified-portal-link");
+      if (linkEl) linkEl.setAttribute("href", portalUrl);
       show("view-login");
+      window.location.replace(portalUrl);
       return;
     }
     state.user = sess.session.user;
@@ -201,7 +292,7 @@
     // so non-admin accounts are rejected immediately before MFA QR enrollment.
     const { data: me, error: meErr } = await sb
       .from("admins")
-      .select("role, display_name, can_review_requests, can_edit_tree, can_access_brand")
+      .select("*")
       .eq("user_id", state.user.id)
       .maybeSingle();
     if (meErr) {
@@ -236,18 +327,25 @@
 
     state.role = me.role;
     const isOwner = me.role === "owner";
-    state.perms = {
-      review: isOwner || me.can_review_requests === true,
-      edit: isOwner || me.can_edit_tree === true,
-      brand: isOwner || me.can_access_brand === true,
-    };
-    const brandTabBtn = $("tab-btn-brand");
-    if (brandTabBtn) brandTabBtn.hidden = !state.perms.brand;
+    state.perms = computePerms(me);
     $("user-label").textContent =
-      (me.display_name || state.user.email || "") + " — " + (isOwner ? "المالك" : "مشرف");
+      (me.display_name || state.user.email || "") + " — " + (isOwner ? "مدير النظام" : "منسّق");
     show("view-dash");
-    await loadMembers();
-    await loadRequests();
+
+    const firstTab = syncDashboardTabsVisibility();
+    const needsMembers =
+      isOwner ||
+      state.perms.review ||
+      state.perms.add ||
+      state.perms.edit ||
+      state.perms.del ||
+      state.perms.backup;
+    if (needsMembers) {
+      await loadMembers();
+    }
+    if (firstTab) {
+      selectTab(firstTab);
+    }
   }
 
   async function startEnroll() {
@@ -285,24 +383,6 @@
     return true;
   }
 
-  $("login-form").addEventListener("submit", async (ev) => {
-    ev.preventDefault();
-    const btn = ev.target.querySelector("button");
-    btn.disabled = true;
-    const { error } = await sb.auth.signInWithPassword({
-      email: $("login-email").value.trim(),
-      password: $("login-password").value,
-    });
-    btn.disabled = false;
-    $("login-password").value = "";
-    if (error) {
-      status(errText(error), "error");
-      return;
-    }
-    status("");
-    await route();
-  });
-
   $("enroll-form").addEventListener("submit", async (ev) => {
     ev.preventDefault();
     if (await verifyCode(state.enrollFactorId, $("enroll-code").value)) {
@@ -324,9 +404,10 @@
   async function logout() {
     await sb.auth.signOut();
     state.role = null;
+    state.user = null;
     state.members = [];
     state.byId.clear();
-    show("view-login");
+    window.location.replace("./?auth=login");
   }
   $("logout-btn").addEventListener("click", logout);
 
@@ -407,7 +488,7 @@
     tab.addEventListener("click", () => selectTab(tab.dataset.tab));
   }
   function selectTab(name) {
-    if (name === "brand" && !state.perms.brand) return;
+    if (!canAccessTab(name)) return;
     for (const t of document.querySelectorAll(".tab")) {
       t.setAttribute("aria-selected", String(t.dataset.tab === name));
     }
@@ -415,6 +496,7 @@
       const panel = $("tab-" + p);
       if (panel) panel.hidden = p !== name;
     }
+    if (name === "requests") loadRequests();
     if (name === "audit") loadAudit();
     if (name === "admins") loadAdmins();
   }
@@ -478,7 +560,8 @@
     );
 
     const actions = el("div", { class: "req-actions" });
-    if (r.target_node_id && state.byId.has(r.target_node_id)) {
+    const canTouchMembers = state.perms.add || state.perms.edit || state.perms.del;
+    if (r.target_node_id && state.byId.has(r.target_node_id) && canTouchMembers) {
       actions.appendChild(
         el("button", {
           type: "button",
@@ -491,8 +574,15 @@
         })
       );
     }
-    const autoSupported = ["إضافة مولود جديد", "إضافة ذرية غير مدونة", "تصحيح تهجئة اسم", "إضافة سيرة / توثيق تاريخي"].includes(
-      r.request_type
+    const isAddReq = ["إضافة مولود جديد", "إضافة ذرية غير مدونة"].includes(r.request_type);
+    const isEditReq = ["تصحيح تهجئة اسم", "إضافة سيرة / توثيق تاريخي"].includes(r.request_type);
+    const autoSupported = isAddReq || isEditReq;
+    const canAutoApply = Boolean(
+      autoSupported &&
+      r.target_node_id &&
+      state.byId.has(r.target_node_id) &&
+      state.perms.review &&
+      ((isAddReq && state.perms.add) || (isEditReq && state.perms.edit))
     );
     if (r.status === "pending" && state.perms.review) {
       const note = el("input", { type: "text", maxlength: "500", placeholder: "ملاحظة للمراجعة (اختياري)" });
@@ -509,7 +599,7 @@
         loadRequests();
       };
       actions.appendChild(note);
-      if (autoSupported && r.target_node_id && state.byId.has(r.target_node_id) && state.perms.edit) {
+      if (canAutoApply) {
         const targetNode = state.byId.get(r.target_node_id);
         actions.appendChild(
           el("button", {
@@ -539,8 +629,8 @@
       actions.appendChild(
         el("button", {
           type: "button",
-          class: autoSupported && r.target_node_id && state.perms.edit ? "btn btn-ghost" : "btn btn-primary",
-          text: autoSupported && r.target_node_id && state.perms.edit ? "قبول فقط" : "قبول",
+          class: canAutoApply ? "btn btn-ghost" : "btn btn-primary",
+          text: canAutoApply ? "قبول فقط" : "قبول",
           onclick: () => decide("approved"),
         })
       );
@@ -633,10 +723,14 @@
 
     const canEditThisNode = state.perms.edit && (m.generation >= 1 || state.role === "owner");
     const protectedNode = m.generation < 2;
+    $("rename-form").hidden = !state.perms.edit;
+    $("bio-form").hidden = !state.perms.edit;
     $("rename-form").querySelector("button").disabled = !canEditThisNode;
     $("bio-form").querySelector("button").disabled = !canEditThisNode;
-    $("child-form").hidden = !state.perms.edit || m.generation < 1;
-    $("delete-btn").disabled = !state.perms.edit || protectedNode || childrenOf(id).length > 0;
+    $("child-form").hidden = !state.perms.add || m.generation < 1;
+    const dangerZone = $("mem-danger-zone");
+    if (dangerZone) dangerZone.hidden = !state.perms.del;
+    $("delete-btn").disabled = !state.perms.del || protectedNode || childrenOf(id).length > 0;
 
     const kids = childrenOf(id);
     const box = $("mem-children");
@@ -735,18 +829,32 @@
     family_members: "الأسماء",
     update_requests: "الطلبات",
     member_invites: "دعوات التفعيل",
+    admins: "إدارة المنسّقين",
   };
 
   async function loadAudit() {
-    const [{ data, error }, admins] = await Promise.all([
-      sb.from("audit_log").select("*").order("at", { ascending: false }).limit(150),
-      sb.from("admins").select("user_id, display_name"),
-    ]);
-    const names = new Map(((admins && admins.data) || []).map((a) => [a.user_id, a.display_name]));
     const list = $("audit-list");
     clear(list);
+
+    let data = null;
+    let error = null;
+    let names = new Map();
+
+    const rpcRes = await sb.rpc("admin_list_audit_log", { p_limit: 150 });
+    if (!rpcRes.error && Array.isArray(rpcRes.data)) {
+      data = rpcRes.data;
+    } else {
+      const [logRes, admRes] = await Promise.all([
+        sb.from("audit_log").select("*").order("at", { ascending: false }).limit(150),
+        sb.from("admins").select("user_id, display_name"),
+      ]);
+      data = logRes.data || [];
+      error = logRes.error;
+      names = new Map(((admRes && admRes.data) || []).map((a) => [a.user_id, a.display_name]));
+    }
+
     if (error) return list.appendChild(el("p", { class: "muted", text: errText(error) }));
-    if (!data.length) return list.appendChild(el("p", { class: "muted empty", text: "السجل فارغ." }));
+    if (!data || !data.length) return list.appendChild(el("p", { class: "muted empty", text: "السجل فارغ." }));
     for (const a of data) {
       const o = a.old_data || {};
       const n = a.new_data || {};
@@ -767,7 +875,12 @@
       } else if (a.table_name === "member_invites") {
         const evName = n.event === "invite_created" ? "دعوة جديدة" : n.event === "invite_claimed" ? "تم تفعيل الدعوة" : "إلغاء دعوة";
         summary = evName + (n.member_name ? " — " + n.member_name : "") + (n.code_hint ? " (" + n.code_hint + ")" : "");
+      } else if (a.table_name === "admins") {
+        if (a.action === "INSERT") summary = "تعيين منسّق جديد: " + (n.display_name || a.row_id);
+        else if (a.action === "DELETE") summary = "إزالة صلاحية الإشراف عن: " + (o.display_name || a.row_id);
+        else summary = "تحديث صلاحيات منسّق: " + (n.display_name || o.display_name || a.row_id);
       }
+      const actorLabel = a.actor_name || (a.actor ? names.get(a.actor) || "مشرف" : "سكربت المزامنة");
       list.appendChild(
         el("div", { class: "audit-row" }, [
           el("span", { class: "pill " + String(a.action).toLowerCase(), text: ACTION_AR[a.action] || a.action }),
@@ -775,7 +888,7 @@
           el("span", { class: "audit-sum", text: summary }),
           el("span", {
             class: "audit-who muted small",
-            text: (a.actor ? names.get(a.actor) || "مشرف" : "سكربت المزامنة") + " · " + fmtDate(a.at),
+            text: actorLabel + " · " + fmtDate(a.at),
           }),
         ])
       );
@@ -819,147 +932,10 @@
   }
 
   // ---------- Owner Member Invites & Verified Members ----------
-  function cleanPhone(raw) {
-    return String(raw || "").replace(/[^0-9+]/g, "").slice(0, 24);
-  }
-
-  function phoneDigits(raw) {
-    return String(raw || "").replace(/\D/g, "");
-  }
-
-  async function previewAdminInvite(rawCode) {
-    const box = $("adm-inv-preview");
-    if (!box) return null;
-    const norm = String(rawCode || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
-    if (norm.length < 10) {
-      box.hidden = true;
-      box.textContent = "";
-      return null;
-    }
-    const { data, error } = await sb.rpc("preview_member_invite", { p_temp_password: rawCode });
-    if (error || !data || !data.valid) {
-      box.hidden = false;
-      box.classList.add("is-err");
-      const reasonMap = {
-        already_used: "هذه الكلمة المؤقتة استُخدمت من قبل.",
-        revoked: "هذه الدعوة ملغاة من قِبل المالك.",
-        expired: "انتهت صلاحية هذه الدعوة.",
-      };
-      box.textContent = (data && reasonMap[data.reason]) || "الكلمة المؤقتة غير صحيحة أو لم تعد صالحة.";
-      return null;
-    }
-    box.hidden = false;
-    box.classList.remove("is-err");
-    const roleLbl = data.target_role === "moderator" ? "مشرف بلوحة الإدارة" : "عضو موثّق بالمنصة";
-    box.textContent = "الدعوة باسم: " + (data.full_lineage || data.member_name) + " — الصفة: " + roleLbl;
-    return data;
-  }
-
-  function bindFirstLoginInviteForm() {
-    const toggle = $("admin-invite-toggle");
-    const form = $("admin-invite-form");
-    const codeInput = $("adm-inv-code");
-    if (!toggle || !form || !codeInput) return;
-
-    toggle.addEventListener("click", () => {
-      const next = form.hidden;
-      form.hidden = !next;
-      toggle.setAttribute("aria-expanded", String(next));
-      if (next) codeInput.focus();
-    });
-
-    let timer = null;
-    codeInput.addEventListener("input", () => {
-      clearTimeout(timer);
-      timer = setTimeout(() => previewAdminInvite(codeInput.value), 260);
-    });
-
-    form.addEventListener("submit", async (ev) => {
-      ev.preventDefault();
-      const code = codeInput.value.trim();
-      const email = $("adm-inv-email").value.trim();
-      const phone = cleanPhone($("adm-inv-phone").value);
-      const password = $("adm-inv-password").value;
-      const btn = $("adm-inv-submit");
-
-      const preview = await previewAdminInvite(code);
-      if (!preview) {
-        status("تحقق من صحة الكلمة المؤقتة قبل المتابعة.", "error");
-        return;
-      }
-      if (!email || !email.includes("@")) {
-        status("أدخل بريداً إلكترونياً صحيحاً.", "error");
-        return;
-      }
-      if (phoneDigits(phone).length < 8) {
-        status("أدخل رقم جوال صحيحاً (إجباري لإتمام التفعيل).", "error");
-        return;
-      }
-      if (!password || password.length < 10) {
-        status("كلمة المرور الدائمة يجب أن لا تقل عن ١٠ خانات.", "error");
-        return;
-      }
-
-      if (btn) btn.disabled = true;
-      const { data: signData, error: signErr } = await sb.auth.signUp({
-        email,
-        password,
-        options: { data: { member_id: preview.member_id, phone } },
-      });
-      $("adm-inv-password").value = "";
-
-      if (signErr) {
-        if (btn) btn.disabled = false;
-        status(errText(signErr), "error");
-        return;
-      }
-
-      if (signData && signData.session) {
-        const { data: claimData, error: claimErr } = await sb.rpc("claim_member_invite", {
-          p_temp_password: code,
-          p_phone: phone,
-        });
-        if (btn) btn.disabled = false;
-        if (claimErr) {
-          status(errText(claimErr), "error");
-          return;
-        }
-        try { localStorage.removeItem(PENDING_INVITE_KEY); } catch (_) {}
-        if (claimData && claimData.target_role !== "moderator") {
-          status(
-            "تم إعداد حسابك وتوثيق اسمك «" + (claimData.member_name || "") + "» وحفظ رقم جوالك بنجاح! انتقل للشجرة الرئيسية لرفع الطلبات.",
-            "ok"
-          );
-          return;
-        }
-        status("تم تفعيل حساب الإشراف الخاص بك — أكمل إعداد التحقق الثنائي الآن.", "ok");
-        await route();
-        return;
-      }
-
-      try {
-        localStorage.setItem(PENDING_INVITE_KEY, JSON.stringify({ code, phone, role: preview.target_role }));
-      } catch (_) {}
-      if (btn) btn.disabled = false;
-      form.hidden = true;
-      toggle.setAttribute("aria-expanded", "false");
-      $("login-email").value = email;
-      status("تم إنشاء حسابك! افتح بريدك الإلكتروني واضغط رابط التفعيل، ثم سجّل دخولك بكلمة المرور الجديدة لإكمال ربط الحساب والتحقق الثنائي.", "ok");
-    });
-
-    const qInvite = new URLSearchParams(window.location.search).get("invite");
-    if (qInvite && qInvite.trim()) {
-      form.hidden = false;
-      toggle.setAttribute("aria-expanded", "true");
-      codeInput.value = qInvite.trim();
-      previewAdminInvite(codeInput.value);
-    }
-  }
-
   function inviteShareLink(invite) {
     const base = window.location.origin + window.location.pathname.replace(/admin\.html$/i, "");
-    const page = invite.target_role === "moderator" ? "admin.html" : "";
-    return base + page + "?invite=" + encodeURIComponent(invite.temp_password);
+    const suffix = invite.target_role === "moderator" ? "&next=admin" : "";
+    return base + "?invite=" + encodeURIComponent(invite.temp_password) + suffix;
   }
 
   function renderInviteSearchDropdown(q) {
@@ -1071,7 +1047,7 @@
       $("inv-result-box").hidden = false;
       $("inv-note").value = "";
       status("تم توليد كلمة المرور المؤقتة للعضو «" + (data.member_name || "") + "».", "ok");
-      await loadInvitesAndVerifiedMembers();
+      await loadOwnerInvites();
     });
 
     if ($("inv-copy-code-btn")) {
@@ -1089,7 +1065,7 @@
         if (!state.lastInvite) return;
         const d = state.lastInvite;
         const link = inviteShareLink(d);
-        const roleTxt = d.target_role === "moderator" ? "مشرف في منصة شجرة ذوي عويض" : "عضو موثّق في شجرة ذوي عويض";
+        const roleTxt = d.target_role === "moderator" ? "منسّق ومشرف في منصة شجرة ذوي عويض" : "عضو موثّق في شجرة ذوي عويض";
         const msg =
           "السلام عليكم ورحمة الله وبركاته\n" +
           "أهلاً بك يا " + d.member_name + "\n" +
@@ -1102,159 +1078,449 @@
     }
   }
 
-  async function loadInvitesAndVerifiedMembers() {
+  const COORD_PERMS = [
+    { key: "can_review_requests", arg: "p_can_review", label: "مراجعة واعتماد الطلبات" },
+    { key: "can_add_members", arg: "p_can_add", label: "إضافة أسماء وأبناء للشجرة" },
+    { key: "can_edit_members", arg: "p_can_edit", label: "تعديل الأسماء والسير" },
+    { key: "can_delete_members", arg: "p_can_delete", label: "حذف أسماء من الشجرة" },
+    { key: "can_access_brand", arg: "p_can_brand", label: "الهوية والورق الرسمي" },
+    { key: "can_view_audit", arg: "p_can_audit", label: "الاطلاع على سجل التعديلات" },
+    { key: "can_export_backup", arg: "p_can_backup", label: "تصدير النسخة الاحتياطية" },
+  ];
+
+  function makeToggleSwitch(permDef, initialChecked, onChangeCb) {
+    const input = el("input", { type: "checkbox" });
+    input.checked = Boolean(initialChecked);
+    if (onChangeCb) {
+      input.addEventListener("change", () => onChangeCb(input));
+    }
+    const label = el("label", { class: "perm-switch" }, [
+      input,
+      el("span", { class: "switch-track", "aria-hidden": "true" }),
+      el("span", { class: "switch-label", text: permDef.label }),
+    ]);
+    return { label, input };
+  }
+
+  async function loadOwnerInvites() {
+    const details = $("owner-invite-details");
     const card = $("owner-invite-card");
-    if (!card) return;
+    if (!card || !details) return;
     if (state.role !== "owner") {
+      details.hidden = true;
       card.hidden = true;
       return;
     }
+    details.hidden = false;
     card.hidden = false;
 
     const invList = $("invites-list");
-    const verList = $("verified-members-list");
-    const [{ data: invites, error: invErr }, { data: verified, error: verErr }] = await Promise.all([
-      sb.rpc("owner_list_member_invites"),
-      sb.rpc("owner_list_verified_members"),
-    ]);
-
-    if (invList) {
-      clear(invList);
-      if (invErr) invList.appendChild(el("p", { class: "muted", text: errText(invErr) }));
-      else if (!invites || !invites.length) invList.appendChild(el("p", { class: "muted empty", text: "لا توجد دعوات صادرة حتى الآن." }));
-      else {
-        const now = Date.now();
-        for (const inv of invites) {
-          let stText = "نشطة";
-          let stCls = "ok";
-          if (inv.used_at) { stText = "مستخدمة"; stCls = "warn"; }
-          else if (inv.revoked_at) { stText = "ملغاة"; stCls = "bad"; }
-          else if (new Date(inv.expires_at).getTime() <= now) { stText = "منتهية"; stCls = "bad"; }
-
-          const revokeBtn = !inv.used_at && !inv.revoked_at
-            ? el("button", {
-                type: "button",
-                class: "btn btn-danger",
-                text: "إلغاء الدعوة",
-                onclick: async () => {
-                  revokeBtn.disabled = true;
-                  const { error: rErr } = await sb.rpc("owner_revoke_member_invite", { p_invite_id: inv.id });
-                  revokeBtn.disabled = false;
-                  if (rErr) return status(errText(rErr), "error");
-                  status("تم إلغاء الدعوة.", "ok");
-                  loadInvitesAndVerifiedMembers();
-                },
-              })
-            : null;
-
-          invList.appendChild(
-            el("div", { class: "audit-row" }, [
-              el("span", { class: "status-badge " + stCls, text: stText }),
-              el("strong", { text: inv.full_lineage || inv.member_name }),
-              el("span", { class: "pill", text: inv.target_role === "moderator" ? "مشرف" : "عضو" }),
-              el("span", { class: "muted small", dir: "ltr", text: inv.code_hint || "" }),
-              el("span", { class: "muted small", text: inv.claimed_email ? "فعّلها: " + inv.claimed_email : "تنتهي: " + fmtDate(inv.expires_at) }),
-              revokeBtn,
-            ])
-          );
-        }
-      }
+    if (!invList) return;
+    const { data: invites, error: invErr } = await sb.rpc("owner_list_member_invites");
+    clear(invList);
+    if (invErr) {
+      invList.appendChild(el("p", { class: "muted", text: errText(invErr) }));
+      return;
+    }
+    if (!invites || !invites.length) {
+      invList.appendChild(el("p", { class: "muted empty", text: "لا توجد دعوات صادرة حتى الآن." }));
+      return;
     }
 
-    if (verList) {
-      clear(verList);
-      if (verErr) verList.appendChild(el("p", { class: "muted", text: errText(verErr) }));
-      else if (!verified || !verified.length) verList.appendChild(el("p", { class: "muted empty", text: "لا يوجد أعضاء موثّقون بعد." }));
-      else {
-        for (const vm of verified) {
-          verList.appendChild(
-            el("div", { class: "audit-row" }, [
-              el("strong", { text: vm.full_lineage || vm.member_name }),
-              el("span", { class: "pill", dir: "ltr", text: vm.phone || "بدون جوال" }),
-              el("span", { class: "muted small", dir: "ltr", text: vm.email || "" }),
-              el("span", { class: "muted small", text: fmtDate(vm.created_at) }),
-            ])
-          );
-        }
-      }
-    }
-  }
+    const now = Date.now();
+    for (const inv of invites) {
+      let stText = "نشطة";
+      let stCls = "ok";
+      if (inv.used_at) { stText = "مستخدمة"; stCls = "warn"; }
+      else if (inv.revoked_at) { stText = "ملغاة"; stCls = "bad"; }
+      else if (new Date(inv.expires_at).getTime() <= now) { stText = "منتهية"; stCls = "bad"; }
 
-  async function loadAdmins() {
-    await loadOwnerSettings();
-    await loadInvitesAndVerifiedMembers();
-    const { data, error } = await sb.from("admins").select("*").order("created_at");
-    const list = $("admins-list");
-    clear(list);
-    if (error) return list.appendChild(el("p", { class: "muted", text: errText(error) }));
-    const isOwner = state.role === "owner";
+      const revokeBtn = !inv.used_at && !inv.revoked_at
+        ? el("button", {
+            type: "button",
+            class: "btn btn-danger",
+            text: "إلغاء الدعوة",
+            onclick: async () => {
+              revokeBtn.disabled = true;
+              const { error: rErr } = await sb.rpc("owner_revoke_member_invite", { p_invite_id: inv.id });
+              revokeBtn.disabled = false;
+              if (rErr) return status(errText(rErr), "error");
+              status("تم إلغاء الدعوة.", "ok");
+              loadOwnerInvites();
+            },
+          })
+        : null;
 
-    for (const a of data) {
-      const rowIsOwner = a.role === "owner";
-      let permsUi = null;
-
-      if (rowIsOwner || !isOwner) {
-        const labels = [];
-        if (rowIsOwner || a.can_review_requests === true) labels.push("مراجعة الطلبات");
-        if (rowIsOwner || a.can_edit_tree === true) labels.push("تعديل الشجرة");
-        if (rowIsOwner || a.can_access_brand === true) labels.push("الهوية والورق الرسمي");
-        permsUi = el("div", { class: "perm-wrap" },
-          labels.length
-            ? labels.map((lbl) => el("span", { class: "pill", text: lbl }))
-            : [el("span", { class: "muted small", text: "قراءة فقط" })]
-        );
-      } else {
-        const cbReview = el("input", { type: "checkbox" });
-        cbReview.checked = a.can_review_requests === true;
-        const cbEdit = el("input", { type: "checkbox" });
-        cbEdit.checked = a.can_edit_tree === true;
-        const cbBrand = el("input", { type: "checkbox" });
-        cbBrand.checked = a.can_access_brand === true;
-
-        const saveBtn = el("button", {
-          type: "button",
-          class: "btn btn-primary",
-          text: "حفظ الصلاحيات",
-          onclick: async () => {
-            saveBtn.disabled = true;
-            const { error: pErr } = await sb.rpc("owner_set_admin_permissions", {
-              p_user_id: a.user_id,
-              p_can_review: cbReview.checked,
-              p_can_edit: cbEdit.checked,
-              p_can_brand: cbBrand.checked,
-            });
-            saveBtn.disabled = false;
-            if (pErr) return status(errText(pErr), "error");
-            status("تم تحديث صلاحيات المشرف «" + (a.display_name || "") + "».", "ok");
-            loadAdmins();
-          },
-        });
-
-        permsUi = el("div", { class: "perm-wrap" }, [
-          el("label", { class: "perm-check" }, [cbReview, "مراجعة الطلبات"]),
-          el("label", { class: "perm-check" }, [cbEdit, "تعديل الشجرة"]),
-          el("label", { class: "perm-check" }, [cbBrand, "الهوية والورق الرسمي"]),
-          saveBtn,
-        ]);
-      }
-
-      list.appendChild(
+      invList.appendChild(
         el("div", { class: "audit-row" }, [
-          el("span", { class: "pill " + a.role, text: rowIsOwner ? "المالك" : "مشرف" }),
-          el("strong", { text: a.display_name || "—" }),
-          permsUi,
-          el("span", { class: "muted small", text: "منذ " + fmtDate(a.created_at) }),
+          el("span", { class: "status-badge " + stCls, text: stText }),
+          el("strong", { text: inv.full_lineage || inv.member_name }),
+          el("span", { class: "pill", text: inv.target_role === "moderator" ? "منسّق" : "عضو" }),
+          el("span", { class: "muted small", dir: "ltr", text: inv.code_hint || "" }),
+          el("span", { class: "muted small", text: inv.claimed_email ? "فعّلها: " + inv.claimed_email : "تنتهي: " + fmtDate(inv.expires_at) }),
+          revokeBtn,
         ])
       );
     }
   }
 
+  function renderCoordinatorsList() {
+    const list = $("admins-list");
+    if (!list) return;
+    clear(list);
+
+    const rows = state.registeredMembers.filter((m) => m.role === "owner" || m.role === "moderator");
+    if (!rows.length) {
+      list.appendChild(el("p", { class: "muted empty", text: "لا توجد بيانات مشرفين." }));
+      return;
+    }
+
+    for (const m of rows) {
+      const rowIsOwner = m.role === "owner";
+      const displayName = m.display_name || m.member_name || m.email || "—";
+      const subParts = [];
+      if (m.full_lineage) subParts.push(m.full_lineage);
+      if (m.branch_name) subParts.push("فرع " + m.branch_name);
+      if (m.phone) subParts.push(m.phone);
+      if (m.email) subParts.push(m.email);
+
+      if (rowIsOwner) {
+        list.appendChild(
+          el("article", { class: "card coord-card is-owner", id: "coord-card-" + m.user_id }, [
+            el("div", { class: "coord-head" }, [
+              el("div", null, [
+                el("div", { class: "coord-title-row" }, [
+                  el("span", { class: "pill owner", text: "مدير النظام (حساب وحيد)" }),
+                  el("strong", { text: displayName }),
+                ]),
+                subParts.length ? el("p", { class: "muted small coord-meta", text: subParts.join(" · ") }) : null,
+              ]),
+              el("span", { class: "muted small", text: m.admin_since ? "منذ " + fmtDate(m.admin_since) : "" }),
+            ]),
+            el("p", {
+              class: "muted small",
+              text: "حساب محمي بجميع الصلاحيات الكاملة لإضافة الأسماء وتعديلها وحذفها، واعتماد الطلبات، وإدارة المنسّقين.",
+            }),
+          ])
+        );
+        continue;
+      }
+
+      const switchesMap = {};
+      const grid = el("div", { class: "perm-switch-grid" });
+
+      const saveCurrentSwitches = async (changedPermKey, changedInput) => {
+        const prevVal = Boolean(m[changedPermKey]);
+        const args = { p_user_id: m.user_id };
+        for (const p of COORD_PERMS) {
+          switchesMap[p.key].disabled = true;
+          args[p.arg] = switchesMap[p.key].checked;
+        }
+        const fn = state.migrationMissing ? "owner_set_admin_permissions" : "owner_set_coordinator_permissions";
+        const payload = state.migrationMissing
+          ? {
+              p_user_id: m.user_id,
+              p_can_review: switchesMap.can_review_requests.checked,
+              p_can_edit: switchesMap.can_add_members.checked || switchesMap.can_edit_members.checked,
+              p_can_brand: switchesMap.can_access_brand.checked,
+            }
+          : args;
+
+        const { error: pErr } = await sb.rpc(fn, payload);
+        for (const p of COORD_PERMS) {
+          switchesMap[p.key].disabled = false;
+        }
+        if (pErr) {
+          changedInput.checked = prevVal;
+          status(errText(pErr), "error");
+          return;
+        }
+        for (const p of COORD_PERMS) {
+          m[p.key] = switchesMap[p.key].checked;
+        }
+        status("تم تحديث صلاحية «" + displayName + "» فوراً.", "ok");
+      };
+
+      for (const p of COORD_PERMS) {
+        const sw = makeToggleSwitch(p, m[p.key] === true, (inp) => saveCurrentSwitches(p.key, inp));
+        switchesMap[p.key] = sw.input;
+        if (state.migrationMissing && !["can_review_requests", "can_add_members", "can_edit_members", "can_access_brand"].includes(p.key)) {
+          sw.input.disabled = true;
+        }
+        grid.appendChild(sw.label);
+      }
+
+      const removeBtn = el("button", {
+        type: "button",
+        class: "btn btn-ghost btn-danger-outline",
+        text: "إزالة الإشراف",
+        disabled: state.migrationMissing ? "disabled" : null,
+        onclick: async () => {
+          if (!window.confirm("إزالة صفة المنسّق عن «" + displayName + "»؟ سيبقى حسابه كعضو عادي في الشجرة.")) return;
+          removeBtn.disabled = true;
+          const { error: rErr } = await sb.rpc("owner_remove_coordinator", { p_user_id: m.user_id });
+          removeBtn.disabled = false;
+          if (rErr) return status(errText(rErr), "error");
+          status("تمت إزالة صلاحية الإشراف عن «" + displayName + "».", "ok");
+          await loadAdmins();
+        },
+      });
+
+      list.appendChild(
+        el("article", { class: "card coord-card", id: "coord-card-" + m.user_id }, [
+          el("div", { class: "coord-head" }, [
+            el("div", null, [
+              el("div", { class: "coord-title-row" }, [
+                el("span", { class: "pill", text: "منسّق" }),
+                el("strong", { text: displayName }),
+              ]),
+              subParts.length ? el("p", { class: "muted small coord-meta", text: subParts.join(" · ") }) : null,
+            ]),
+            el("div", { class: "coord-head-actions" }, [
+              el("span", { class: "muted small", text: m.admin_since ? "منذ " + fmtDate(m.admin_since) : "" }),
+              removeBtn,
+            ]),
+          ]),
+          grid,
+        ])
+      );
+    }
+  }
+
+  function renderRegisteredMembers() {
+    const card = $("promote-member-card");
+    const list = $("registered-members-list");
+    const countEl = $("reg-members-count");
+    if (!card || !list) return;
+
+    if (state.role !== "owner") {
+      card.hidden = true;
+      return;
+    }
+    card.hidden = false;
+    clear(list);
+
+    const q = normalizeAr($("reg-member-search") ? $("reg-member-search").value : "");
+    const filterVal = $("reg-member-filter") ? $("reg-member-filter").value : "all";
+
+    const filtered = state.registeredMembers.filter((m) => {
+      if (filterVal === "member" && m.role !== "member") return false;
+      if (filterVal === "moderator" && m.role !== "moderator") return false;
+      if (!q) return true;
+      const hay = normalizeAr(
+        [m.member_name, m.full_lineage, m.branch_name, m.display_name, m.phone, m.email].filter(Boolean).join(" ")
+      );
+      return hay.includes(q);
+    });
+
+    if (countEl) countEl.textContent = String(filtered.length);
+
+    if (!filtered.length) {
+      list.appendChild(el("p", { class: "muted empty", text: "لا يوجد أعضاء مطابقون لبحثك." }));
+      return;
+    }
+
+    for (const m of filtered) {
+      const displayName = m.full_lineage || m.member_name || m.display_name || m.email || "عضو مسجّل";
+      const metaBits = [];
+      if (m.branch_name) metaBits.push("فرع " + m.branch_name);
+      if (m.phone) metaBits.push(m.phone);
+      if (m.email) metaBits.push(m.email);
+      if (m.registered_at) metaBits.push("سجّل: " + fmtDate(m.registered_at));
+
+      if (m.role === "owner") {
+        list.appendChild(
+          el("div", { class: "reg-row" }, [
+            el("div", { class: "reg-info" }, [
+              el("strong", { text: displayName }),
+              el("div", { class: "muted small", text: metaBits.join(" · ") }),
+            ]),
+            el("div", { class: "reg-actions" }, [
+              el("span", { class: "pill owner", text: "مدير النظام (حساب وحيد)" }),
+            ]),
+          ])
+        );
+        continue;
+      }
+
+      if (m.role === "moderator") {
+        list.appendChild(
+          el("div", { class: "reg-row" }, [
+            el("div", { class: "reg-info" }, [
+              el("strong", { text: displayName }),
+              el("div", { class: "muted small", text: metaBits.join(" · ") }),
+            ]),
+            el("div", { class: "reg-actions" }, [
+              el("span", { class: "pill", text: "منسّق حالياً" }),
+              el("button", {
+                type: "button",
+                class: "btn btn-ghost",
+                text: "إدارة الصلاحيات ↑",
+                onclick: () => {
+                  const targetCard = $("coord-card-" + m.user_id);
+                  if (targetCard) targetCard.scrollIntoView({ behavior: "smooth", block: "center" });
+                },
+              }),
+            ]),
+          ])
+        );
+        continue;
+      }
+
+      const drawer = el("div", { class: "promote-drawer", hidden: "" });
+      const drawerInputs = {};
+      const drawerGrid = el("div", { class: "perm-switch-grid" });
+      for (const p of COORD_PERMS) {
+        const sw = makeToggleSwitch(p, p.key === "can_review_requests");
+        drawerInputs[p.key] = sw.input;
+        drawerGrid.appendChild(sw.label);
+      }
+      const confirmBtn = el("button", {
+        type: "button",
+        class: "btn btn-primary",
+        text: "تأكيد التعيين كمنسّق",
+        onclick: async () => {
+          confirmBtn.disabled = true;
+          const shortDisplay = m.full_lineage
+            ? m.full_lineage.split(" بن ").slice(0, 2).join(" بن ")
+            : (m.member_name || m.email || "");
+          const { error: prErr } = await sb.rpc("owner_promote_member_to_coordinator", {
+            p_user_id: m.user_id,
+            p_display_name: shortDisplay,
+            p_can_review: drawerInputs.can_review_requests.checked,
+            p_can_add: drawerInputs.can_add_members.checked,
+            p_can_edit: drawerInputs.can_edit_members.checked,
+            p_can_delete: drawerInputs.can_delete_members.checked,
+            p_can_brand: drawerInputs.can_access_brand.checked,
+            p_can_audit: drawerInputs.can_view_audit.checked,
+            p_can_backup: drawerInputs.can_export_backup.checked,
+          });
+          confirmBtn.disabled = false;
+          if (prErr) return status(errText(prErr), "error");
+          status("تم تعيين «" + (m.member_name || shortDisplay) + "» كمنسّق وتفعيل صلاحياته المختارة.", "ok");
+          await loadAdmins();
+        },
+      });
+      const cancelBtn = el("button", {
+        type: "button",
+        class: "btn btn-ghost",
+        text: "إلغاء",
+        onclick: () => { drawer.hidden = true; },
+      });
+      drawer.appendChild(el("p", { class: "muted small", text: "اختر المزايا التي تريد تشغيلها لهذا المنسّق:" }));
+      drawer.appendChild(drawerGrid);
+      drawer.appendChild(el("div", { class: "row-actions inv-actions-row" }, [confirmBtn, cancelBtn]));
+
+      const promoteBtn = el("button", {
+        type: "button",
+        class: "btn btn-primary",
+        text: "تعيين كمنسّق / مشرف",
+        disabled: state.migrationMissing ? "disabled" : null,
+        onclick: () => {
+          drawer.hidden = !drawer.hidden;
+        },
+      });
+
+      list.appendChild(
+        el("div", { class: "reg-row-wrap" }, [
+          el("div", { class: "reg-row" }, [
+            el("div", { class: "reg-info" }, [
+              el("strong", { text: displayName }),
+              el("div", { class: "muted small", text: metaBits.join(" · ") }),
+            ]),
+            el("div", { class: "reg-actions" }, [
+              el("span", { class: "pill member", text: "عضو مسجّل" }),
+              promoteBtn,
+            ]),
+          ]),
+          drawer,
+        ])
+      );
+    }
+  }
+
+  function bindOwnerMemberDirectoryControls() {
+    const searchEl = $("reg-member-search");
+    const filterEl = $("reg-member-filter");
+    if (searchEl) searchEl.addEventListener("input", renderRegisteredMembers);
+    if (filterEl) filterEl.addEventListener("change", renderRegisteredMembers);
+  }
+
+  async function loadAdmins() {
+    if (state.role !== "owner") return;
+    await loadOwnerSettings();
+    await loadOwnerInvites();
+
+    const warnBox = $("migration-warning");
+    const { data: regData, error: regErr } = await sb.rpc("owner_list_registered_members");
+
+    if (!regErr && Array.isArray(regData)) {
+      state.migrationMissing = false;
+      if (warnBox) warnBox.hidden = true;
+      state.registeredMembers = regData;
+      renderCoordinatorsList();
+      renderRegisteredMembers();
+      return;
+    }
+
+    // Graceful fallback if migration 4 has not been executed yet in Supabase
+    const isMissingRpc =
+      regErr && (regErr.code === "PGRST202" || /Could not find|does not exist/i.test(regErr.message || ""));
+    state.migrationMissing = Boolean(isMissingRpc);
+    if (warnBox) warnBox.hidden = !state.migrationMissing;
+    if (regErr && !isMissingRpc) {
+      status(errText(regErr), "error");
+    }
+
+    const [{ data: admData }, { data: verData }] = await Promise.all([
+      sb.from("admins").select("*").order("created_at"),
+      sb.rpc("owner_list_verified_members"),
+    ]);
+
+    const combined = [];
+    const seen = new Set();
+    for (const a of admData || []) {
+      seen.add(a.user_id);
+      combined.push({
+        user_id: a.user_id,
+        role: a.role,
+        display_name: a.display_name,
+        can_review_requests: a.can_review_requests === true,
+        can_add_members: a.can_edit_tree === true,
+        can_edit_members: a.can_edit_tree === true,
+        can_delete_members: a.can_edit_tree === true,
+        can_access_brand: a.can_access_brand === true,
+        can_view_audit: true,
+        can_export_backup: a.role === "owner",
+        admin_since: a.created_at,
+      });
+    }
+    for (const v of verData || []) {
+      if (seen.has(v.user_id)) continue;
+      combined.push({
+        user_id: v.user_id,
+        role: "member",
+        member_id: v.member_id,
+        member_name: v.member_name,
+        full_lineage: v.full_lineage,
+        phone: v.phone,
+        email: v.email,
+        registered_at: v.created_at,
+      });
+    }
+    state.registeredMembers = combined;
+    renderCoordinatorsList();
+    renderRegisteredMembers();
+  }
+
   // ---------- Boot ----------
   initAdminTheme();
-  bindFirstLoginInviteForm();
   bindOwnerInviteControls();
+  bindOwnerMemberDirectoryControls();
   sb.auth.onAuthStateChange((event) => {
-    if (event === "SIGNED_OUT") show("view-login");
+    if (event === "SIGNED_OUT") {
+      window.location.replace("./?auth=login");
+    }
   });
   route().catch((e) => status(errText(e), "error"));
 })();
