@@ -16,3 +16,8 @@ node_modules/
 # Private local letterhead archive (with signature & seal slots) - never push to public GitHub
 brand/archive-private/
 
+# Local secrets (Supabase secret key, etc.) - NEVER push to public GitHub
+.env
+.env.local
+.env.*.local
+

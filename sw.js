@@ -2,12 +2,13 @@
    Offline Service Worker for Dhawi Uwaid PWA
    ========================================================================== */
 
-const CACHE_NAME = "dhawi-uwaid-v5";
+const CACHE_NAME = "dhawi-uwaid-v6";
 const PRECACHE_URLS = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./supabase-client.js",
   "./data/tree-data.js",
   "./manifest.webmanifest",
   "./assets/logo-seal-clean.svg",
@@ -44,6 +45,8 @@ self.addEventListener("fetch", (event) => {
   if (req.method !== "GET") return;
 
   const url = new URL(req.url);
+  if (url.hostname.endsWith(".supabase.co")) return;
+
   const isCacheFirst =
     url.origin !== self.location.origin ||
     url.pathname.includes("/assets/");

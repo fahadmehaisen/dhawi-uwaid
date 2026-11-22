@@ -6,7 +6,7 @@
 (function () {
   "use strict";
 
-  const DATA = window.DHAWI_UWAID_TREE;
+  let DATA = window.DHAWI_UWAID_TREE;
   if (!DATA || !DATA.nodesById) {
     console.error("DHAWI_UWAID_TREE data payload not loaded.");
     return;
@@ -111,20 +111,27 @@
 
   // -------------------- Search Index --------------------
 
-  const ALL_NODES = Object.values(DATA.nodesById);
-  const SEARCH_INDEX = ALL_NODES.map((node) => {
-    const father = node.parentId ? DATA.nodesById[node.parentId] : null;
-    const uwaidLineage = formatLineageSentence(node.id, false);
-    const fullLineage = formatLineageSentence(node.id, true);
-    return {
-      node,
-      fatherName: father ? father.name : "",
-      normName: normalizeArabic(node.name),
-      normUwaid: normalizeArabic(uwaidLineage),
-      normFull: normalizeArabic(fullLineage),
-      shortLineage: uwaidLineage || fullLineage,
-    };
-  });
+  let ALL_NODES = [];
+  let SEARCH_INDEX = [];
+
+  function rebuildSearchIndex() {
+    ALL_NODES = Object.values(DATA.nodesById);
+    SEARCH_INDEX = ALL_NODES.map((node) => {
+      const father = node.parentId ? DATA.nodesById[node.parentId] : null;
+      const uwaidLineage = formatLineageSentence(node.id, false);
+      const fullLineage = formatLineageSentence(node.id, true);
+      return {
+        node,
+        fatherName: father ? father.name : "",
+        normName: normalizeArabic(node.name),
+        normUwaid: normalizeArabic(uwaidLineage),
+        normFull: normalizeArabic(fullLineage),
+        shortLineage: uwaidLineage || fullLineage,
+      };
+    });
+  }
+
+  rebuildSearchIndex();
 
   function searchNodes(query, limit) {
     const q = normalizeArabic(query);
@@ -184,6 +191,7 @@
     layoutPositions: new Map(),
     drawerNodeId: null,
     drawerFullLineage: false,
+    prefillTargetNodeId: null,
     sunburstRootId: "R00",
     sunburstInspectorId: "R00",
     directoryPageSize: 48,
@@ -1130,8 +1138,9 @@
 
   function populateDirectorySelects() {
     const branchSel = document.getElementById("dir-branch-select");
+    const prevBranch = branchSel.value || "ALL";
     branchSel.textContent = "";
-    branchSel.appendChild(el("option", { value: "ALL", textContent: "جميع الفروع (٧٦٠)" }));
+    branchSel.appendChild(el("option", { value: "ALL", textContent: `جميع الفروع (${toArabicDigits(DATA.meta.totalNodes)})` }));
     branchSel.appendChild(el("option", { value: "ANC", textContent: "عمود النسب أعلى عويض (١٠)" }));
     branchSel.appendChild(el("option", { value: "ROOT", textContent: "الجد المؤسس — عويض" }));
     for (const bs of DATA.branchStats) {
@@ -1142,8 +1151,12 @@
         })
       );
     }
+    if ([...branchSel.options].some((o) => o.value === prevBranch)) {
+      branchSel.value = prevBranch;
+    }
 
     const genSel = document.getElementById("dir-gen-select");
+    const prevGen = genSel.value || "ALL";
     genSel.textContent = "";
     genSel.appendChild(el("option", { value: "ALL", textContent: "جميع الأجيال" }));
     genSel.appendChild(el("option", { value: "ANC", textContent: "الأجداد قبل عويض (-١٠ إلى -١)" }));
@@ -1154,6 +1167,9 @@
           textContent: g === 0 ? "الجد عويض (الجيل ٠)" : `الجيل ${toArabicDigits(g)}`,
         })
       );
+    }
+    if ([...genSel.options].some((o) => o.value === prevGen)) {
+      genSel.value = prevGen;
     }
 
     // Modal branch select as well
@@ -2098,6 +2114,10 @@
           el("div", null, [
             el("strong", { textContent: `${item.type} — ${item.branch}` }),
             el("span", { className: "hint-sub", textContent: ` • ${item.date}` }),
+            el("span", {
+              className: "hint-sub",
+              textContent: item.synced ? " • تم الإرسال لقاعدة البيانات" : " • محفوظ محلياً",
+            }),
           ]),
           el("div", {
             textContent: `المعني: ${item.target} | الإضافة/التعديل: ${item.newName}${item.submitter ? ` | مقدم الطلب: ${item.submitter}` : ""}`,
@@ -2109,8 +2129,9 @@
   }
 
   function openUpdateModal(prefillNodeId) {
-    if (prefillNodeId && DATA.nodesById[prefillNodeId]) {
-      const n = DATA.nodesById[prefillNodeId];
+    state.prefillTargetNodeId = prefillNodeId && DATA.nodesById[prefillNodeId] ? prefillNodeId : null;
+    if (state.prefillTargetNodeId) {
+      const n = DATA.nodesById[state.prefillTargetNodeId];
       document.getElementById("req-target-person").value = formatLineageSentence(n.id, false)
         .split(" بن ")
         .slice(0, 3)
@@ -2129,6 +2150,7 @@
   }
 
   function closeUpdateModal() {
+    state.prefillTargetNodeId = null;
     document.getElementById("modal-backdrop").classList.add("hidden");
     document.getElementById("update-modal").classList.add("hidden");
   }
@@ -2406,23 +2428,53 @@
     document.getElementById("modal-close-btn").addEventListener("click", closeUpdateModal);
     document.getElementById("modal-backdrop").addEventListener("click", closeUpdateModal);
 
-    document.getElementById("update-request-form").addEventListener("submit", (ev) => {
+    document.getElementById("update-request-form").addEventListener("submit", async (ev) => {
       ev.preventDefault();
+      const formEl = ev.target;
+      const submitBtn = formEl.querySelector('button[type="submit"]');
+      const originalBtnText = submitBtn ? submitBtn.textContent : "";
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "جارٍ الإرسال...";
+      }
+
       const entry = {
         type: document.getElementById("req-type").value,
         branch: document.getElementById("req-branch").value,
         target: document.getElementById("req-target-person").value.trim(),
+        targetNodeId: state.prefillTargetNodeId || null,
         newName: document.getElementById("req-new-name").value.trim(),
         submitter: document.getElementById("req-submitter").value.trim(),
         notes: document.getElementById("req-notes").value.trim(),
         date: new Date().toLocaleDateString("ar-SA"),
+        synced: false,
       };
+
+      try {
+        if (window.DHAWI_UWAID_DB && typeof window.DHAWI_UWAID_DB.submitUpdateRequest === "function") {
+          const res = await window.DHAWI_UWAID_DB.submitUpdateRequest(entry);
+          entry.synced = Boolean(res && res.synced);
+        }
+      } catch (_) {
+        entry.synced = false;
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalBtnText;
+        }
+      }
+
       const list = loadSavedRequests();
       list.unshift(entry);
       saveRequests(list);
       renderSavedRequests();
-      ev.target.reset();
-      showToast("تم حفظ الطلب محلياً وتجهيزه للمراجعة.");
+      formEl.reset();
+      state.prefillTargetNodeId = null;
+      showToast(
+        entry.synced
+          ? "تم إرسال الطلب إلى قاعدة بيانات ذوي عويض وحفظ نسخة محلية للمتابعة."
+          : "تم حفظ الطلب محلياً وتجهيزه للمراجعة (تعذّر الإرسال السحابي حالياً)."
+      );
     });
 
     document.getElementById("copy-all-requests-wa-btn").addEventListener("click", async () => {
@@ -2491,11 +2543,50 @@
       openProfileDrawer(qPerson);
     }
 
+    // Non-blocking background sync with dedicated Dhawi Uwaid Supabase project
+    syncLiveTreeFromSupabase();
+
     // Register Service Worker for instant loading & offline Home Screen support
     if ("serviceWorker" in navigator && (location.protocol === "http:" || location.protocol === "https:")) {
       window.addEventListener("load", () => {
         navigator.serviceWorker.register("sw.js").catch(() => {});
       });
+    }
+  }
+
+  async function syncLiveTreeFromSupabase() {
+    if (!window.DHAWI_UWAID_DB || typeof window.DHAWI_UWAID_DB.fetchLiveTreePayload !== "function") {
+      return;
+    }
+    const live = await window.DHAWI_UWAID_DB.fetchLiveTreePayload();
+    if (!live || !live.nodesById) return;
+
+    DATA = live;
+    window.DHAWI_UWAID_TREE = live;
+    rebuildSearchIndex();
+
+    document.getElementById("edition-label-text").textContent = DATA.meta.editionLabel;
+    document.getElementById("footer-edition-meta").textContent =
+      `${toArabicDigits(DATA.meta.totalNodes)} اسماً موثقاً • ${DATA.meta.editionLabel} • متصل بقاعدة البيانات السحابية`;
+
+    renderBranchPills();
+    populateDirectorySelects();
+
+    if (state.activeView === "tree") {
+      renderTree({ preserveView: true });
+    } else if (state.activeView === "sunburst") {
+      renderSunburst();
+    } else if (state.activeView === "directory") {
+      renderDirectory();
+    } else if (state.activeView === "kinship") {
+      renderKinshipResult();
+    } else if (state.activeView === "analytics") {
+      renderAnalytics();
+    }
+
+    const drawerEl = document.getElementById("profile-drawer");
+    if (drawerEl && !drawerEl.classList.contains("hidden") && state.drawerNodeId && DATA.nodesById[state.drawerNodeId]) {
+      renderProfileDrawer();
     }
   }
 

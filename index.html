@@ -440,7 +440,7 @@
     <div class="modal-header">
       <div>
         <h2 id="update-modal-title">إضافة مولود أو طلب تحديث بيانات</h2>
-        <p class="modal-sub">تُحفظ الطلبات محلياً للمراجعة وتوليد رسالة جاهزة لإرسالها عبر الواتساب أو تصديرها للجنة الشجرة.</p>
+        <p class="modal-sub">تُرسل الطلبات مباشرةً إلى قاعدة بيانات ذوي عويض السحابية لمراجعتها واعتمادها، مع حفظ نسخة محلية وتجهيز رسالة واتساب جاهزة.</p>
       </div>
       <button type="button" id="modal-close-btn" class="icon-close-btn" aria-label="إغلاق النافذة">✕</button>
     </div>
@@ -485,7 +485,7 @@
         </div>
 
         <div class="modal-form-actions">
-          <button type="submit" class="btn btn-emerald">حفظ الطلب وتجهيز الرسالة</button>
+          <button type="submit" class="btn btn-emerald">إرسال الطلب لقاعدة البيانات</button>
           <button type="button" id="copy-all-requests-wa-btn" class="btn btn-gold">نسخ الطلبات بصيغة واتساب</button>
           <button type="button" id="export-requests-json-btn" class="btn btn-outline">تصدير سجل الطلبات</button>
         </div>
@@ -508,6 +508,7 @@
   <div id="toast-box" class="toast-box hidden" role="status" aria-live="polite"></div>
 
   <script src="data/tree-data.js"></script>
+  <script src="supabase-client.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
