@@ -270,12 +270,18 @@
     }
     const icon = document.getElementById("theme-toggle-icon");
     const label = document.getElementById("theme-toggle-label");
+    const mIcon = document.getElementById("mobile-menu-theme-icon");
+    const mLabel = document.getElementById("mobile-menu-theme-label");
     if (theme === "dark") {
-      icon.textContent = "☀";
-      label.textContent = "الرقعة التراثية";
+      if (icon) icon.textContent = "☀";
+      if (label) label.textContent = "الرقعة التراثية";
+      if (mIcon) mIcon.textContent = "☀";
+      if (mLabel) mLabel.textContent = "الرقعة التراثية (النهاري)";
     } else {
-      icon.textContent = "☾";
-      label.textContent = "مجلس ليلي";
+      if (icon) icon.textContent = "☾";
+      if (label) label.textContent = "مجلس ليلي";
+      if (mIcon) mIcon.textContent = "☾";
+      if (mLabel) mLabel.textContent = "المجلس الليلي";
     }
   }
 
@@ -286,14 +292,69 @@
     if (dd) dd.classList.add("hidden");
   }
 
+  function closeAccountPopover() {
+    const pop = document.getElementById("account-popover");
+    const btn = document.getElementById("open-auth-portal-btn");
+    if (pop) pop.classList.add("hidden");
+    if (btn) btn.setAttribute("aria-expanded", "false");
+  }
+
+  function closeMobileSheets() {
+    const backdrop = document.getElementById("mobile-sheet-backdrop");
+    const secSheet = document.getElementById("mobile-sections-sheet");
+    const moreSheet = document.getElementById("mobile-more-sheet");
+    const secBtn = document.getElementById("mobile-sections-trigger");
+    const moreBtn = document.getElementById("mobile-more-trigger");
+    if (backdrop) backdrop.classList.add("hidden");
+    if (secSheet) secSheet.classList.add("hidden");
+    if (moreSheet) moreSheet.classList.add("hidden");
+    if (secBtn) {
+      secBtn.setAttribute("aria-expanded", "false");
+      secBtn.classList.remove("sheet-open");
+    }
+    if (moreBtn) {
+      moreBtn.setAttribute("aria-expanded", "false");
+      moreBtn.classList.remove("sheet-open");
+    }
+  }
+
+  function toggleMobileSheet(which) {
+    const targetId = which === "sections" ? "mobile-sections-sheet" : "mobile-more-sheet";
+    const triggerId = which === "sections" ? "mobile-sections-trigger" : "mobile-more-trigger";
+    const sheet = document.getElementById(targetId);
+    const trigger = document.getElementById(triggerId);
+    const backdrop = document.getElementById("mobile-sheet-backdrop");
+    if (!sheet) return;
+    const willOpen = sheet.classList.contains("hidden");
+    closeMobileSearch();
+    closeAccountPopover();
+    closeMobileSheets();
+    if (willOpen) {
+      sheet.classList.remove("hidden");
+      if (backdrop) backdrop.classList.remove("hidden");
+      if (trigger) {
+        trigger.setAttribute("aria-expanded", "true");
+        trigger.classList.add("sheet-open");
+      }
+    }
+  }
+
   function switchView(viewName) {
+    if (!viewName) return;
     state.activeView = viewName;
     closeMobileSearch();
-    document.querySelectorAll(".tab-btn, .mobile-tab-btn").forEach((btn) => {
+    closeMobileSheets();
+    document.querySelectorAll(".tab-btn[data-view], .mobile-tab-btn[data-view], .mobile-sheet-item[data-view]").forEach((btn) => {
       const match = btn.dataset.view === viewName;
       btn.classList.toggle("active", match);
-      btn.setAttribute("aria-selected", String(match));
+      if (btn.hasAttribute("aria-selected")) {
+        btn.setAttribute("aria-selected", String(match));
+      }
     });
+    const sectionsBtn = document.getElementById("mobile-sections-trigger");
+    if (sectionsBtn) {
+      sectionsBtn.classList.toggle("active", ["sunburst", "directory", "kinship", "analytics"].includes(viewName));
+    }
     document.querySelectorAll(".view-panel").forEach((panel) => {
       panel.classList.toggle("active", panel.id === `view-${viewName}`);
     });
@@ -2474,25 +2535,52 @@
   }
 
   function updateTopbarAccountUi(ctx) {
-    const adminLink = document.getElementById("topbar-admin-link");
     const portalBtn = document.getElementById("open-auth-portal-btn");
     const portalLbl = document.getElementById("open-auth-portal-label");
-    const isAdmin = Boolean(ctx && ctx.signedIn && (ctx.role === "owner" || ctx.role === "moderator"));
+    const portalRole = document.getElementById("open-auth-portal-role");
+    const portalCaret = document.getElementById("open-auth-portal-caret");
+    const popName = document.getElementById("account-popover-name");
+    const popRole = document.getElementById("account-popover-role");
+    const popAdmin = document.getElementById("account-popover-admin-link");
+    const mobAdmin = document.getElementById("mobile-menu-admin-link");
+    const mobAccSub = document.getElementById("mobile-menu-account-sub");
 
-    if (adminLink) {
-      adminLink.classList.toggle("hidden", !isAdmin);
-    }
-    if (portalBtn && portalLbl) {
-      if (!ctx || !ctx.signedIn) {
-        portalLbl.textContent = "دخول / تسجيل";
+    const signedIn = Boolean(ctx && ctx.signedIn);
+    const isOwner = Boolean(signedIn && ctx.role === "owner");
+    const isMod = Boolean(signedIn && ctx.role === "moderator");
+    const isAdmin = isOwner || isMod;
+
+    if (!signedIn) {
+      closeAccountPopover();
+      if (portalLbl) portalLbl.textContent = "تسجيل الدخول";
+      if (portalRole) portalRole.textContent = "";
+      if (portalCaret) portalCaret.classList.add("hidden");
+      if (portalBtn) {
         portalBtn.classList.remove("is-signed-in");
-      } else {
-        const shortName = getShortAccountName(ctx);
-        const roleTag = ctx.role === "owner" ? "مدير النظام" : ctx.role === "moderator" ? "منسّق" : "";
-        portalLbl.textContent = roleTag ? `${shortName} • ${roleTag}` : shortName;
-        portalBtn.classList.add("is-signed-in");
+        portalBtn.setAttribute("aria-expanded", "false");
       }
+      if (popAdmin) popAdmin.classList.add("hidden");
+      if (mobAdmin) mobAdmin.classList.add("hidden");
+      if (mobAccSub) mobAccSub.textContent = "تسجيل الدخول أو إنشاء حساب";
+      return;
     }
+
+    const shortName = getShortAccountName(ctx);
+    const roleTag = isOwner ? "مدير النظام" : isMod ? "منسّق" : "عضو موثّق";
+
+    if (portalLbl) portalLbl.textContent = shortName;
+    if (portalRole) portalRole.textContent = isAdmin ? ` • ${roleTag}` : "";
+    if (portalCaret) portalCaret.classList.remove("hidden");
+    if (portalBtn) portalBtn.classList.add("is-signed-in");
+
+    if (popName) popName.textContent = shortName;
+    if (popRole) {
+      popRole.className = "auth-role-badge " + (isOwner ? "is-owner" : isMod ? "is-moderator" : "is-member");
+      popRole.textContent = roleTag;
+    }
+    if (popAdmin) popAdmin.classList.toggle("hidden", !isAdmin);
+    if (mobAdmin) mobAdmin.classList.toggle("hidden", !isAdmin);
+    if (mobAccSub) mobAccSub.textContent = `${shortName} (${roleTag})`;
   }
 
   async function renderAuthPortalState(ctx) {
@@ -3103,6 +3191,8 @@
 
     document.querySelectorAll(".member-logout-action").forEach((btn) => {
       btn.addEventListener("click", async () => {
+        closeAccountPopover();
+        closeMobileSheets();
         const client = window.DHAWI_UWAID_DB && window.DHAWI_UWAID_DB.getAuthClient();
         if (client) await client.auth.signOut();
         state.memberProfile = null;
@@ -3119,8 +3209,72 @@
     });
 
     const openAuthBtn = document.getElementById("open-auth-portal-btn");
+    const accountPopover = document.getElementById("account-popover");
     if (openAuthBtn) {
-      openAuthBtn.addEventListener("click", () => openAuthPortal());
+      openAuthBtn.addEventListener("click", (ev) => {
+        if (state.account && state.account.signedIn && accountPopover) {
+          ev.stopPropagation();
+          closeMobileSearch();
+          closeMobileSheets();
+          const kitPop = document.getElementById("brand-kit-popover");
+          const kitBtn = document.getElementById("brand-kit-toggle");
+          if (kitPop) kitPop.classList.add("hidden");
+          if (kitBtn) kitBtn.setAttribute("aria-expanded", "false");
+          const willOpen = accountPopover.classList.contains("hidden");
+          accountPopover.classList.toggle("hidden", !willOpen);
+          openAuthBtn.setAttribute("aria-expanded", String(willOpen));
+        } else {
+          openAuthPortal();
+        }
+      });
+    }
+    const accHubBtn = document.getElementById("account-popover-hub-btn");
+    if (accHubBtn) {
+      accHubBtn.addEventListener("click", () => {
+        closeAccountPopover();
+        openAuthPortal();
+      });
+    }
+    document.addEventListener("click", (ev) => {
+      if (!ev.target.closest("#account-menu-wrap")) {
+        closeAccountPopover();
+      }
+    });
+
+    const secTrigger = document.getElementById("mobile-sections-trigger");
+    const moreTrigger = document.getElementById("mobile-more-trigger");
+    const secClose = document.getElementById("mobile-sections-close");
+    const moreClose = document.getElementById("mobile-more-close");
+    const sheetBackdrop = document.getElementById("mobile-sheet-backdrop");
+    if (secTrigger) secTrigger.addEventListener("click", () => toggleMobileSheet("sections"));
+    if (moreTrigger) moreTrigger.addEventListener("click", () => toggleMobileSheet("more"));
+    if (secClose) secClose.addEventListener("click", closeMobileSheets);
+    if (moreClose) moreClose.addEventListener("click", closeMobileSheets);
+    if (sheetBackdrop) sheetBackdrop.addEventListener("click", closeMobileSheets);
+
+    document.querySelectorAll(".mobile-sheet-item[data-view]").forEach((btn) => {
+      btn.addEventListener("click", () => switchView(btn.dataset.view));
+    });
+    const mobAddBtn = document.getElementById("mobile-add-trigger");
+    if (mobAddBtn) {
+      mobAddBtn.addEventListener("click", () => {
+        closeMobileSearch();
+        closeMobileSheets();
+        openUpdateModal();
+      });
+    }
+    const mobAccBtn = document.getElementById("mobile-menu-account-btn");
+    if (mobAccBtn) {
+      mobAccBtn.addEventListener("click", () => {
+        closeMobileSheets();
+        openAuthPortal();
+      });
+    }
+    const mobThemeBtn = document.getElementById("mobile-menu-theme-btn");
+    if (mobThemeBtn) {
+      mobThemeBtn.addEventListener("click", () => {
+        applyTheme(state.theme === "dark" ? "light" : "dark");
+      });
     }
     const authCloseBtn = document.getElementById("auth-portal-close-btn");
     if (authCloseBtn) authCloseBtn.addEventListener("click", closeAuthPortal);
@@ -3277,6 +3431,8 @@
     if (mobileTrigger && wrap) {
       mobileTrigger.addEventListener("click", (ev) => {
         ev.stopPropagation();
+        closeMobileSheets();
+        closeAccountPopover();
         const isOpen = wrap.classList.toggle("mobile-search-open");
         if (isOpen) {
           setTimeout(() => input.focus(), 40);
@@ -3334,7 +3490,7 @@
     });
 
     // Main tab navigation (both desktop header tabs & mobile bottom tab bar)
-    document.querySelectorAll(".tab-btn, .mobile-tab-btn").forEach((btn) => {
+    document.querySelectorAll(".tab-btn[data-view], .mobile-tab-btn[data-view]").forEach((btn) => {
       btn.addEventListener("click", () => switchView(btn.dataset.view));
     });
 
@@ -3600,6 +3756,8 @@
         closeProfileDrawer();
         closeUpdateModal();
         closeAuthPortal();
+        closeMobileSheets();
+        closeAccountPopover();
       }
     });
 

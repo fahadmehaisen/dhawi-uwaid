@@ -69,23 +69,12 @@
 
         <!-- Utility Actions -->
         <div class="topbar-actions">
-          <button type="button" id="mobile-search-trigger" class="btn btn-ghost btn-sm mobile-only-btn topbar-icon-btn" aria-label="بحث في الشجرة" title="بحث">
-            <span aria-hidden="true">⌕</span>
+          <button type="button" id="open-update-modal-btn" class="btn btn-gold btn-sm desktop-only-action" title="إضافة مولود أو طلب تحديث">
+            <span>+ إضافة / تحديث</span>
           </button>
-          <a href="admin.html" id="topbar-admin-link" class="btn btn-outline btn-sm topbar-admin-pill hidden" title="الانتقال إلى لوحة الإدارة">لوحة الإدارة</a>
-          <button type="button" id="open-auth-portal-btn" class="btn btn-outline btn-sm topbar-account-btn" title="بوابة الدخول والتسجيل الموحّدة">
-            <span id="open-auth-portal-label">دخول / تسجيل</span>
-          </button>
-          <button type="button" id="open-update-modal-btn" class="btn btn-gold btn-sm" title="إضافة مولود أو طلب تحديث">
-            <span>+ إضافة<span class="desktop-only-inline"> / تحديث</span></span>
-          </button>
-          <button type="button" id="theme-toggle-btn" class="btn btn-ghost btn-sm topbar-icon-btn-mobile" title="التبديل بين النمط التراثي والمجلس الليلي">
-            <span id="theme-toggle-icon" aria-hidden="true">☾</span>
-            <span id="theme-toggle-label" class="desktop-only-inline">مجلس ليلي</span>
-          </button>
-          <div class="brand-kit-menu" id="brand-kit-menu">
+          <div class="brand-kit-menu desktop-only-action" id="brand-kit-menu">
             <button type="button" id="brand-kit-toggle" class="btn btn-outline btn-sm" aria-expanded="false">
-              <span>اللوحة الجدارية<span class="desktop-only-inline"> للطباعة</span> ▾</span>
+              <span>اللوحة الجدارية للطباعة ▾</span>
             </button>
             <div class="brand-kit-popover hidden" id="brand-kit-popover">
               <a href="brand/wall-mural.html" target="_blank" rel="noopener">معاينة اللوحة الجدارية التفاعلية (٧٦٠ اسماً)</a>
@@ -93,6 +82,26 @@
               <a href="brand/لوحة_شجرة_ذوي_عويض_الجدارية.pdf" download="لوحة_شجرة_ذوي_عويض_الجدارية.pdf">اللوحة الجدارية الكاملة للمطابع (PDF)</a>
               <a href="brand/لوحة_شجرة_ذوي_عويض_الجدارية.png" download="لوحة_شجرة_ذوي_عويض_الجدارية.png">صورة اللوحة الجدارية فائقة الدقة (PNG)</a>
               <a href="brand/dhawi-uwaid-wall-mural.svg" download="شجرة_ذوي_عويض_الجدارية.svg">الملف المتجهي لجميع المقاسات (SVG)</a>
+            </div>
+          </div>
+          <button type="button" id="theme-toggle-btn" class="btn btn-ghost btn-sm topbar-icon-btn-mobile desktop-only-action" title="التبديل بين النمط التراثي والمجلس الليلي">
+            <span id="theme-toggle-icon" aria-hidden="true">☾</span>
+            <span id="theme-toggle-label" class="desktop-only-inline">مجلس ليلي</span>
+          </button>
+          <div class="account-menu-wrap" id="account-menu-wrap">
+            <button type="button" id="open-auth-portal-btn" class="btn btn-outline btn-sm topbar-account-btn" aria-expanded="false" title="بوابة الدخول والتسجيل الموحّدة">
+              <span id="open-auth-portal-label">تسجيل الدخول</span>
+              <span id="open-auth-portal-role" class="desktop-only-inline"></span>
+              <span id="open-auth-portal-caret" class="hidden" aria-hidden="true"> ▾</span>
+            </button>
+            <div class="brand-kit-popover account-popover hidden" id="account-popover">
+              <div class="account-popover-head">
+                <strong id="account-popover-name"></strong>
+                <span id="account-popover-role" class="auth-role-badge is-member"></span>
+              </div>
+              <a href="admin.html" id="account-popover-admin-link" class="account-popover-item is-accent hidden">لوحة الإدارة</a>
+              <button type="button" id="account-popover-hub-btn" class="account-popover-item">حسابي والصلاحيات</button>
+              <button type="button" id="account-popover-logout-btn" class="account-popover-item is-danger member-logout-action">تسجيل الخروج</button>
             </div>
           </div>
         </div>
@@ -370,6 +379,89 @@
     </footer>
   </div>
 
+  <!-- Mobile Pop-up Menus Backdrop & Sheets (<= 760px) -->
+  <div id="mobile-sheet-backdrop" class="mobile-sheet-backdrop hidden" aria-hidden="true"></div>
+
+  <div id="mobile-sections-sheet" class="mobile-menu-sheet hidden" role="dialog" aria-label="أقسام المنصة">
+    <div class="mobile-sheet-head">
+      <strong>أقسام المنصة</strong>
+      <button type="button" id="mobile-sections-close" class="mobile-sheet-close" aria-label="إغلاق">✕</button>
+    </div>
+    <div class="mobile-sheet-list">
+      <button type="button" class="mobile-sheet-item" data-view="sunburst">
+        <span class="msheet-icon" aria-hidden="true">◎</span>
+        <span class="msheet-copy">
+          <strong>البوصلة النسبية</strong>
+          <small>التوزّع الدائري لفروع ذوي عويض</small>
+        </span>
+      </button>
+      <button type="button" class="mobile-sheet-item" data-view="directory">
+        <span class="msheet-icon" aria-hidden="true">▤</span>
+        <span class="msheet-copy">
+          <strong>الدليل والبحث</strong>
+          <small>تصفية الأسماء حسب الفرع والجيل</small>
+        </span>
+      </button>
+      <button type="button" class="mobile-sheet-item" data-view="kinship">
+        <span class="msheet-icon" aria-hidden="true">⇄</span>
+        <span class="msheet-copy">
+          <strong>وش يقرب لي؟</strong>
+          <small>حاسبة صلة القرابة والجد الجامع</small>
+        </span>
+      </button>
+      <button type="button" class="mobile-sheet-item" data-view="analytics">
+        <span class="msheet-icon" aria-hidden="true">▥</span>
+        <span class="msheet-copy">
+          <strong>الإحصائيات</strong>
+          <small>تعداد الفروع والأجيال وأكثر الأسماء تكراراً</small>
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <div id="mobile-more-sheet" class="mobile-menu-sheet hidden" role="dialog" aria-label="القائمة والخيارات">
+    <div class="mobile-sheet-head">
+      <strong>القائمة والخيارات</strong>
+      <button type="button" id="mobile-more-close" class="mobile-sheet-close" aria-label="إغلاق">✕</button>
+    </div>
+    <div class="mobile-sheet-list">
+      <a href="admin.html" id="mobile-menu-admin-link" class="mobile-sheet-item is-accent hidden">
+        <span class="msheet-icon" aria-hidden="true">⚙</span>
+        <span class="msheet-copy">
+          <strong>لوحة الإدارة</strong>
+          <small>إدارة الطلبات والأسماء والمنسّقين</small>
+        </span>
+      </a>
+      <button type="button" id="mobile-menu-account-btn" class="mobile-sheet-item">
+        <span class="msheet-icon" aria-hidden="true">◈</span>
+        <span class="msheet-copy">
+          <strong>بوابة الدخول وحسابي</strong>
+          <small id="mobile-menu-account-sub">تسجيل الدخول أو إنشاء حساب</small>
+        </span>
+      </button>
+      <button type="button" id="mobile-menu-theme-btn" class="mobile-sheet-item">
+        <span class="msheet-icon" id="mobile-menu-theme-icon" aria-hidden="true">☾</span>
+        <span class="msheet-copy">
+          <strong id="mobile-menu-theme-label">المجلس الليلي</strong>
+          <small>تبديل مظهر المنصة</small>
+        </span>
+      </button>
+      <details class="mobile-sheet-accordion">
+        <summary class="mobile-sheet-accordion-head">
+          <span>اللوحة الجدارية والطباعة</span>
+          <span aria-hidden="true">▾</span>
+        </summary>
+        <div class="mobile-sheet-accordion-body">
+          <a href="brand/wall-mural.html" target="_blank" rel="noopener">معاينة اللوحة الجدارية التفاعلية (٧٦٠ اسماً)</a>
+          <a href="brand/شجرة_ذوي_عويض_طباعة_A4_واضحة.pdf" download="شجرة_ذوي_عويض_طباعة_A4_واضحة.pdf">طباعة ورق عادي واضحة (٧ صفحات — PDF)</a>
+          <a href="brand/لوحة_شجرة_ذوي_عويض_الجدارية.pdf" download="لوحة_شجرة_ذوي_عويض_الجدارية.pdf">اللوحة الجدارية الكاملة للمطابع (PDF)</a>
+          <a href="brand/لوحة_شجرة_ذوي_عويض_الجدارية.png" download="لوحة_شجرة_ذوي_عويض_الجدارية.png">صورة اللوحة الجدارية فائقة الدقة (PNG)</a>
+          <a href="brand/dhawi-uwaid-wall-mural.svg" download="شجرة_ذوي_عويض_الجدارية.svg">الملف المتجهي لجميع المقاسات (SVG)</a>
+        </div>
+      </details>
+    </div>
+  </div>
+
   <!-- Mobile Native Bottom Tab Bar (<= 760px) -->
   <nav class="mobile-bottom-nav" id="mobile-bottom-nav" role="tablist" aria-label="التنقل الرئيسي للجوال">
     <button type="button" class="mobile-tab-btn active" role="tab" aria-selected="true" data-view="tree">
@@ -378,29 +470,31 @@
       </svg>
       <span>الشجرة</span>
     </button>
-    <button type="button" class="mobile-tab-btn" role="tab" aria-selected="false" data-view="sunburst">
+    <button type="button" id="mobile-sections-trigger" class="mobile-tab-btn" aria-expanded="false" aria-controls="mobile-sections-sheet">
       <svg class="mtab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-        <circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/><path d="M12 3v5.5M20.5 15l-4.8-2.5M3.5 15l4.8-2.5"/>
+        <rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/>
       </svg>
-      <span>البوصلة</span>
+      <span>الأقسام</span>
     </button>
-    <button type="button" class="mobile-tab-btn" role="tab" aria-selected="false" data-view="directory">
-      <svg class="mtab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-        <circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5" stroke-linecap="round"/>
-      </svg>
-      <span>الدليل</span>
+    <button type="button" id="mobile-search-trigger" class="mobile-tab-btn mobile-search-center-btn" aria-label="بحث في الشجرة">
+      <span class="msearch-center-orb" aria-hidden="true">
+        <svg class="mtab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <span>بحث</span>
     </button>
-    <button type="button" class="mobile-tab-btn" role="tab" aria-selected="false" data-view="kinship">
+    <button type="button" id="mobile-add-trigger" class="mobile-tab-btn">
       <svg class="mtab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-        <path d="M8 7a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm8 0a3 3 0 1 1 0 6 3 3 0 0 1 0-6zM3 19c0-2.5 2.2-4 5-4s5 1.5 5 4M11 19c0-2.5 2.2-4 5-4s5 1.5 5 4" stroke-linecap="round"/>
+        <circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8" stroke-linecap="round"/>
       </svg>
-      <span>القرابة</span>
+      <span>إضافة</span>
     </button>
-    <button type="button" class="mobile-tab-btn" role="tab" aria-selected="false" data-view="analytics">
+    <button type="button" id="mobile-more-trigger" class="mobile-tab-btn" aria-expanded="false" aria-controls="mobile-more-sheet">
       <svg class="mtab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-        <path d="M4 19h16M7 16v-6M12 16V6M17 16v-9" stroke-linecap="round"/>
+        <path d="M4 7h16M4 12h16M4 17h16" stroke-linecap="round"/>
       </svg>
-      <span>الإحصائيات</span>
+      <span>القائمة</span>
     </button>
   </nav>
 

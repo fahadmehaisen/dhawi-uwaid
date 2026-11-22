@@ -1980,6 +1980,8 @@ a {
 @media (min-width: 761px) {
   .mobile-only-btn,
   .mobile-bottom-nav,
+  .mobile-menu-sheet,
+  .mobile-sheet-backdrop,
   .sheet-grab-bar,
   .mobile-tools-toggle,
   .ios-install-banner {
@@ -2004,6 +2006,7 @@ a {
 
 @media (max-width: 760px) {
   .desktop-only-inline,
+  .desktop-only-action,
   .brand-subtitle,
   .nav-strip,
   .app-footer,
@@ -2021,9 +2024,11 @@ a {
   }
 
   .topbar-inner {
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 8px;
-    padding: 8px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 14px;
   }
   .brand-mark-link {
     gap: 8px;
@@ -2034,16 +2039,19 @@ a {
     height: 34px;
   }
   .brand-wordmark-img {
-    height: 31px;
-    width: 67px;
+    height: 34px;
+    width: auto;
+    max-width: 140px;
+    flex-shrink: 0;
   }
   .brand-title {
     font-size: 1.24rem;
     white-space: nowrap;
   }
   .topbar-actions {
-    gap: 5px;
+    gap: 6px;
     flex-wrap: nowrap;
+    flex-shrink: 0;
   }
   .topbar-icon-btn,
   .topbar-icon-btn-mobile {
@@ -2055,21 +2063,13 @@ a {
     background: rgba(11, 36, 27, 0.45);
     font-size: 0.95rem;
   }
-  #open-update-modal-btn {
-    padding: 5px 9px;
-    font-size: 0.75rem;
-  }
-  #open-auth-portal-btn,
-  #topbar-admin-link {
-    padding: 5px 8px;
-    font-size: 0.73rem;
-    max-width: 112px;
+  #open-auth-portal-btn {
+    padding: 6px 12px;
+    font-size: 0.82rem;
+    max-width: 150px;
+    border-radius: 999px;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-  #brand-kit-toggle {
-    padding: 5px 8px;
-    font-size: 0.75rem;
   }
 
   /* Slide-down Mobile Search Overlay */
@@ -2237,9 +2237,200 @@ a {
     width: 21px;
     height: 21px;
   }
-  .mobile-tab-btn.active {
+  .mobile-tab-btn.active,
+  .mobile-tab-btn.sheet-open {
     color: var(--gold-light);
     background: rgba(197, 155, 67, 0.14);
+  }
+  .mobile-search-center-btn {
+    position: relative;
+    overflow: visible;
+  }
+  .msearch-center-orb {
+    width: 38px;
+    height: 38px;
+    margin-top: -14px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold-light), var(--gold));
+    color: #1c1b18;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3), 0 0 0 2px rgba(18, 55, 42, 0.92);
+  }
+  [data-theme="dark"] .msearch-center-orb {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45), 0 0 0 2px rgba(11, 22, 18, 0.95);
+  }
+  .mobile-search-center-btn .mtab-icon {
+    width: 19px;
+    height: 19px;
+  }
+  .mobile-search-center-btn > span:last-child {
+    color: var(--gold-light);
+    font-weight: 700;
+  }
+
+  /* Mobile Pop-up Menus (Sections & More) */
+  .mobile-sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(11, 24, 19, 0.45);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    z-index: 48;
+  }
+  .mobile-menu-sheet {
+    position: fixed;
+    right: 10px;
+    left: 10px;
+    bottom: calc(68px + env(safe-area-inset-bottom));
+    z-index: 49;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1.5px solid var(--gold);
+    border-radius: 18px;
+    box-shadow: 0 -10px 34px rgba(0, 0, 0, 0.28);
+    max-height: 70dvh;
+    overflow-y: auto;
+    padding: 12px;
+    animation: sheetSlideUp 0.18s ease;
+  }
+  .mobile-sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 4px 10px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .mobile-sheet-head strong {
+    font-family: "Amiri", serif;
+    font-size: 1.15rem;
+    color: var(--emerald);
+  }
+  [data-theme="dark"] .mobile-sheet-head strong {
+    color: var(--gold-light);
+  }
+  .mobile-sheet-close {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface-alt);
+    color: var(--ink);
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .mobile-sheet-list {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .mobile-sheet-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    text-align: right;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface-alt);
+    color: var(--ink);
+    text-decoration: none;
+    cursor: pointer;
+    font: inherit;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .mobile-sheet-item.active,
+  .mobile-sheet-item:hover {
+    border-color: var(--gold);
+    background: var(--gold-soft);
+  }
+  .mobile-sheet-item.is-accent {
+    background: rgba(18, 55, 42, 0.08);
+    border-color: rgba(197, 155, 67, 0.55);
+  }
+  [data-theme="dark"] .mobile-sheet-item.is-accent {
+    background: rgba(197, 155, 67, 0.14);
+  }
+  .msheet-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--emerald);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  [data-theme="dark"] .msheet-icon {
+    color: var(--gold-light);
+  }
+  .msheet-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+  .msheet-copy strong {
+    font-size: 0.92rem;
+    font-weight: 700;
+  }
+  .msheet-copy small {
+    font-size: 0.76rem;
+    color: var(--ink-muted);
+  }
+  .mobile-sheet-accordion {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface-alt);
+    overflow: hidden;
+  }
+  .mobile-sheet-accordion-head {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 12px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--emerald);
+  }
+  [data-theme="dark"] .mobile-sheet-accordion-head {
+    color: var(--gold-light);
+  }
+  .mobile-sheet-accordion-head::-webkit-details-marker {
+    display: none;
+  }
+  .mobile-sheet-accordion[open] .mobile-sheet-accordion-head span:last-child {
+    transform: rotate(180deg);
+  }
+  .mobile-sheet-accordion-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px 8px 10px;
+    border-top: 1px solid var(--border);
+  }
+  .mobile-sheet-accordion-body a {
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 0.83rem;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid transparent;
+  }
+  .mobile-sheet-accordion-body a:hover {
+    border-color: var(--gold);
+    background: var(--gold-soft);
   }
 
   /* Native iOS Bottom Sheets for Profile Drawer & Update Modal */
@@ -2545,6 +2736,77 @@ a {
 
 /* ---------------- Unified Auth Portal & Topbar Account ---------------- */
 
+.account-menu-wrap {
+  position: relative;
+}
+
+.account-popover {
+  left: 0;
+  min-width: 230px;
+  padding: 8px;
+  gap: 5px;
+}
+
+.account-popover-head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 6px 8px 9px;
+  margin-bottom: 3px;
+  border-bottom: 1px solid var(--border);
+}
+
+.account-popover-head strong {
+  font-size: 0.92rem;
+  color: var(--ink);
+}
+
+.account-popover-item {
+  display: block;
+  width: 100%;
+  text-align: right;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.account-popover-item:hover {
+  background: var(--gold-soft);
+  color: var(--emerald);
+}
+
+[data-theme="dark"] .account-popover-item:hover {
+  color: var(--gold-light);
+}
+
+.account-popover-item.is-accent {
+  color: var(--emerald);
+  background: rgba(31, 122, 77, 0.08);
+  font-weight: 700;
+}
+
+[data-theme="dark"] .account-popover-item.is-accent {
+  color: var(--gold-light);
+  background: rgba(197, 155, 67, 0.14);
+}
+
+.account-popover-item.is-danger {
+  color: #a3322a;
+}
+
+[data-theme="dark"] .account-popover-item.is-danger {
+  color: #f49b94;
+}
+
 .topbar-account-btn {
   border-color: rgba(226, 190, 110, 0.55);
   background: rgba(11, 36, 27, 0.45);
@@ -2555,17 +2817,6 @@ a {
   border-color: var(--gold-light);
   background: rgba(197, 155, 67, 0.2);
   color: var(--gold-light);
-}
-
-.topbar-admin-pill {
-  background: rgba(226, 190, 110, 0.22);
-  border-color: var(--gold-light);
-  color: #fffdf8;
-  font-weight: 700;
-}
-
-.topbar-admin-pill:hover {
-  background: rgba(226, 190, 110, 0.35);
 }
 
 .verified-bar-head {
