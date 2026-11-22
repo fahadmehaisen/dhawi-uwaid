@@ -2512,3 +2512,25 @@ a {
 [data-theme="dark"] .cloud-req-pill.pending { color: var(--gold-light); }
 [data-theme="dark"] .cloud-req-pill.approved { color: #7ae2ac; }
 [data-theme="dark"] .cloud-req-pill.rejected { color: #f49b94; }
+
+.honorific-ar {
+  font-family: var(--font-display) !important;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.invite-preview-box {
+  margin: 6px 0 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  background: rgba(25, 114, 71, 0.1);
+  color: var(--emerald);
+  border: 1px solid rgba(25, 114, 71, 0.25);
+}
+.invite-preview-box.is-err {
+  background: rgba(180, 48, 36, 0.08);
+  color: #b43024;
+  border-color: rgba(180, 48, 36, 0.25);
+}

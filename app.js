@@ -1816,13 +1816,18 @@
 
     const bioBox = document.getElementById("drawer-bio-box");
     if (isBiosEnabled() && (node.bioNote || node.kunyah || node.isDeceased || node.birthYear || node.deathYear)) {
-      const parts = [];
-      if (node.isDeceased) parts.push("رحمه الله");
-      if (node.kunyah) parts.push(`الكنية: ${node.kunyah}`);
-      if (node.birthYear) parts.push(`الميلاد: ${node.birthYear}`);
-      if (node.deathYear) parts.push(`الوفاة: ${node.deathYear}`);
-      if (node.bioNote) parts.push(node.bioNote);
-      bioBox.textContent = `توثيق وملاحظة: ${parts.join(" • ")}`;
+      const items = [];
+      if (node.isDeceased) items.push(el("span", { className: "honorific-ar", textContent: "رحمه الله" }));
+      if (node.kunyah) items.push(`الكنية: ${node.kunyah}`);
+      if (node.birthYear) items.push(`الميلاد: ${node.birthYear}`);
+      if (node.deathYear) items.push(`الوفاة: ${node.deathYear}`);
+      if (node.bioNote) items.push(node.bioNote);
+      bioBox.textContent = "";
+      bioBox.appendChild(document.createTextNode("توثيق وملاحظة: "));
+      items.forEach((it, idx) => {
+        if (idx > 0) bioBox.appendChild(document.createTextNode(" • "));
+        bioBox.appendChild(typeof it === "string" ? document.createTextNode(it) : it);
+      });
       bioBox.classList.remove("hidden");
     } else {
       bioBox.classList.add("hidden");
@@ -1865,14 +1870,22 @@
         grp.appendChild(el("span", { className: "hint-sub", textContent: "لا يوجد مسجّل في هذه الخانة" }));
       } else {
         const wrap = el("div", { className: "fam-chips-wrap" });
+        const biosOn = isBiosEnabled();
         for (const m of members) {
+          const isDeceasedChip = biosOn && (m.isDeceased || (m.bioNote && m.bioNote.includes("لم يُعقب")));
+          const chipChildren = isDeceasedChip
+            ? [m.name + " (", el("span", { className: "honorific-ar", textContent: "رحمه الله" }), ")"]
+            : [m.name];
           wrap.appendChild(
-            el("button", {
-              type: "button",
-              className: "fam-chip",
-              textContent: m.bioNote && m.bioNote.includes("لم يُعقب") ? `${m.name} (رحمه الله)` : m.name,
-              onClick: () => openProfileDrawer(m.id),
-            })
+            el(
+              "button",
+              {
+                type: "button",
+                className: "fam-chip",
+                onClick: () => openProfileDrawer(m.id),
+              },
+              chipChildren
+            )
           );
         }
         grp.appendChild(wrap);
@@ -2412,9 +2425,25 @@
     }
 
     const user = sess.session.user;
+    try {
+      const pendingInvRaw = localStorage.getItem("dhawi_uwaid_pending_invite");
+      if (pendingInvRaw) {
+        const pendingInv = JSON.parse(pendingInvRaw);
+        if (pendingInv && pendingInv.code && pendingInv.phone) {
+          const { data: claimOk, error: claimErr } = await client.rpc("claim_member_invite", {
+            p_temp_password: pendingInv.code,
+            p_phone: pendingInv.phone,
+          });
+          if (!claimErr && claimOk && claimOk.ok) {
+            localStorage.removeItem("dhawi_uwaid_pending_invite");
+          }
+        }
+      }
+    } catch (_) {}
+
     const { data: prof, error: profErr } = await client
       .from("member_profiles")
-      .select("member_id, member_full_lineage, branch_name")
+      .select("member_id, member_full_lineage, branch_name, phone")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -2428,14 +2457,16 @@
 
     if (!prof) {
       const pendingMemberId = localStorage.getItem("dhawi_uwaid_pending_member_id");
-      if (pendingMemberId && DATA.nodesById[pendingMemberId]) {
+      const pendingPhone = (localStorage.getItem("dhawi_uwaid_pending_phone") || "").replace(/[^0-9+]/g, "");
+      if (pendingMemberId && DATA.nodesById[pendingMemberId] && pendingPhone.replace(/\D/g, "").length >= 8) {
         const { data: inserted, error: linkErr } = await client
           .from("member_profiles")
-          .insert([{ user_id: user.id, member_id: pendingMemberId }])
-          .select("member_id, member_full_lineage, branch_name")
+          .insert([{ user_id: user.id, member_id: pendingMemberId, phone: pendingPhone }])
+          .select("member_id, member_full_lineage, branch_name, phone")
           .single();
         if (!linkErr && inserted) {
           localStorage.removeItem("dhawi_uwaid_pending_member_id");
+          localStorage.removeItem("dhawi_uwaid_pending_phone");
           return refreshUpdateModalAuth();
         }
       }
@@ -2444,7 +2475,7 @@
       if (linkForm) linkForm.classList.remove("hidden");
       if (verifiedBar) verifiedBar.classList.add("hidden");
       form.classList.add("hidden");
-      setMemberAuthStatus("الخطوة الأخيرة لإكمال تسجيلك: اختر اسمك الحقيقي من شجرة ذوي عويض لربطه بحسابك.", false);
+      setMemberAuthStatus("الخطوة الأخيرة لإكمال تسجيلك: اختر اسمك الحقيقي من شجرة ذوي عويض وأدخل رقم جوالك لربطه بحسابك.", false);
       return;
     }
 
@@ -2502,30 +2533,79 @@
     await renderCloudMyRequests();
   }
 
+  function cleanPhoneStr(raw) {
+    return String(raw || "").replace(/[^0-9+]/g, "").slice(0, 24);
+  }
+
+  function countPhoneDigits(raw) {
+    return String(raw || "").replace(/\D/g, "").length;
+  }
+
+  async function previewPublicInvite(rawCode) {
+    const box = document.getElementById("member-invite-preview");
+    if (!box) return null;
+    const norm = String(rawCode || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+    if (norm.length < 10) {
+      box.classList.add("hidden");
+      box.classList.remove("is-err");
+      box.textContent = "";
+      return null;
+    }
+    const client = window.DHAWI_UWAID_DB && window.DHAWI_UWAID_DB.getAuthClient();
+    if (!client) return null;
+    const { data, error } = await client.rpc("preview_member_invite", { p_temp_password: rawCode });
+    box.classList.remove("hidden");
+    if (error || !data || !data.valid) {
+      box.classList.add("is-err");
+      const reasonMap = {
+        already_used: "هذه الكلمة المؤقتة استُخدمت من قبل.",
+        revoked: "تم إلغاء هذه الدعوة من قِبل المالك.",
+        expired: "انتهت صلاحية هذه الدعوة.",
+      };
+      box.textContent = (data && reasonMap[data.reason]) || "كلمة المرور المؤقتة غير صالحة.";
+      return null;
+    }
+    box.classList.remove("is-err");
+    box.textContent = `الدعوة باسم: ${data.full_lineage || data.member_name}`;
+    return data;
+  }
+
   function bindMemberAuthGate() {
     const tabIn = document.getElementById("auth-tab-signin");
     const tabUp = document.getElementById("auth-tab-signup");
+    const tabInv = document.getElementById("auth-tab-invite");
     const fIn = document.getElementById("member-signin-form");
     const fUp = document.getElementById("member-signup-form");
+    const fInv = document.getElementById("member-invite-form");
     const fLink = document.getElementById("member-link-form");
 
     const switchAuthTab = (mode) => {
-      const isUp = mode === "signup";
       if (tabIn) {
-        tabIn.classList.toggle("active", !isUp);
-        tabIn.setAttribute("aria-selected", String(!isUp));
+        const on = mode === "signin";
+        tabIn.classList.toggle("active", on);
+        tabIn.setAttribute("aria-selected", String(on));
       }
       if (tabUp) {
-        tabUp.classList.toggle("active", isUp);
-        tabUp.setAttribute("aria-selected", String(isUp));
+        const on = mode === "signup";
+        tabUp.classList.toggle("active", on);
+        tabUp.setAttribute("aria-selected", String(on));
       }
-      if (fIn) fIn.classList.toggle("hidden", isUp);
-      if (fUp) fUp.classList.toggle("hidden", !isUp);
+      if (tabInv) {
+        const on = mode === "invite";
+        tabInv.classList.toggle("active", on);
+        tabInv.setAttribute("aria-selected", String(on));
+      }
+      if (fIn) fIn.classList.toggle("hidden", mode !== "signin");
+      if (fUp) fUp.classList.toggle("hidden", mode !== "signup");
+      if (fInv) fInv.classList.toggle("hidden", mode !== "invite");
       setMemberAuthStatus("", false);
     };
+    window.__duSwitchAuthTab = switchAuthTab;
+    window.__duPreviewPublicInvite = previewPublicInvite;
 
     if (tabIn) tabIn.addEventListener("click", () => switchAuthTab("signin"));
     if (tabUp) tabUp.addEventListener("click", () => switchAuthTab("signup"));
+    if (tabInv) tabInv.addEventListener("click", () => switchAuthTab("invite"));
 
     function setupMemberIdentityPicker(inputId, ddId, pillId, stateKey) {
       const inp = document.getElementById(inputId);
@@ -2579,6 +2659,11 @@
           setMemberAuthStatus("يجب البحث عن اسمك واختياره من شجرة ذوي عويض أولاً.", true);
           return;
         }
+        const rawPhone = cleanPhoneStr(document.getElementById("member-signup-phone")?.value);
+        if (countPhoneDigits(rawPhone) < 8) {
+          setMemberAuthStatus("رقم الجوال إجباري ويجب أن يكون صحيحاً (٨–١٦ رقماً).", true);
+          return;
+        }
         const client = window.DHAWI_UWAID_DB && window.DHAWI_UWAID_DB.getAuthClient();
         if (!client) return;
         const btn = document.getElementById("member-signup-btn");
@@ -2589,10 +2674,11 @@
         const chosenId = state.authSignupMemberId;
 
         localStorage.setItem("dhawi_uwaid_pending_member_id", chosenId);
+        localStorage.setItem("dhawi_uwaid_pending_phone", rawPhone);
         const { data, error } = await client.auth.signUp({
           email,
           password,
-          options: { data: { member_id: chosenId } },
+          options: { data: { member_id: chosenId, phone: rawPhone } },
         });
         if (btn) btn.disabled = false;
         document.getElementById("member-signup-password").value = "";
@@ -2602,14 +2688,92 @@
           return;
         }
         if (data && data.session && data.user) {
-          await client.from("member_profiles").insert([{ user_id: data.user.id, member_id: chosenId }]);
+          await client.from("member_profiles").insert([{ user_id: data.user.id, member_id: chosenId, phone: rawPhone }]);
           localStorage.removeItem("dhawi_uwaid_pending_member_id");
+          localStorage.removeItem("dhawi_uwaid_pending_phone");
           await refreshUpdateModalAuth();
           return;
         }
         switchAuthTab("signin");
         document.getElementById("member-signin-email").value = email;
         setMemberAuthStatus("تم تسجيل طلب حسابك! افتح بريدك الإلكتروني واضغط رابط التفعيل، ثم ادخل من هنا لتفعيل التحقق الثنائي.", false);
+      });
+    }
+
+    const invCodeEl = document.getElementById("member-invite-code");
+    if (invCodeEl) {
+      let invTimer = null;
+      invCodeEl.addEventListener("input", () => {
+        clearTimeout(invTimer);
+        invTimer = setTimeout(() => previewPublicInvite(invCodeEl.value), 260);
+      });
+    }
+
+    if (fInv) {
+      fInv.addEventListener("submit", async (ev) => {
+        ev.preventDefault();
+        const code = (document.getElementById("member-invite-code")?.value || "").trim();
+        const email = (document.getElementById("member-invite-email")?.value || "").trim();
+        const phone = cleanPhoneStr(document.getElementById("member-invite-phone")?.value);
+        const password = document.getElementById("member-invite-password")?.value || "";
+        const btn = document.getElementById("member-invite-btn");
+
+        const prev = await previewPublicInvite(code);
+        if (!prev) {
+          setMemberAuthStatus("يرجى إدخال كلمة مرور مؤقتة صالحة.", true);
+          return;
+        }
+        if (!email || !email.includes("@")) {
+          setMemberAuthStatus("أدخل بريداً إلكترونياً صحيحاً.", true);
+          return;
+        }
+        if (countPhoneDigits(phone) < 8) {
+          setMemberAuthStatus("رقم الجوال إجباري ويجب أن يكون صحيحاً (٨–١٦ رقماً).", true);
+          return;
+        }
+        if (password.length < 10) {
+          setMemberAuthStatus("كلمة المرور الجديدة يجب أن لا تقل عن ١٠ خانات.", true);
+          return;
+        }
+
+        const client = window.DHAWI_UWAID_DB && window.DHAWI_UWAID_DB.getAuthClient();
+        if (!client) return;
+        if (btn) btn.disabled = true;
+        const { data, error } = await client.auth.signUp({
+          email,
+          password,
+          options: { data: { member_id: prev.member_id, phone } },
+        });
+        document.getElementById("member-invite-password").value = "";
+
+        if (error) {
+          if (btn) btn.disabled = false;
+          setMemberAuthStatus("تعذّر إنشاء الحساب: " + (error.message || "تأكد من البيانات المدخلة."), true);
+          return;
+        }
+
+        if (data && data.session && data.user) {
+          const { error: claimErr } = await client.rpc("claim_member_invite", {
+            p_temp_password: code,
+            p_phone: phone,
+          });
+          if (btn) btn.disabled = false;
+          if (claimErr) {
+            setMemberAuthStatus("تعذّر تفعيل الدعوة: " + (claimErr.message || "حاول مرة أخرى."), true);
+            return;
+          }
+          localStorage.removeItem("dhawi_uwaid_pending_invite");
+          await refreshUpdateModalAuth();
+          return;
+        }
+
+        try {
+          localStorage.setItem("dhawi_uwaid_pending_invite", JSON.stringify({ code, phone }));
+        } catch (_) {}
+        if (btn) btn.disabled = false;
+        switchAuthTab("signin");
+        document.getElementById("member-signin-email").value = email;
+        setMemberAuthStatus("تم إنشاء حسابك! افتح بريدك الإلكتروني واضغط رابط التفعيل، ثم سجل دخولك من هنا لربط الاسم ورقم الجوال وتفعيل التحقق الثنائي.", false);
       });
     }
 
@@ -2620,15 +2784,20 @@
           setMemberAuthStatus("اختر اسمك من القائمة المنسدلة أولاً.", true);
           return;
         }
+        const phone = cleanPhoneStr(document.getElementById("member-link-phone")?.value);
+        if (countPhoneDigits(phone) < 8) {
+          setMemberAuthStatus("أدخل رقم جوال صحيحاً (إجباري لإتمام التوثيق).", true);
+          return;
+        }
         const client = window.DHAWI_UWAID_DB && window.DHAWI_UWAID_DB.getAuthClient();
         if (!client) return;
         const { data: sess } = await client.auth.getSession();
         if (!sess || !sess.session) return;
         const { error } = await client
           .from("member_profiles")
-          .insert([{ user_id: sess.session.user.id, member_id: state.authLinkMemberId }]);
+          .insert([{ user_id: sess.session.user.id, member_id: state.authLinkMemberId, phone }]);
         if (error) {
-          setMemberAuthStatus("تعذّر ربط الاسم المختار بالحساب، تأكد من اختيار أحد فروع ذوي عويض.", true);
+          setMemberAuthStatus("تعذّر ربط الاسم المختار بالحساب، تأكد من اختيار أحد فروع ذوي عويض ومن صحة رقم الجوال.", true);
           return;
         }
         await refreshUpdateModalAuth();
@@ -3143,6 +3312,19 @@
     }
     if (qPerson && DATA.nodesById[qPerson]) {
       openProfileDrawer(qPerson);
+    }
+
+    const qInvite = params.get("invite");
+    if (qInvite && qInvite.trim()) {
+      openUpdateModal();
+      if (typeof window.__duSwitchAuthTab === "function") window.__duSwitchAuthTab("invite");
+      const invInput = document.getElementById("member-invite-code");
+      if (invInput) {
+        invInput.value = qInvite.trim();
+        if (typeof window.__duPreviewPublicInvite === "function") {
+          window.__duPreviewPublicInvite(invInput.value);
+        }
+      }
     }
 
     // Non-blocking background sync with dedicated Dhawi Uwaid Supabase project

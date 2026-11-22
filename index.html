@@ -475,6 +475,7 @@
           <div class="auth-mode-tabs" role="tablist">
             <button type="button" id="auth-tab-signin" class="auth-mode-btn active" role="tab" aria-selected="true">تسجيل دخول</button>
             <button type="button" id="auth-tab-signup" class="auth-mode-btn" role="tab" aria-selected="false">تسجيل جديد (من الشجرة)</button>
+            <button type="button" id="auth-tab-invite" class="auth-mode-btn" role="tab" aria-selected="false">كلمة مرور مؤقتة</button>
           </div>
 
           <form id="member-signin-form" class="update-form">
@@ -508,12 +509,42 @@
                 <input type="email" id="member-signup-email" class="text-input" dir="ltr" autocomplete="email" required />
               </div>
               <div class="field-group">
-                <label for="member-signup-password">كلمة المرور (٦ أحرف فأكثر)</label>
-                <input type="password" id="member-signup-password" class="text-input" dir="ltr" autocomplete="new-password" minlength="6" required />
+                <label for="member-signup-phone">رقم الجوال (إجباري)</label>
+                <input type="tel" id="member-signup-phone" class="text-input" dir="ltr" inputmode="tel" placeholder="05xxxxxxxx" autocomplete="tel" required />
               </div>
+            </div>
+            <div class="field-group">
+              <label for="member-signup-password">كلمة المرور (٦ أحرف فأكثر)</label>
+              <input type="password" id="member-signup-password" class="text-input" dir="ltr" autocomplete="new-password" minlength="6" required />
             </div>
             <div class="modal-form-actions">
               <button type="submit" id="member-signup-btn" class="btn btn-emerald">إنشاء الحساب وربط الاسم</button>
+            </div>
+          </form>
+
+          <form id="member-invite-form" class="update-form hidden">
+            <p class="hint-sub">أدخل كلمة المرور المؤقتة المرسلة لك من مدير النظام لمرة واحدة، ثم أكمل بريدك ورقم جوالك وكلمة مرورك الخاصة.</p>
+            <div class="field-group">
+              <label for="member-invite-code">كلمة المرور المؤقتة</label>
+              <input type="text" id="member-invite-code" class="text-input" dir="ltr" placeholder="DU-XXXX-XXXX" autocomplete="off" required />
+              <div id="member-invite-preview" class="invite-preview-box hidden"></div>
+            </div>
+            <div class="form-row-2">
+              <div class="field-group">
+                <label for="member-invite-email">البريد الإلكتروني الشخصي</label>
+                <input type="email" id="member-invite-email" class="text-input" dir="ltr" autocomplete="email" required />
+              </div>
+              <div class="field-group">
+                <label for="member-invite-phone">رقم الجوال (إجباري)</label>
+                <input type="tel" id="member-invite-phone" class="text-input" dir="ltr" inputmode="tel" placeholder="05xxxxxxxx" autocomplete="tel" required />
+              </div>
+            </div>
+            <div class="field-group">
+              <label for="member-invite-password">كلمة المرور الجديدة (١٠ خانات على الأقل)</label>
+              <input type="password" id="member-invite-password" class="text-input" dir="ltr" autocomplete="new-password" minlength="10" required />
+            </div>
+            <div class="modal-form-actions">
+              <button type="submit" id="member-invite-btn" class="btn btn-emerald">إنشاء الحساب وتفعيل الدعوة</button>
             </div>
           </form>
         </div>
@@ -526,6 +557,10 @@
               <div id="link-member-dropdown" class="autocomplete-dropdown hidden"></div>
             </div>
             <div id="link-member-selected" class="selected-person-pill hidden"></div>
+          </div>
+          <div class="field-group">
+            <label for="member-link-phone">رقم الجوال (إجباري)</label>
+            <input type="tel" id="member-link-phone" class="text-input" dir="ltr" inputmode="tel" placeholder="05xxxxxxxx" autocomplete="tel" required />
           </div>
           <div class="modal-form-actions">
             <button type="submit" id="member-link-btn" class="btn btn-emerald">تأكيد ربط الاسم</button>

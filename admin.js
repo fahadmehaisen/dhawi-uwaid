@@ -14,6 +14,34 @@
   const SUPABASE_URL = "https://nmsmbcfnlqvnzfprexbh.supabase.co";
   const SUPABASE_KEY = "sb_publishable_nM7K9SCmR-MkwEkE0o-Azg_aqwxB8G9";
   const IDLE_LIMIT_MS = 30 * 60 * 1000;
+  const STORAGE_THEME_KEY = "dhawi_uwaid_theme_v1";
+  const PENDING_INVITE_KEY = "dhawi_uwaid_pending_invite";
+
+  function applyAdminTheme(theme) {
+    const clean = theme === "dark" ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", clean);
+    const btn = document.getElementById("adm-theme-toggle");
+    if (btn) btn.textContent = clean === "dark" ? "الوضع الفاتح" : "الوضع الداكن";
+    return clean;
+  }
+
+  function initAdminTheme() {
+    let saved = "light";
+    try {
+      const raw = localStorage.getItem(STORAGE_THEME_KEY);
+      if (raw === "dark" || raw === "light") saved = raw;
+    } catch (_) {}
+    applyAdminTheme(saved);
+    const btn = document.getElementById("adm-theme-toggle");
+    if (btn) {
+      btn.addEventListener("click", () => {
+        const cur = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+        const next = cur === "dark" ? "light" : "dark";
+        applyAdminTheme(next);
+        try { localStorage.setItem(STORAGE_THEME_KEY, next); } catch (_) {}
+      });
+    }
+  }
 
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
     auth: {
@@ -33,6 +61,9 @@
     selectedId: null,
     enrollFactorId: null,
     verifyFactorId: null,
+    invMemberId: null,
+    invMemberName: "",
+    lastInvite: null,
   };
 
   // ---------- DOM helpers ----------
@@ -84,6 +115,11 @@
     "note too long": "الملاحظة أطول من المسموح.",
     "Invalid login credentials": "البريد أو كلمة المرور غير صحيحة.",
     "Invalid TOTP code entered": "رمز التحقق غير صحيح.",
+    "Owner privileges required": "هذا الإجراء مخصّص للمالك فقط.",
+    "Temporary password": "تحقق من صحة وحالة كلمة المرور المؤقتة.",
+    "A valid mobile phone number": "يرجى إدخال رقم جوال صحيح (٨ إلى ١٦ رقماً).",
+    "User already registered": "البريد الإلكتروني مسجّل مسبقاً — سجّل دخولك من النموذج أعلاه لإكمال التفعيل.",
+    "Only descendants": "يُسمح فقط باختيار أسماء ذرية عويض من الجيل الأول فأدنى.",
   };
 
   function errText(err) {
@@ -124,6 +160,25 @@
   }
 
   // ---------- Auth flow ----------
+  async function tryClaimPendingInvite() {
+    let raw = null;
+    try { raw = localStorage.getItem(PENDING_INVITE_KEY); } catch (_) {}
+    if (!raw) return null;
+    try {
+      const pending = JSON.parse(raw);
+      if (!pending || !pending.code || !pending.phone) return null;
+      const { data, error } = await sb.rpc("claim_member_invite", {
+        p_temp_password: pending.code,
+        p_phone: pending.phone,
+      });
+      if (!error && data && data.ok) {
+        try { localStorage.removeItem(PENDING_INVITE_KEY); } catch (_) {}
+        return data;
+      }
+    } catch (_) {}
+    return null;
+  }
+
   async function route() {
     const { data: sess } = await sb.auth.getSession();
     if (!sess.session) {
@@ -133,6 +188,14 @@
     }
     state.user = sess.session.user;
     $("user-label").textContent = state.user.email || "";
+
+    const claimedPending = await tryClaimPendingInvite();
+    if (claimedPending && claimedPending.target_role !== "moderator") {
+      status(
+        "تم توثيق حسابك باسم «" + (claimedPending.member_name || "") + "» وحفظ رقم جوالك بنجاح! يمكنك التوجه للشجرة العامة لرفع طلبات التعديل.",
+        "ok"
+      );
+    }
 
     // Check admins table first (admins_read_self policy allows reading own row even at aal1)
     // so non-admin accounts are rejected immediately before MFA QR enrollment.
@@ -668,7 +731,11 @@
 
   // ---------- Audit ----------
   const ACTION_AR = { INSERT: "إضافة", UPDATE: "تعديل", DELETE: "حذف" };
-  const TABLE_AR = { family_members: "الأسماء", update_requests: "الطلبات" };
+  const TABLE_AR = {
+    family_members: "الأسماء",
+    update_requests: "الطلبات",
+    member_invites: "دعوات التفعيل",
+  };
 
   async function loadAudit() {
     const [{ data, error }, admins] = await Promise.all([
@@ -697,6 +764,9 @@
         }
       } else if (a.table_name === "update_requests") {
         summary = (n.request_type || o.request_type || "") + " ← " + (STATUS_AR[n.status] || n.status || "");
+      } else if (a.table_name === "member_invites") {
+        const evName = n.event === "invite_created" ? "دعوة جديدة" : n.event === "invite_claimed" ? "تم تفعيل الدعوة" : "إلغاء دعوة";
+        summary = evName + (n.member_name ? " — " + n.member_name : "") + (n.code_hint ? " (" + n.code_hint + ")" : "");
       }
       list.appendChild(
         el("div", { class: "audit-row" }, [
@@ -748,8 +818,371 @@
     });
   }
 
+  // ---------- Owner Member Invites & Verified Members ----------
+  function cleanPhone(raw) {
+    return String(raw || "").replace(/[^0-9+]/g, "").slice(0, 24);
+  }
+
+  function phoneDigits(raw) {
+    return String(raw || "").replace(/\D/g, "");
+  }
+
+  async function previewAdminInvite(rawCode) {
+    const box = $("adm-inv-preview");
+    if (!box) return null;
+    const norm = String(rawCode || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+    if (norm.length < 10) {
+      box.hidden = true;
+      box.textContent = "";
+      return null;
+    }
+    const { data, error } = await sb.rpc("preview_member_invite", { p_temp_password: rawCode });
+    if (error || !data || !data.valid) {
+      box.hidden = false;
+      box.classList.add("is-err");
+      const reasonMap = {
+        already_used: "هذه الكلمة المؤقتة استُخدمت من قبل.",
+        revoked: "هذه الدعوة ملغاة من قِبل المالك.",
+        expired: "انتهت صلاحية هذه الدعوة.",
+      };
+      box.textContent = (data && reasonMap[data.reason]) || "الكلمة المؤقتة غير صحيحة أو لم تعد صالحة.";
+      return null;
+    }
+    box.hidden = false;
+    box.classList.remove("is-err");
+    const roleLbl = data.target_role === "moderator" ? "مشرف بلوحة الإدارة" : "عضو موثّق بالمنصة";
+    box.textContent = "الدعوة باسم: " + (data.full_lineage || data.member_name) + " — الصفة: " + roleLbl;
+    return data;
+  }
+
+  function bindFirstLoginInviteForm() {
+    const toggle = $("admin-invite-toggle");
+    const form = $("admin-invite-form");
+    const codeInput = $("adm-inv-code");
+    if (!toggle || !form || !codeInput) return;
+
+    toggle.addEventListener("click", () => {
+      const next = form.hidden;
+      form.hidden = !next;
+      toggle.setAttribute("aria-expanded", String(next));
+      if (next) codeInput.focus();
+    });
+
+    let timer = null;
+    codeInput.addEventListener("input", () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => previewAdminInvite(codeInput.value), 260);
+    });
+
+    form.addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const code = codeInput.value.trim();
+      const email = $("adm-inv-email").value.trim();
+      const phone = cleanPhone($("adm-inv-phone").value);
+      const password = $("adm-inv-password").value;
+      const btn = $("adm-inv-submit");
+
+      const preview = await previewAdminInvite(code);
+      if (!preview) {
+        status("تحقق من صحة الكلمة المؤقتة قبل المتابعة.", "error");
+        return;
+      }
+      if (!email || !email.includes("@")) {
+        status("أدخل بريداً إلكترونياً صحيحاً.", "error");
+        return;
+      }
+      if (phoneDigits(phone).length < 8) {
+        status("أدخل رقم جوال صحيحاً (إجباري لإتمام التفعيل).", "error");
+        return;
+      }
+      if (!password || password.length < 10) {
+        status("كلمة المرور الدائمة يجب أن لا تقل عن ١٠ خانات.", "error");
+        return;
+      }
+
+      if (btn) btn.disabled = true;
+      const { data: signData, error: signErr } = await sb.auth.signUp({
+        email,
+        password,
+        options: { data: { member_id: preview.member_id, phone } },
+      });
+      $("adm-inv-password").value = "";
+
+      if (signErr) {
+        if (btn) btn.disabled = false;
+        status(errText(signErr), "error");
+        return;
+      }
+
+      if (signData && signData.session) {
+        const { data: claimData, error: claimErr } = await sb.rpc("claim_member_invite", {
+          p_temp_password: code,
+          p_phone: phone,
+        });
+        if (btn) btn.disabled = false;
+        if (claimErr) {
+          status(errText(claimErr), "error");
+          return;
+        }
+        try { localStorage.removeItem(PENDING_INVITE_KEY); } catch (_) {}
+        if (claimData && claimData.target_role !== "moderator") {
+          status(
+            "تم إعداد حسابك وتوثيق اسمك «" + (claimData.member_name || "") + "» وحفظ رقم جوالك بنجاح! انتقل للشجرة الرئيسية لرفع الطلبات.",
+            "ok"
+          );
+          return;
+        }
+        status("تم تفعيل حساب الإشراف الخاص بك — أكمل إعداد التحقق الثنائي الآن.", "ok");
+        await route();
+        return;
+      }
+
+      try {
+        localStorage.setItem(PENDING_INVITE_KEY, JSON.stringify({ code, phone, role: preview.target_role }));
+      } catch (_) {}
+      if (btn) btn.disabled = false;
+      form.hidden = true;
+      toggle.setAttribute("aria-expanded", "false");
+      $("login-email").value = email;
+      status("تم إنشاء حسابك! افتح بريدك الإلكتروني واضغط رابط التفعيل، ثم سجّل دخولك بكلمة المرور الجديدة لإكمال ربط الحساب والتحقق الثنائي.", "ok");
+    });
+
+    const qInvite = new URLSearchParams(window.location.search).get("invite");
+    if (qInvite && qInvite.trim()) {
+      form.hidden = false;
+      toggle.setAttribute("aria-expanded", "true");
+      codeInput.value = qInvite.trim();
+      previewAdminInvite(codeInput.value);
+    }
+  }
+
+  function inviteShareLink(invite) {
+    const base = window.location.origin + window.location.pathname.replace(/admin\.html$/i, "");
+    const page = invite.target_role === "moderator" ? "admin.html" : "";
+    return base + page + "?invite=" + encodeURIComponent(invite.temp_password);
+  }
+
+  function renderInviteSearchDropdown(q) {
+    const dd = $("inv-member-dropdown");
+    if (!dd) return;
+    clear(dd);
+    const normQ = normalizeAr(q);
+    if (!normQ) {
+      dd.hidden = true;
+      return;
+    }
+    const hits = [];
+    for (const m of state.members) {
+      if (Number(m.generation) < 1) continue;
+      const hay = normalizeAr((m.full_lineage || m.name) + " " + (m.branch_name || ""));
+      if (hay.includes(normQ)) {
+        hits.push(m);
+        if (hits.length >= 25) break;
+      }
+    }
+    if (!hits.length) {
+      dd.hidden = false;
+      dd.appendChild(el("div", { class: "dropdown-item", text: "لا توجد أسماء مطابقة في الشجرة" }));
+      return;
+    }
+    dd.hidden = false;
+    for (const m of hits) {
+      dd.appendChild(
+        el("button", {
+          type: "button",
+          class: "dropdown-item",
+          onclick: () => {
+            state.invMemberId = m.id;
+            state.invMemberName = m.name;
+            $("inv-member-search").value = m.name;
+            dd.hidden = true;
+            const badge = $("inv-member-selected");
+            if (badge) {
+              badge.hidden = false;
+              badge.textContent = "المختار: " + (m.full_lineage || m.name) + " (" + (m.branch_name || "") + ")";
+            }
+          },
+        }, [
+          el("strong", { text: m.name }),
+          el("small", { text: m.full_lineage || m.branch_name || "" }),
+        ])
+      );
+    }
+  }
+
+  async function copyText(txt, okMsg) {
+    try {
+      await navigator.clipboard.writeText(txt);
+      status(okMsg, "ok");
+    } catch (_) {
+      status("تعذّر النسخ التلقائي — يمكنك النسخ يدوياً من الصندوق.", "error");
+    }
+  }
+
+  function bindOwnerInviteControls() {
+    const search = $("inv-member-search");
+    const roleSel = $("inv-role");
+    const permsBox = $("inv-perms-box");
+    const createBtn = $("inv-create-btn");
+    if (!search || !roleSel || !createBtn) return;
+
+    search.addEventListener("input", async () => {
+      if (!state.members.length) {
+        const res = await fetchAllMembersAdmin();
+        if (res.data) state.members = res.data;
+      }
+      renderInviteSearchDropdown(search.value);
+    });
+
+    document.addEventListener("click", (ev) => {
+      const dd = $("inv-member-dropdown");
+      if (dd && !ev.target.closest(".inv-search-wrap")) dd.hidden = true;
+    });
+
+    roleSel.addEventListener("change", () => {
+      if (permsBox) permsBox.hidden = roleSel.value !== "moderator";
+    });
+
+    createBtn.addEventListener("click", async () => {
+      if (!state.invMemberId) {
+        status("اختر اسم العضو من نتائج البحث أولاً.", "error");
+        return;
+      }
+      createBtn.disabled = true;
+      const isMod = roleSel.value === "moderator";
+      const { data, error } = await sb.rpc("owner_create_member_invite", {
+        p_member_id: state.invMemberId,
+        p_target_role: roleSel.value,
+        p_can_review: isMod ? $("inv-perm-review").checked : false,
+        p_can_edit_tree: isMod ? $("inv-perm-tree").checked : false,
+        p_can_access_brand: isMod ? $("inv-perm-brand").checked : false,
+        p_note: $("inv-note").value.trim(),
+        p_expires_days: Number($("inv-expires-days").value || 14),
+      });
+      createBtn.disabled = false;
+      if (error) {
+        status(errText(error), "error");
+        return;
+      }
+      state.lastInvite = data;
+      const link = inviteShareLink(data);
+      $("inv-code-output").textContent = data.temp_password;
+      $("inv-link-preview").textContent = link;
+      $("inv-result-box").hidden = false;
+      $("inv-note").value = "";
+      status("تم توليد كلمة المرور المؤقتة للعضو «" + (data.member_name || "") + "».", "ok");
+      await loadInvitesAndVerifiedMembers();
+    });
+
+    if ($("inv-copy-code-btn")) {
+      $("inv-copy-code-btn").addEventListener("click", () => {
+        if (state.lastInvite) copyText(state.lastInvite.temp_password, "تم نسخ كلمة المرور المؤقتة.");
+      });
+    }
+    if ($("inv-copy-link-btn")) {
+      $("inv-copy-link-btn").addEventListener("click", () => {
+        if (state.lastInvite) copyText(inviteShareLink(state.lastInvite), "تم نسخ الرابط المباشر للدعوة.");
+      });
+    }
+    if ($("inv-copy-wa-btn")) {
+      $("inv-copy-wa-btn").addEventListener("click", () => {
+        if (!state.lastInvite) return;
+        const d = state.lastInvite;
+        const link = inviteShareLink(d);
+        const roleTxt = d.target_role === "moderator" ? "مشرف في منصة شجرة ذوي عويض" : "عضو موثّق في شجرة ذوي عويض";
+        const msg =
+          "السلام عليكم ورحمة الله وبركاته\n" +
+          "أهلاً بك يا " + d.member_name + "\n" +
+          "تم إعداد دعوتك الخاصة بصلاحية (" + roleTxt + ").\n\n" +
+          "كلمة المرور المؤقتة (لدخول واحد فقط): " + d.temp_password + "\n" +
+          "رابط التفعيل المباشر:\n" + link + "\n\n" +
+          "عند الدخول سيُطلب منك إجبارياً إدخال بريدك الإلكتروني، ورقم جوالك، وتعيين كلمة مرور خاصة بك.";
+        copyText(msg, "تم نسخ رسالة الدعوة للواتساب بنجاح.");
+      });
+    }
+  }
+
+  async function loadInvitesAndVerifiedMembers() {
+    const card = $("owner-invite-card");
+    if (!card) return;
+    if (state.role !== "owner") {
+      card.hidden = true;
+      return;
+    }
+    card.hidden = false;
+
+    const invList = $("invites-list");
+    const verList = $("verified-members-list");
+    const [{ data: invites, error: invErr }, { data: verified, error: verErr }] = await Promise.all([
+      sb.rpc("owner_list_member_invites"),
+      sb.rpc("owner_list_verified_members"),
+    ]);
+
+    if (invList) {
+      clear(invList);
+      if (invErr) invList.appendChild(el("p", { class: "muted", text: errText(invErr) }));
+      else if (!invites || !invites.length) invList.appendChild(el("p", { class: "muted empty", text: "لا توجد دعوات صادرة حتى الآن." }));
+      else {
+        const now = Date.now();
+        for (const inv of invites) {
+          let stText = "نشطة";
+          let stCls = "ok";
+          if (inv.used_at) { stText = "مستخدمة"; stCls = "warn"; }
+          else if (inv.revoked_at) { stText = "ملغاة"; stCls = "bad"; }
+          else if (new Date(inv.expires_at).getTime() <= now) { stText = "منتهية"; stCls = "bad"; }
+
+          const revokeBtn = !inv.used_at && !inv.revoked_at
+            ? el("button", {
+                type: "button",
+                class: "btn btn-danger",
+                text: "إلغاء الدعوة",
+                onclick: async () => {
+                  revokeBtn.disabled = true;
+                  const { error: rErr } = await sb.rpc("owner_revoke_member_invite", { p_invite_id: inv.id });
+                  revokeBtn.disabled = false;
+                  if (rErr) return status(errText(rErr), "error");
+                  status("تم إلغاء الدعوة.", "ok");
+                  loadInvitesAndVerifiedMembers();
+                },
+              })
+            : null;
+
+          invList.appendChild(
+            el("div", { class: "audit-row" }, [
+              el("span", { class: "status-badge " + stCls, text: stText }),
+              el("strong", { text: inv.full_lineage || inv.member_name }),
+              el("span", { class: "pill", text: inv.target_role === "moderator" ? "مشرف" : "عضو" }),
+              el("span", { class: "muted small", dir: "ltr", text: inv.code_hint || "" }),
+              el("span", { class: "muted small", text: inv.claimed_email ? "فعّلها: " + inv.claimed_email : "تنتهي: " + fmtDate(inv.expires_at) }),
+              revokeBtn,
+            ])
+          );
+        }
+      }
+    }
+
+    if (verList) {
+      clear(verList);
+      if (verErr) verList.appendChild(el("p", { class: "muted", text: errText(verErr) }));
+      else if (!verified || !verified.length) verList.appendChild(el("p", { class: "muted empty", text: "لا يوجد أعضاء موثّقون بعد." }));
+      else {
+        for (const vm of verified) {
+          verList.appendChild(
+            el("div", { class: "audit-row" }, [
+              el("strong", { text: vm.full_lineage || vm.member_name }),
+              el("span", { class: "pill", dir: "ltr", text: vm.phone || "بدون جوال" }),
+              el("span", { class: "muted small", dir: "ltr", text: vm.email || "" }),
+              el("span", { class: "muted small", text: fmtDate(vm.created_at) }),
+            ])
+          );
+        }
+      }
+    }
+  }
+
   async function loadAdmins() {
     await loadOwnerSettings();
+    await loadInvitesAndVerifiedMembers();
     const { data, error } = await sb.from("admins").select("*").order("created_at");
     const list = $("admins-list");
     clear(list);
@@ -817,6 +1250,9 @@
   }
 
   // ---------- Boot ----------
+  initAdminTheme();
+  bindFirstLoginInviteForm();
+  bindOwnerInviteControls();
   sb.auth.onAuthStateChange((event) => {
     if (event === "SIGNED_OUT") show("view-login");
   });

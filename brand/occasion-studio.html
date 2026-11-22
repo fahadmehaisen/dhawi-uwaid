@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>استوديو الكليشة والمناسبات — ذوي عويض</title>
+  <script src="brand-guard.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --emerald: #12372A;
+      --emerald-deep: #0D291F;
+      --gold: #C59B43;
+      --gold-bright: #D6B05B;
+      --cream: #FBF8F1;
+      --parchment: #F4ECDC;
+      --ink: #1C1B18;
+      --muted: #5C5549;
+      --border: rgba(18, 55, 42, 0.16);
+      --font-display: 'Amiri', Georgia, serif;
+      --font-body: 'Tajawal', system-ui, -apple-system, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #E9E2D2;
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input, select, textarea { font-family: var(--font-body); }
+    .honorific-ar { font-family: var(--font-display) !important; font-weight: 700; }
+
+    /* Top Publish Bar */
+    .no-print-bar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: linear-gradient(90deg, var(--emerald-deep), var(--emerald));
+      color: #F8F4EC;
+      padding: 12px 18px;
+      border-bottom: 2px solid var(--gold);
+      box-shadow: 0 8px 24px rgba(13, 41, 31, 0.22);
+    }
+    .bar-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .bar-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .bar-title img { height: 34px; width: auto; display: block; }
+    .bar-title strong {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      color: var(--gold-bright);
+      display: block;
+      line-height: 1.25;
+    }
+    .bar-title small {
+      color: rgba(248, 244, 236, 0.84);
+      font-size: 0.78rem;
+      display: block;
+    }
+
+    .bar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .btn {
+      border: 1px solid rgba(201, 164, 90, 0.48);
+      background: rgba(255, 255, 255, 0.08);
+      color: #F8F4EC;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 0.86rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s ease, transform 0.12s ease;
+      white-space: nowrap;
+    }
+    .btn:hover { background: rgba(255, 255, 255, 0.16); transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+    .btn-gold {
+      background: linear-gradient(180deg, #D8B463, #C59B43);
+      color: #16140F;
+      border-color: #E3C27A;
+    }
+    .btn-gold:hover { background: #DFBC6E; }
+    .btn-emerald {
+      background: var(--emerald);
+      color: #F8F4EC;
+      border-color: var(--emerald);
+    }
+    .btn-light {
+      background: #FFFDF8;
+      color: var(--emerald);
+      border-color: var(--border);
+    }
+    .btn-light:hover { background: var(--parchment); }
+
+    .toast-bar {
+      max-width: 1280px;
+      margin: 10px auto 0;
+      padding: 9px 14px;
+      border-radius: 10px;
+      background: rgba(201, 164, 90, 0.18);
+      border: 1px solid var(--gold);
+      color: #F8F4EC;
+      font-size: 0.86rem;
+      font-weight: 700;
+      display: none;
+    }
+    .toast-bar.show { display: block; }
+
+    /* Main Two-Column Workspace */
+    .workspace {
+      max-width: 1280px;
+      margin: 18px auto 34px;
+      padding: 0 16px;
+      display: grid;
+      grid-template-columns: minmax(320px, 430px) minmax(0, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+    @media (max-width: 980px) {
+      .workspace { grid-template-columns: 1fr; }
+    }
+
+    .controls-card {
+      background: #FFFDF8;
+      border: 1px solid rgba(197, 155, 67, 0.45);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 12px 30px rgba(18, 55, 42, 0.08);
+    }
+    .controls-card h2 {
+      font-family: var(--font-display);
+      color: var(--emerald);
+      font-size: 1.3rem;
+      margin: 0 0 6px;
+    }
+    .sec-label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--emerald);
+      margin: 14px 0 6px;
+    }
+    .muted-tip { font-size: 0.8rem; color: var(--muted); margin: 0 0 8px; }
+
+    .preset-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .preset-btn {
+      padding: 9px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--cream);
+      color: var(--ink);
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+    .preset-btn.active {
+      background: var(--emerald);
+      color: #F8F4EC;
+      border-color: var(--gold);
+      box-shadow: 0 4px 12px rgba(18, 55, 42, 0.18);
+    }
+
+    .mode-switch {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .mode-pill {
+      padding: 8px 10px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: #FFF;
+      color: var(--ink);
+      font-size: 0.83rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .mode-pill.active {
+      background: rgba(197, 155, 67, 0.18);
+      border-color: var(--gold);
+      color: var(--emerald);
+    }
+
+    .paste-box {
+      background: linear-gradient(180deg, rgba(197, 155, 67, 0.12), rgba(251, 248, 241, 0.9));
+      border: 1.5px solid var(--gold);
+      border-radius: 12px;
+      padding: 12px;
+      margin-top: 12px;
+    }
+    .paste-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    .paste-head strong { color: var(--emerald); font-size: 0.92rem; }
+    .auto-chk {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    input[type="text"], textarea, select {
+      width: 100%;
+      padding: 9px 11px;
+      border: 1px solid rgba(18, 55, 42, 0.22);
+      border-radius: 10px;
+      background: #FFFFFF;
+      color: var(--ink);
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+    input[type="text"]:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(197, 155, 67, 0.2);
+    }
+    textarea { resize: vertical; min-height: 92px; }
+
+    .paste-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    details.fine-tune {
+      margin-top: 14px;
+      border-top: 1px dashed var(--border);
+      padding-top: 10px;
+    }
+    details.fine-tune summary {
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.88rem;
+      color: var(--emerald);
+      padding: 4px 0;
+    }
+
+    /* Preview Stage */
+    .stage-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+    .stage-note {
+      background: rgba(255, 253, 248, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-size: 0.83rem;
+      color: var(--muted);
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .stage-note strong { color: var(--emerald); }
+
+    /* Shared Heritage Sheet Styling (Card 4:5 vs A4 Print) */
+    .sheet {
+      position: relative;
+      background: radial-gradient(circle at 50% 24%, #FFFDF8 0%, #F7F0DF 78%, #EFE4CC 100%);
+      color: var(--ink);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 22px 52px rgba(13, 41, 31, 0.2);
+      border: 1px solid rgba(197, 155, 67, 0.65);
+    }
+    .sheet.mode-card {
+      width: min(100%, 540px);
+      aspect-ratio: 4 / 5;
+      border-radius: 12px;
+    }
+    .sheet.mode-a4 {
+      width: min(100%, 210mm);
+      min-height: 297mm;
+      border-radius: 4px;
+    }
+
+    /* Preset Accent Variations */
+    .sheet.theme-condolence {
+      background: radial-gradient(circle at 50% 26%, #FAF7F0 0%, #EFE9DB 80%, #E6DEC9 100%);
+    }
+    .sheet.theme-condolence .sheet-top-band {
+      background: linear-gradient(90deg, #162B23 0%, #1F3930 50%, #162B23 100%);
+    }
+
+    .sheet-top-band {
+      height: 16px;
+      background: linear-gradient(90deg, #0D291F 0%, #12372A 50%, #0D291F 100%);
+      position: relative;
+      flex-shrink: 0;
+    }
+    .sheet-top-band::after {
+      content: "";
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      height: 3.5px;
+      background: linear-gradient(90deg, #B58A34, #E0BF73, #B58A34);
+    }
+
+    .sheet-inner-frame {
+      position: absolute;
+      inset: 22px 14px 18px;
+      border: 1px solid rgba(197, 155, 67, 0.55);
+      pointer-events: none;
+      z-index: 2;
+    }
+    .mode-a4 .sheet-inner-frame { inset: 12mm 10mm 11mm; }
+
+    .sheet-watermark {
+      position: absolute;
+      top: 53%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 56%;
+      max-width: 340px;
+      opacity: 0.045;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .sheet-watermark img { width: 100%; height: auto; display: block; }
+
+    .sheet-header {
+      position: relative;
+      z-index: 3;
+      padding: 16px 26px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1.5px solid rgba(197, 155, 67, 0.72);
+      background: linear-gradient(180deg, rgba(255, 253, 248, 0.72), rgba(247, 240, 223, 0.25));
+    }
+    .mode-a4 .sheet-header { padding: 8mm 15mm 6mm; }
+
+    .sheet-brand {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 3px;
+    }
+    .sheet-brand img.wm { height: 42px; width: auto; display: block; }
+    .mode-a4 .sheet-brand img.wm { height: 19mm; }
+    .sheet-brand .tribe-sub {
+      font-family: var(--font-display);
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--emerald);
+    }
+
+    .sheet-occ-badge {
+      padding: 5px 14px;
+      border-radius: 999px;
+      border: 1.2px solid var(--gold);
+      background: rgba(255, 253, 248, 0.92);
+      color: var(--emerald);
+      font-family: var(--font-display);
+      font-size: 0.96rem;
+      font-weight: 700;
+      white-space: nowrap;
+      box-shadow: 0 3px 10px rgba(18, 55, 42, 0.06);
+    }
+    .theme-condolence .sheet-occ-badge {
+      background: #1B332A;
+      color: #F4E6C3;
+      border-color: #B9974B;
+    }
+
+    .sheet-body {
+      position: relative;
+      z-index: 3;
+      flex: 1;
+      padding: 18px 32px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      text-align: center;
+      gap: 10px;
+    }
+    .mode-a4 .sheet-body {
+      padding: 14mm 18mm 12mm;
+      justify-content: flex-start;
+      gap: 5mm;
+    }
+
+    .sheet-bismillah {
+      font-family: var(--font-display);
+      font-size: 1.22rem;
+      font-weight: 700;
+      color: var(--emerald);
+      margin: 0;
+    }
+    .sheet-title {
+      font-family: var(--font-display);
+      font-size: 1.48rem;
+      font-weight: 700;
+      color: var(--emerald-deep);
+      margin: 0;
+      line-height: 1.38;
+    }
+    .sheet-divider {
+      width: 110px;
+      height: 2px;
+      margin: 2px auto;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      border-radius: 2px;
+    }
+    .sheet-opening {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #2A4338;
+      margin: 0;
+    }
+    .sheet-paragraphs {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 0.97rem;
+      line-height: 1.82;
+      color: var(--ink);
+      text-align: center;
+    }
+    .mode-a4 .sheet-paragraphs {
+      text-align: right;
+      font-size: 12pt;
+      line-height: 2;
+      gap: 4mm;
+    }
+    .sheet-paragraphs p { margin: 0; }
+
+    .sheet-meta-box {
+      margin: 4px auto 0;
+      padding: 7px 14px;
+      border-radius: 10px;
+      background: rgba(18, 55, 42, 0.055);
+      border: 1px solid rgba(197, 155, 67, 0.45);
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: var(--emerald);
+      max-width: 92%;
+    }
+    .sheet-closing {
+      font-family: var(--font-display);
+      font-size: 1.08rem;
+      font-weight: 700;
+      color: var(--emerald);
+      margin: 4px 0 0;
+    }
+
+    .sheet-footer {
+      position: relative;
+      z-index: 3;
+      padding: 9px 26px 11px;
+      border-top: 1.2px solid rgba(197, 155, 67, 0.7);
+      background: rgba(244, 236, 220, 0.72);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--emerald);
+      flex-shrink: 0;
+    }
+    .mode-a4 .sheet-footer { padding: 5mm 15mm 6mm; font-size: 9pt; }
+    .sheet-bottom-band { height: 6px; background: var(--emerald); flex-shrink: 0; }
+
+    /* Mobile spacing adjustments */
+    @media (max-width: 600px) {
+      .no-print-bar { padding: 10px 12px; }
+      .bar-actions { width: 100%; }
+      .bar-actions .btn { flex: 1 1 auto; text-align: center; font-size: 0.8rem; padding: 8px 10px; }
+      .sheet.mode-card { aspect-ratio: auto; min-height: 540px; }
+      .sheet-body { padding: 16px 20px; }
+      .sheet-header { padding: 14px 18px 10px; }
+    }
+
+    @media print {
+      body { background: #fff !important; }
+      .no-print-bar, .controls-card, .stage-note { display: none !important; }
+      .workspace { display: block; margin: 0; padding: 0; max-width: none; }
+      .stage-panel { display: block; }
+      .sheet {
+        width: 210mm !important;
+        min-height: 297mm !important;
+        height: 297mm !important;
+        aspect-ratio: auto !important;
+        border: none !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="no-print-bar">
+    <div class="bar-inner">
+      <div class="bar-title">
+        <img src="../assets/logo-wordmark-clean.svg" alt="ذوي عويض" />
+        <div>
+          <strong>قالب الكليشة والبطاقات الجاهز (بدون توقيع)</strong>
+          <small>من البصصة قبيلة الشدادين بني الحارث — الصق الكلام ليُرتّب تلقائياً وانشره فوراً</small>
+        </div>
+      </div>
+
+      <div class="bar-actions">
+        <button type="button" class="btn btn-gold" id="btn-share-publish">نشر ومشاركة للواتساب</button>
+        <button type="button" class="btn" id="btn-download-png">تحميل صورة (١٠٨٠×١٣٥٠)</button>
+        <button type="button" class="btn" id="btn-print-a4">طباعة / حفظ PDF</button>
+        <button type="button" class="btn" id="btn-copy-wa">نسخ النص مرتباً</button>
+        <a class="btn" href="../admin.html">لوحة الإدارة</a>
+      </div>
+    </div>
+    <div id="studio-toast" class="toast-bar" role="status" aria-live="polite"></div>
+  </header>
+
+  <main class="workspace">
+    <!-- Controls -->
+    <section class="controls-card" aria-label="إعدادات القالب والنص">
+      <h2>١. اختر نوع المناسبة أو القالب</h2>
+      <p class="muted-tip">كليشة معتمدة نظيفة بدون توقيع ولا ختم — جاهزة للنشر الفوري في مجموعات الواتساب أو للطباعة.</p>
+
+      <div class="preset-grid" role="tablist">
+        <button type="button" class="preset-btn active" data-preset="wedding">دعوة زواج</button>
+        <button type="button" class="preset-btn" data-preset="condolence">تعزية ومواساة</button>
+        <button type="button" class="preset-btn" data-preset="congrats">تهنئة ومناسبة</button>
+        <button type="button" class="preset-btn" data-preset="announcement">بيان أو إعلان عام</button>
+      </div>
+
+      <span class="sec-label">٢. صيغة العرض والتصدير</span>
+      <div class="mode-switch">
+        <button type="button" class="mode-pill active" id="mode-card-btn">بطاقة واتساب (١٠٨٠×١٣٥٠)</button>
+        <button type="button" class="mode-pill" id="mode-a4-btn">ورقة رسمية للطباعة (A4)</button>
+      </div>
+
+      <div class="paste-box">
+        <div class="paste-head">
+          <strong>٣. لصق النص الخام والترتيب التلقائي</strong>
+          <button type="button" class="btn btn-emerald" id="btn-smart-format" style="padding:5px 12px;font-size:0.8rem;">ترتيب النص الآن</button>
+        </div>
+        <textarea id="raw-paste" rows="5" placeholder="الصق رسالة الزواج أو التعزية أو الإعلان هنا كما وصلتك من الواتساب... وسيتم تنظيفها وترتيب العنوان والتفاصيل تلقائياً داخل الكليشة."></textarea>
+        <label class="auto-chk">
+          <input type="checkbox" id="chk-auto-preset" checked />
+          <span>التعرّف التلقائي على نوع المناسبة (زواج / عزاء / تهنئة)</span>
+        </label>
+        <div class="paste-actions">
+          <button type="button" class="btn btn-light" id="btn-load-sample" style="padding:6px 10px;font-size:0.8rem;">إدراج نموذج للمعاينة</button>
+          <button type="button" class="btn btn-light" id="btn-clear-paste" style="padding:6px 10px;font-size:0.8rem;">مسح النص</button>
+        </div>
+      </div>
+
+      <details class="fine-tune" open>
+        <summary>تعديل وتفصيل حقول الكليشة يدوياً</summary>
+        <label class="sec-label" for="f-badge">شارة التصنيف أعلى الكليشة</label>
+        <input type="text" id="f-badge" />
+
+        <label class="sec-label" for="f-bismillah">الاستهلال / البسملة / الآية</label>
+        <input type="text" id="f-bismillah" />
+
+        <label class="sec-label" for="f-title">العنوان الرئيسي (يظهر بخط أميري)</label>
+        <input type="text" id="f-title" />
+
+        <label class="sec-label" for="f-opening">مقدمة الخطاب</label>
+        <input type="text" id="f-opening" />
+
+        <label class="sec-label" for="f-body">نص الرسالة المرتّب</label>
+        <textarea id="f-body" rows="5"></textarea>
+
+        <label class="sec-label" for="f-meta">الموعد والمكان / تفاصيل إضافية (اختياري)</label>
+        <input type="text" id="f-meta" placeholder="مثال: يوم الجمعة الموافق ... — قاعة ..." />
+
+        <label class="sec-label" for="f-closing">الدعاء والختام (بخط أميري)</label>
+        <input type="text" id="f-closing" />
+      </details>
+    </section>
+
+    <!-- Live Card / A4 Sheet Stage -->
+    <section class="stage-panel" aria-label="معاينة الكليشة">
+      <div class="stage-note">
+        <span>معاينة حية بهوية <strong>ذوي عويض</strong> — كليشة نظيفة بدون توقيع</span>
+        <span id="stage-dim-label">المقاس التصديري: ١٠٨٠ × ١٣٥٠ بكسل</span>
+      </div>
+
+      <article class="sheet mode-card theme-wedding" id="preview-sheet">
+        <div class="sheet-top-band"></div>
+        <div class="sheet-inner-frame"></div>
+        <div class="sheet-watermark" aria-hidden="true">
+          <img src="../assets/logo-seal-clean.svg" alt="" />
+        </div>
+
+        <header class="sheet-header">
+          <div class="sheet-brand">
+            <img class="wm" src="../assets/logo-wordmark-emerald.svg" alt="ذوي عويض" />
+            <div class="tribe-sub">من البصصة قبيلة الشدادين بني الحارث</div>
+          </div>
+          <div class="sheet-occ-badge" id="pv-badge">دعوة زواج</div>
+        </header>
+
+        <div class="sheet-body">
+          <p class="sheet-bismillah" id="pv-bismillah"></p>
+          <h1 class="sheet-title" id="pv-title"></h1>
+          <div class="sheet-divider"></div>
+          <p class="sheet-opening" id="pv-opening"></p>
+          <div class="sheet-paragraphs" id="pv-body"></div>
+          <div class="sheet-meta-box" id="pv-meta"></div>
+          <p class="sheet-closing" id="pv-closing"></p>
+        </div>
+
+        <footer class="sheet-footer">
+          <span>منصة شجرة أسرة ذوي عويض</span>
+          <span>من البصصة قبيلة الشدادين بني الحارث</span>
+        </footer>
+        <div class="sheet-bottom-band"></div>
+      </article>
+    </section>
+  </main>
+
+  <canvas id="export-canvas" width="1080" height="1350" style="display:none;"></canvas>
+
+  <script>
+    (function () {
+      "use strict";
+
+      const PRESETS = {
+        wedding: {
+          themeClass: "theme-wedding",
+          badge: "دعوة زواج",
+          bismillah: "بسم الله الرحمن الرحيم",
+          title: "أفراح أسرة ذوي عويض",
+          opening: "السلام عليكم ورحمة الله وبركاته",
+          body: "يسرّنا دعوتكم لحضور حفل زواج أبنائنا وتناول طعام العشاء، وذلك بمشيئة الله تعالى.\nبحضوركم تكتمل الفرحة وتُسرّ القلوب، والدعوة عامة لكافة أفراد الأسرة.",
+          meta: "الموعد والموقع: يُحدّد لاحقاً حسب الدعوة",
+          closing: "بارك الله لهما وبارك عليهما وجمع بينهما في خير",
+          sampleRaw: "السلام عليكم ورحمة الله وبركاته\nيتشرف أبناء الأسرة بدعوتكم لحضور حفل زواج الشاب ...\nيوم الجمعة القادم الموافق ١٥ / ١٠ / ١٤٤٨ هـ\nالمكان: القاعة الكبرى بعد صلاة العشاء\nبحضوركم تكتمل أفراحنا ودامت دياركم عامرة بالمسرات",
+        },
+        condolence: {
+          themeClass: "theme-condolence",
+          badge: "تعزية ومواساة",
+          bismillah: "﴿إِنَّا لِلَّهِ وَإِنَّا إِلَيْهِ رَاجِعُونَ﴾",
+          title: "تعزية ومواساة في وفاة فقيد الأسرة (رحمه الله)",
+          opening: "بقلوب مؤمنة بقضاء الله وقدره",
+          body: "نرفع خالص التعازي وصادق المواساة إلى كافة ذوي الفقيد رحمه الله وأفراد الأسرة الكرام في هذا المصاب الجلل.\nسائلين المولى عز وجل أن يتغمده بواسع رحمته ويسكنه فسيح جناته.",
+          meta: "تُقبل التعازي في منزل الأسرة وعبر الاتصال",
+          closing: "رحمه الله رحمةً واسعة وألهم أهله وذويه الصبر والسلوان",
+          sampleRaw: "انا لله وانا اليه راجعون\nانتقل إلى رحمة الله تعالى فقيدنا ... رحمه الله\nوستكون الصلاة عليه بعد صلاة العصر اليوم\nنسأل الله أن يغفر له ويرحمه ويسكنه فسيح جناته",
+        },
+        congrats: {
+          themeClass: "theme-congrats",
+          badge: "تهنئة ومباركة",
+          bismillah: "بسم الله الرحمن الرحيم",
+          title: "تهنئة ومباركة لأبناء الأسرة",
+          opening: "أسمى آيات التهاني والتبريكات",
+          body: "نبارك لابننا الكريم هذا التميّز والإنجاز المبارك، متمنّين له دوام التوفيق والسداد في حياته العلمية والعملية لخدمة دينه ووطنه وأسرته.",
+          meta: "",
+          closing: "ألف مبارك ومن نجاحٍ إلى نجاح بإذن الله",
+          sampleRaw: "السلام عليكم\nألف مبروك التخرج والتميز لابننا ...\nنتمنى لك مزيداً من التوفيق والرفعة في الدنيا والآخرة",
+        },
+        announcement: {
+          themeClass: "theme-announcement",
+          badge: "بيان وإعلان عام",
+          bismillah: "بسم الله الرحمن الرحيم",
+          title: "إعلان وتنويه لأفراد أسرة ذوي عويض",
+          opening: "الأخوة الأعزاء أبناء أسرة ذوي عويض الكرام",
+          body: "نحيطكم علماً بما يستجد من تنسيق ومواعيد تخص الأسرة، شاكرين للجميع تفاعلهم وحرصهم على صلة الرحم والتكاتف.",
+          meta: "",
+          closing: "والله ولي التوفيق، والسلام عليكم ورحمة الله وبركاته",
+          sampleRaw: "تنويه هام لأبناء الأسرة:\nسيُعقد اللقاء الدوري السنوي بمشيئة الله في الموعد المحدد.\nنرجو من الجميع تأكيد الحضور وتبليغ من لم تصله الرسالة.",
+        },
+      };
+
+      let currentPreset = "wedding";
+      let currentMode = "card";
+      let cachedAssets = null;
+
+      const $ = (id) => document.getElementById(id);
+
+      function showToast(msg) {
+        const bar = $("studio-toast");
+        if (!bar) return;
+        bar.textContent = msg || "";
+        bar.classList.toggle("show", Boolean(msg));
+        clearTimeout(showToast._t);
+        if (msg) {
+          showToast._t = setTimeout(() => bar.classList.remove("show"), 4200);
+        }
+      }
+
+      // Clean WhatsApp formatting tokens & messy symbols without touching real Arabic punctuation
+      function cleanRawLine(line) {
+        return String(line || "")
+          .replace(/[*_~`]/g, "")
+          .replace(/[\u200E\u200F\u202A-\u202E]/g, "")
+          .replace(/^[•\-–—▪️▫️🔸🔹✨🌹🎉💐🤍🤲📌]+\s*/g, "")
+          .replace(/\s*[✨🌹🎉💐🤍🤲]+$/g, "")
+          .replace(/\s+/g, " ")
+          .trim();
+      }
+
+      function detectPreset(fullText) {
+        const t = fullText;
+        if (/إنا لله|انا لله|تعزية|مواساة|وفاة|توفي|انتقل إلى رحمة|الصلاة عليه|المقبرة|عزاء|رحمه الله|يرحمه الله|غفر الله له/i.test(t)) {
+          return "condolence";
+        }
+        if (/زواج|زفاف|عقد قران|حفل زواج|أفراح|يتشرف.*دعوتكم|وليمة العشاء|بارك الله لهما/i.test(t)) {
+          return "wedding";
+        }
+        if (/مبروك|مبارك|تهنئة|تخرج|ترقية|قدوم مولود|سلامة/i.test(t)) {
+          return "congrats";
+        }
+        return "announcement";
+      }
+
+      function applyPreset(presetKey, overwriteFields = true) {
+        if (!PRESETS[presetKey]) return;
+        currentPreset = presetKey;
+        document.querySelectorAll(".preset-btn").forEach((b) => {
+          b.classList.toggle("active", b.dataset.preset === presetKey);
+        });
+        const p = PRESETS[presetKey];
+        const sheet = $("preview-sheet");
+        sheet.classList.remove("theme-wedding", "theme-condolence", "theme-congrats", "theme-announcement");
+        sheet.classList.add(p.themeClass);
+
+        if (overwriteFields) {
+          $("f-badge").value = p.badge;
+          $("f-bismillah").value = p.bismillah;
+          $("f-title").value = p.title;
+          $("f-opening").value = p.opening;
+          $("f-body").value = p.body;
+          $("f-meta").value = p.meta;
+          $("f-closing").value = p.closing;
+        } else {
+          $("f-badge").value = p.badge;
+        }
+        renderPreview();
+      }
+
+      function smartFormatRawPaste(rawText) {
+        const cleaned = String(rawText || "").replace(/\r\n/g, "\n");
+        if (!cleaned.trim()) return;
+
+        if ($("chk-auto-preset")?.checked) {
+          const detected = detectPreset(cleaned);
+          applyPreset(detected, false);
+        }
+
+        const p = PRESETS[currentPreset];
+        const rawLines = cleaned.split("\n").map(cleanRawLine).filter(Boolean);
+        if (!rawLines.length) return;
+
+        let bismillah = p.bismillah;
+        let title = p.title;
+        let opening = p.opening;
+        const metaLines = [];
+        const bodyLines = [];
+        let closing = "";
+
+        for (let i = 0; i < rawLines.length; i++) {
+          const ln = rawLines[i];
+
+          // Match bismillah / inna lillah lines
+          if (/^(بسم الله الرحمن الرحيم|إنا لله وإنا إليه راجعون|انا لله وانا اليه راجعون|﴿?إِنَّا لِلَّهِ)/.test(ln)) {
+            bismillah = ln.includes("انا لله") ? "﴿إِنَّا لِلَّهِ وَإِنَّا إِلَيْهِ رَاجِعُونَ﴾" : ln;
+            continue;
+          }
+          // Match opening salam
+          if (/^(السلام عليكم|تحية طيبة|الإخوة الكرام|الأخوة الأعزاء)/.test(ln) && bodyLines.length === 0) {
+            opening = ln;
+            continue;
+          }
+          // Match date/location/meta
+          if (/^(التاريخ|الموافق|اليوم|الموعد|الزمان|المكان|الموقع|القاعة|الصلاة|العزاء|ملاحظة)\s*[:：]/.test(ln) ||
+              (ln.length < 75 && /(يوم (السبت|الأحد|الاثنين|الثلاثاء|الأربعاء|الخميس|الجمعة)|الموافق\s+\d|بعد صلاة (العصر|المغرب|العشاء)|قاعة\s|مسجد\s)/.test(ln))) {
+            metaLines.push(ln);
+            continue;
+          }
+          // Match closing dua
+          if (i >= rawLines.length - 2 && /(بارك الله لهما|دامت أفراحكم|غفر الله له|أحسن الله عزاءكم|رحمه الله|والسلام عليكم|نسأل الله|ألف مبروك)/.test(ln)) {
+            closing = ln;
+            continue;
+          }
+          bodyLines.push(ln);
+        }
+
+        // First concise non-generic line can serve as title if long enough content remains
+        if (bodyLines.length >= 2 && bodyLines[0].length <= 58) {
+          title = bodyLines.shift();
+        } else if (bodyLines.length === 1 && bodyLines[0].length > 90) {
+          title = p.title;
+        }
+
+        $("f-bismillah").value = bismillah;
+        $("f-title").value = title;
+        $("f-opening").value = opening;
+        $("f-body").value = bodyLines.join("\n");
+        $("f-meta").value = metaLines.join(" • ");
+        $("f-closing").value = closing || p.closing;
+
+        renderPreview();
+        showToast("تم تنظيف النص وترتيب الكليشة تلقائياً.");
+      }
+
+      // Render text safely while wrapping 'رحمه الله' in Amiri serif
+      function appendRichArabicText(el, str) {
+        el.textContent = "";
+        const pattern = /(رحمه الله|يرحمه الله|رحمهم الله)/g;
+        const parts = String(str || "").split(pattern);
+        for (const part of parts) {
+          if (!part) continue;
+          if (/^(رحمه الله|يرحمه الله|رحمهم الله)$/.test(part)) {
+            const span = document.createElement("span");
+            span.className = "honorific-ar";
+            span.textContent = part;
+            el.appendChild(span);
+          } else {
+            el.appendChild(document.createTextNode(part));
+          }
+        }
+      }
+
+      function renderPreview() {
+        $("pv-badge").textContent = $("f-badge").value.trim() || PRESETS[currentPreset].badge;
+
+        const bisEl = $("pv-bismillah");
+        const bisVal = $("f-bismillah").value.trim();
+        bisEl.textContent = bisVal;
+        bisEl.style.display = bisVal ? "block" : "none";
+
+        appendRichArabicText($("pv-title"), $("f-title").value.trim());
+
+        const openEl = $("pv-opening");
+        const openVal = $("f-opening").value.trim();
+        appendRichArabicText(openEl, openVal);
+        openEl.style.display = openVal ? "block" : "none";
+
+        const bodyWrap = $("pv-body");
+        bodyWrap.textContent = "";
+        const paras = $("f-body").value
+          .split(/\n+/)
+          .map((s) => s.trim())
+          .filter(Boolean);
+        for (const pText of paras) {
+          const p = document.createElement("p");
+          appendRichArabicText(p, pText);
+          bodyWrap.appendChild(p);
+        }
+
+        const metaEl = $("pv-meta");
+        const metaVal = $("f-meta").value.trim();
+        metaEl.textContent = metaVal;
+        metaEl.style.display = metaVal ? "inline-block" : "none";
+
+        const closeEl = $("pv-closing");
+        const closeVal = $("f-closing").value.trim();
+        appendRichArabicText(closeEl, closeVal);
+        closeEl.style.display = closeVal ? "block" : "none";
+      }
+
+      function switchSheetMode(mode) {
+        currentMode = mode === "a4" ? "a4" : "card";
+        const sheet = $("preview-sheet");
+        sheet.classList.toggle("mode-card", currentMode === "card");
+        sheet.classList.toggle("mode-a4", currentMode === "a4");
+        $("mode-card-btn").classList.toggle("active", currentMode === "card");
+        $("mode-a4-btn").classList.toggle("active", currentMode === "a4");
+        $("stage-dim-label").textContent =
+          currentMode === "card"
+            ? "المقاس التصديري: ١٠٨٠ × ١٣٥٠ بكسل (مناسب للواتساب)"
+            : "المقاس التصديري: ورق طباعة A4 عمودي";
+      }
+
+      // Fetch SVGs & load blob URLs once so HTML5 Canvas stays strictly untainted
+      async function loadBrandImagesForCanvas() {
+        if (cachedAssets) return cachedAssets;
+        async function svgToImg(path) {
+          const res = await fetch(path);
+          if (!res.ok) throw new Error("SVG fetch failed");
+          const txt = await res.text();
+          const blob = new Blob([txt], { type: "image/svg+xml;charset=utf-8" });
+          const url = URL.createObjectURL(blob);
+          return await new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = url;
+          });
+        }
+        try {
+          const [wordmark, seal] = await Promise.all([
+            svgToImg("../assets/logo-wordmark-emerald.svg"),
+            svgToImg("../assets/logo-seal-clean.svg"),
+          ]);
+          cachedAssets = { wordmark, seal };
+        } catch (_) {
+          cachedAssets = { wordmark: null, seal: null };
+        }
+        return cachedAssets;
+      }
+
+      function wrapCanvasLines(ctx, text, maxWidth) {
+        const lines = [];
+        const rawParas = String(text || "").split(/\n+/);
+        for (const para of rawParas) {
+          const trimmed = para.trim();
+          if (!trimmed) continue;
+          const words = trimmed.split(/\s+/);
+          let line = "";
+          for (const w of words) {
+            const candidate = line ? line + " " + w : w;
+            if (ctx.measureText(candidate).width <= maxWidth) {
+              line = candidate;
+            } else {
+              if (line) lines.push(line);
+              line = w;
+            }
+          }
+          if (line) lines.push(line);
+        }
+        return lines;
+      }
+
+      async function renderCardPngBlob() {
+        if (document.fonts && document.fonts.ready) {
+          await document.fonts.ready;
+          await Promise.allSettled([
+            document.fonts.load('700 42px "Amiri"'),
+            document.fonts.load('400 28px "Tajawal"'),
+            document.fonts.load('700 28px "Tajawal"'),
+          ]);
+        }
+
+        const assets = await loadBrandImagesForCanvas();
+        const canvas = $("export-canvas");
+        const W = 1080;
+        const H = 1350;
+        canvas.width = W;
+        canvas.height = H;
+        const ctx = canvas.getContext("2d");
+        const isCondolence = currentPreset === "condolence";
+
+        // 1. Background Heritage Parchment Gradient
+        const grad = ctx.createRadialGradient(W * 0.5, H * 0.28, 60, W * 0.5, H * 0.5, 920);
+        if (isCondolence) {
+          grad.addColorStop(0, "#FAF7F0");
+          grad.addColorStop(0.75, "#EFE9DB");
+          grad.addColorStop(1, "#E5DEC8");
+        } else {
+          grad.addColorStop(0, "#FFFDF8");
+          grad.addColorStop(0.75, "#F7F0DF");
+          grad.addColorStop(1, "#EDE1C8");
+        }
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+
+        // 2. Top Emerald + Gold Header Band
+        const bandH = 34;
+        const bandGrad = ctx.createLinearGradient(0, 0, W, 0);
+        bandGrad.addColorStop(0, isCondolence ? "#162B23" : "#0D291F");
+        bandGrad.addColorStop(0.5, isCondolence ? "#1F3930" : "#12372A");
+        bandGrad.addColorStop(1, isCondolence ? "#162B23" : "#0D291F");
+        ctx.fillStyle = bandGrad;
+        ctx.fillRect(0, 0, W, bandH);
+
+        ctx.fillStyle = "#C59B43";
+        ctx.fillRect(0, bandH - 6, W, 6);
+
+        // 3. Double Gold Inner Frame
+        ctx.strokeStyle = "rgba(197, 155, 67, 0.72)";
+        ctx.lineWidth = 2.5;
+        ctx.strokeRect(30, 48, W - 60, H - 84);
+        ctx.strokeStyle = "rgba(18, 55, 42, 0.14)";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(38, 56, W - 76, H - 100);
+
+        // 4. Watermark Seal
+        if (assets.seal) {
+          ctx.save();
+          ctx.globalAlpha = 0.045;
+          const sSize = 540;
+          ctx.drawImage(assets.seal, (W - sSize) / 2, (H - sSize) / 2 + 25, sSize, sSize);
+          ctx.restore();
+        }
+
+        // 5. Header Strip (RTL: Wordmark on Right, Badge Pill on Left)
+        const headerBottom = 212;
+        ctx.fillStyle = "rgba(255, 253, 248, 0.55)";
+        ctx.fillRect(32, 50, W - 64, headerBottom - 50);
+
+        if (assets.wordmark) {
+          const maxWmH = 74;
+          const ratio = maxWmH / assets.wordmark.naturalHeight;
+          const wmW = assets.wordmark.naturalWidth * ratio;
+          ctx.drawImage(assets.wordmark, W - 76 - wmW, 72, wmW, maxWmH);
+        }
+        ctx.direction = "rtl";
+        ctx.textAlign = "right";
+        ctx.font = '700 24px "Amiri", Georgia, serif';
+        ctx.fillStyle = "#12372A";
+        ctx.fillText("من البصصة قبيلة الشدادين بني الحارث", W - 76, 184);
+
+        const badgeTxt = $("f-badge").value.trim() || PRESETS[currentPreset].badge;
+        ctx.font = '700 28px "Amiri", Georgia, serif';
+        const pillW = Math.min(340, ctx.measureText(badgeTxt).width + 64);
+        const pillH = 54;
+        const pillX = 76;
+        const pillY = 98;
+        ctx.beginPath();
+        ctx.roundRect(pillX, pillY, pillW, pillH, 27);
+        ctx.fillStyle = isCondolence ? "#1B332A" : "#FFFDF8";
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#C59B43";
+        ctx.stroke();
+
+        ctx.textAlign = "center";
+        ctx.fillStyle = isCondolence ? "#F4E6C3" : "#12372A";
+        ctx.fillText(badgeTxt, pillX + pillW / 2, pillY + 36);
+
+        ctx.strokeStyle = "rgba(197, 155, 67, 0.78)";
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(64, headerBottom);
+        ctx.lineTo(W - 64, headerBottom);
+        ctx.stroke();
+
+        // 6. Auto-Fitted Content Area (between headerBottom + 36 and footerTop - 36)
+        const footerTop = H - 102;
+        const areaTop = headerBottom + 36;
+        const areaH = footerTop - 36 - areaTop;
+        const maxTextW = W - 180;
+
+        const bisVal = $("f-bismillah").value.trim();
+        const titleVal = $("f-title").value.trim();
+        const openVal = $("f-opening").value.trim();
+        const bodyVal = $("f-body").value.trim();
+        const metaVal = $("f-meta").value.trim();
+        const closeVal = $("f-closing").value.trim();
+
+        // Scale down typography automatically if text is long so it never clips
+        let scale = 1.0;
+        let layout = null;
+        while (scale >= 0.62) {
+          const fBis = Math.round(34 * scale);
+          const fTitle = Math.round(44 * scale);
+          const fOpen = Math.round(31 * scale);
+          const fBody = Math.round(29 * scale);
+          const fMeta = Math.round(25 * scale);
+          const fClose = Math.round(32 * scale);
+
+          ctx.font = `700 ${fTitle}px "Amiri", Georgia, serif`;
+          const titleLines = wrapCanvasLines(ctx, titleVal, maxTextW);
+
+          ctx.font = `700 ${fOpen}px "Amiri", Georgia, serif`;
+          const openLines = openVal ? wrapCanvasLines(ctx, openVal, maxTextW) : [];
+
+          ctx.font = `500 ${fBody}px "Tajawal", sans-serif`;
+          const bodyLines = wrapCanvasLines(ctx, bodyVal, maxTextW);
+
+          ctx.font = `700 ${fMeta}px "Tajawal", sans-serif`;
+          const metaLines = metaVal ? wrapCanvasLines(ctx, metaVal, maxTextW - 44) : [];
+
+          ctx.font = `700 ${fClose}px "Amiri", Georgia, serif`;
+          const closeLines = closeVal ? wrapCanvasLines(ctx, closeVal, maxTextW) : [];
+
+          const totalH =
+            (bisVal ? fBis * 1.6 : 0) +
+            titleLines.length * (fTitle * 1.4) +
+            26 +
+            (openLines.length ? openLines.length * (fOpen * 1.48) + 12 : 0) +
+            bodyLines.length * (fBody * 1.68) +
+            (metaLines.length ? metaLines.length * (fMeta * 1.5) + 34 : 0) +
+            (closeLines.length ? closeLines.length * (fClose * 1.5) + 22 : 0);
+
+          layout = {
+            fBis, fTitle, fOpen, fBody, fMeta, fClose,
+            titleLines, openLines, bodyLines, metaLines, closeLines, totalH,
+          };
+          if (totalH <= areaH) break;
+          scale -= 0.04;
+        }
+
+        let curY = areaTop + Math.max(0, (areaH - layout.totalH) / 2);
+        ctx.textAlign = "center";
+
+        if (bisVal) {
+          ctx.font = `700 ${layout.fBis}px "Amiri", Georgia, serif`;
+          ctx.fillStyle = "#12372A";
+          curY += layout.fBis * 1.1;
+          ctx.fillText(bisVal, W / 2, curY);
+          curY += layout.fBis * 0.55;
+        }
+
+        if (layout.titleLines.length) {
+          ctx.font = `700 ${layout.fTitle}px "Amiri", Georgia, serif`;
+          ctx.fillStyle = "#0D291F";
+          for (const ln of layout.titleLines) {
+            curY += layout.fTitle * 1.2;
+            ctx.fillText(ln, W / 2, curY);
+          }
+          curY += 16;
+          const divGrad = ctx.createLinearGradient(W / 2 - 120, 0, W / 2 + 120, 0);
+          divGrad.addColorStop(0, "transparent");
+          divGrad.addColorStop(0.5, "#C59B43");
+          divGrad.addColorStop(1, "transparent");
+          ctx.fillStyle = divGrad;
+          ctx.fillRect(W / 2 - 120, curY, 240, 3);
+          curY += 16;
+        }
+
+        if (layout.openLines.length) {
+          ctx.font = `700 ${layout.fOpen}px "Amiri", Georgia, serif`;
+          ctx.fillStyle = "#2A4338";
+          for (const ln of layout.openLines) {
+            curY += layout.fOpen * 1.32;
+            ctx.fillText(ln, W / 2, curY);
+          }
+          curY += 12;
+        }
+
+        if (layout.bodyLines.length) {
+          ctx.fillStyle = "#1C1B18";
+          for (const ln of layout.bodyLines) {
+            curY += layout.fBody * 1.52;
+            // Honor Amiri serif if line highlights 'رحمه الله'
+            const hasHonorific = /رحمه الله|يرحمه الله/.test(ln);
+            ctx.font = hasHonorific
+              ? `700 ${Math.round(layout.fBody * 1.06)}px "Amiri", Georgia, serif`
+              : `500 ${layout.fBody}px "Tajawal", sans-serif`;
+            ctx.fillText(ln, W / 2, curY);
+          }
+        }
+
+        if (layout.metaLines.length) {
+          curY += 20;
+          const boxH = layout.metaLines.length * (layout.fMeta * 1.45) + 22;
+          const boxW = Math.min(maxTextW + 20, 820);
+          ctx.beginPath();
+          ctx.roundRect((W - boxW) / 2, curY, boxW, boxH, 14);
+          ctx.fillStyle = "rgba(18, 55, 42, 0.065)";
+          ctx.fill();
+          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = "rgba(197, 155, 67, 0.55)";
+          ctx.stroke();
+
+          ctx.font = `700 ${layout.fMeta}px "Tajawal", sans-serif`;
+          ctx.fillStyle = "#12372A";
+          let my = curY + 12;
+          for (const ln of layout.metaLines) {
+            my += layout.fMeta * 1.25;
+            ctx.fillText(ln, W / 2, my);
+          }
+          curY += boxH;
+        }
+
+        if (layout.closeLines.length) {
+          curY += 18;
+          ctx.font = `700 ${layout.fClose}px "Amiri", Georgia, serif`;
+          ctx.fillStyle = "#12372A";
+          for (const ln of layout.closeLines) {
+            curY += layout.fClose * 1.38;
+            ctx.fillText(ln, W / 2, curY);
+          }
+        }
+
+        // 7. Clean Unsigned Footer Band
+        ctx.fillStyle = "rgba(244, 236, 220, 0.85)";
+        ctx.fillRect(32, footerTop, W - 64, H - 36 - footerTop);
+        ctx.strokeStyle = "rgba(197, 155, 67, 0.72)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(64, footerTop);
+        ctx.lineTo(W - 64, footerTop);
+        ctx.stroke();
+
+        ctx.font = '700 22px "Tajawal", sans-serif';
+        ctx.fillStyle = "#12372A";
+        ctx.textAlign = "right";
+        ctx.fillText("منصة شجرة أسرة ذوي عويض", W - 76, footerTop + 42);
+        ctx.textAlign = "left";
+        ctx.fillText("من البصصة قبيلة الشدادين بني الحارث", 76, footerTop + 42);
+
+        ctx.fillStyle = isCondolence ? "#1F3930" : "#12372A";
+        ctx.fillRect(0, H - 14, W, 14);
+
+        return await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+      }
+
+      function buildFormattedWhatsAppText() {
+        const lines = [];
+        const bis = $("f-bismillah").value.trim();
+        const title = $("f-title").value.trim();
+        const open = $("f-opening").value.trim();
+        const body = $("f-body").value.trim();
+        const meta = $("f-meta").value.trim();
+        const close = $("f-closing").value.trim();
+
+        if (bis) lines.push(bis);
+        if (title) lines.push("*" + title + "*");
+        if (open) lines.push(open);
+        if (body) lines.push("\n" + body);
+        if (meta) lines.push("\n📌 " + meta);
+        if (close) lines.push("\n" + close);
+        lines.push("\n— ذوي عويض | من البصصة قبيلة الشدادين بني الحارث");
+        return lines.join("\n");
+      }
+
+      function downloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+      }
+
+      // Bindings
+      document.querySelectorAll(".preset-btn").forEach((b) => {
+        b.addEventListener("click", () => applyPreset(b.dataset.preset, true));
+      });
+
+      $("mode-card-btn").addEventListener("click", () => switchSheetMode("card"));
+      $("mode-a4-btn").addEventListener("click", () => switchSheetMode("a4"));
+
+      $("raw-paste").addEventListener("paste", () => {
+        setTimeout(() => smartFormatRawPaste($("raw-paste").value), 30);
+      });
+      $("btn-smart-format").addEventListener("click", () => smartFormatRawPaste($("raw-paste").value));
+
+      $("btn-load-sample").addEventListener("click", () => {
+        const sample = PRESETS[currentPreset].sampleRaw;
+        $("raw-paste").value = sample;
+        smartFormatRawPaste(sample);
+      });
+      $("btn-clear-paste").addEventListener("click", () => {
+        $("raw-paste").value = "";
+        showToast("تم مسح صندوق اللصق.");
+      });
+
+      ["f-badge", "f-bismillah", "f-title", "f-opening", "f-body", "f-meta", "f-closing"].forEach((id) => {
+        $(id).addEventListener("input", renderPreview);
+      });
+
+      $("btn-download-png").addEventListener("click", async () => {
+        const btn = $("btn-download-png");
+        btn.disabled = true;
+        try {
+          const blob = await renderCardPngBlob();
+          downloadBlob(blob, "بطاقة_ذوي_عويض_" + currentPreset + ".png");
+          showToast("تم تصدير وحفظ البطاقة بدقة ١٠٨٠×١٣٥٠ بكسل.");
+        } catch (_) {
+          showToast("تعذّر تصدير الصورة، حاول مرة أخرى.");
+        }
+        btn.disabled = false;
+      });
+
+      $("btn-share-publish").addEventListener("click", async () => {
+        const btn = $("btn-share-publish");
+        btn.disabled = true;
+        try {
+          const blob = await renderCardPngBlob();
+          const fileName = "بطاقة_ذوي_عويض_" + currentPreset + ".png";
+          const file = new File([blob], fileName, { type: "image/png" });
+          const waText = buildFormattedWhatsAppText();
+
+          if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
+            await navigator.share({
+              title: $("f-title").value.trim() || "ذوي عويض",
+              text: waText,
+              files: [file],
+            });
+            showToast("تمت مشاركة البطاقة بنجاح.");
+          } else {
+            downloadBlob(blob, fileName);
+            try { await navigator.clipboard.writeText(waText); } catch (_) {}
+            showToast("تم حفظ صورة البطاقة في جهازك ونسخ النص مرتباً — أرفق الصورة مباشرة في الواتساب.");
+          }
+        } catch (err) {
+          if (!err || err.name !== "AbortError") {
+            showToast("تعذّرت المشاركة المباشرة، استخدم زر تحميل الصورة ونسخ النص.");
+          }
+        }
+        btn.disabled = false;
+      });
+
+      $("btn-print-a4").addEventListener("click", () => {
+        switchSheetMode("a4");
+        setTimeout(() => window.print(), 120);
+      });
+
+      $("btn-copy-wa").addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(buildFormattedWhatsAppText());
+          showToast("تم نسخ النص مرتباً بصيغة مناسبة للواتساب.");
+        } catch (_) {
+          showToast("تعذّر النسخ التلقائي — حدّد النص يدوياً.");
+        }
+      });
+
+      // Boot with Wedding preset ready
+      applyPreset("wedding", true);
+    })();
+  </script>
+</body>
+</html>
