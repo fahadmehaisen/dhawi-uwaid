@@ -294,60 +294,6 @@
           </div>
           <button type="button" class="btn btn-primary" id="save-site-settings-btn">حفظ إعدادات المنصة</button>
         </div>
-
-        <details class="card collapsible-card" id="owner-invite-details" hidden>
-          <summary class="collapsible-summary">دعوة عضو أو منسّق بكلمة مرور مؤقتة (اختياري)</summary>
-          <div id="owner-invite-card" class="collapsible-body" hidden>
-            <p class="muted">ابحث عن اسم العضو في الشجرة واختر نوع صلاحيته، ثم أنشئ كلمة مرور مؤقتة صالحة لدخول واحد فقط تُلغى تلقائياً فور إعداده لحسابه الشخصي وإدخال رقم جواله.</p>
-            <div class="invite-form-grid">
-              <div class="inv-search-wrap">
-                <label for="inv-member-search">ابحث عن الاسم في الشجرة</label>
-                <input id="inv-member-search" type="search" placeholder="اكتب الاسم للبحث من ٧٦٠ اسماً..." autocomplete="off" />
-                <div id="inv-member-dropdown" class="dropdown" hidden></div>
-                <div id="inv-member-selected" class="inv-selected-badge" hidden></div>
-              </div>
-              <div>
-                <label for="inv-role">نوع الحساب والصلاحية</label>
-                <select id="inv-role">
-                  <option value="member">عضو موثّق (رفع طلبات التعديل والتوثيق)</option>
-                  <option value="moderator">منسّق بلوحة الإدارة</option>
-                </select>
-                <div id="inv-perms-box" class="perm-row" hidden>
-                  <label class="perm-check"><input type="checkbox" id="inv-perm-review" /> <span>مراجعة الطلبات</span></label>
-                  <label class="perm-check"><input type="checkbox" id="inv-perm-tree" /> <span>تعديل الأسماء والشجرة</span></label>
-                  <label class="perm-check"><input type="checkbox" id="inv-perm-brand" /> <span>الهوية والورق الرسمي</span></label>
-                </div>
-              </div>
-              <div>
-                <label for="inv-expires-days">مدة صلاحية الكلمة المؤقتة</label>
-                <select id="inv-expires-days">
-                  <option value="7">٧ أيام</option>
-                  <option value="14" selected>١٤ يوماً</option>
-                  <option value="30">٣٠ يوماً</option>
-                </select>
-              </div>
-              <div>
-                <label for="inv-note">ملاحظة داخلية اختيارية</label>
-                <input id="inv-note" type="text" placeholder="مثال: فرع الدباس — للتنسيق..." />
-              </div>
-            </div>
-            <div class="row-actions inv-actions-row">
-              <button type="button" class="btn btn-primary" id="inv-create-btn">توليد كلمة مرور مؤقتة</button>
-            </div>
-            <div id="inv-result-box" class="inv-result-box" hidden>
-              <div class="inv-result-head">كلمة المرور المؤقتة جاهزة — تظهر مرة واحدة فقط:</div>
-              <div class="inv-code-display" id="inv-code-output" dir="ltr"></div>
-              <div class="muted inv-link-preview" id="inv-link-preview" dir="ltr"></div>
-              <div class="row-actions inv-actions-row">
-                <button type="button" class="btn btn-primary" id="inv-copy-wa-btn">نسخ دعوة واتساب جاهزة</button>
-                <button type="button" class="btn btn-ghost" id="inv-copy-code-btn">نسخ الكلمة المؤقتة</button>
-                <button type="button" class="btn btn-ghost" id="inv-copy-link-btn">نسخ الرابط المباشر</button>
-              </div>
-            </div>
-            <h3 class="sub-card-title">الدعوات الصادرة وحالتها</h3>
-            <div id="invites-list" class="list"></div>
-          </div>
-        </details>
       </div>
     </section>
   </main>

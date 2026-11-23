@@ -17,7 +17,6 @@
   const LEGACY_AUTH_KEYS = ["dhawi-uwaid-admin-auth", "dhawi-uwaid-member-auth"];
   const IDLE_LIMIT_MS = 30 * 60 * 1000;
   const STORAGE_THEME_KEY = "dhawi_uwaid_theme_v1";
-  const PENDING_INVITE_KEY = "dhawi_uwaid_pending_invite";
 
   function migrateLegacyAuthStorage() {
     try {
@@ -86,9 +85,6 @@
     selectedId: null,
     enrollFactorId: null,
     verifyFactorId: null,
-    invMemberId: null,
-    invMemberName: "",
-    lastInvite: null,
     registeredMembers: [],
     migrationMissing: false,
   };
@@ -238,33 +234,10 @@
   }
 
   function buildUnifiedPortalLoginUrl() {
-    const qInvite = new URLSearchParams(window.location.search).get("invite");
-    if (qInvite && qInvite.trim()) {
-      return "./?invite=" + encodeURIComponent(qInvite.trim()) + "&next=admin";
-    }
     return "./?auth=login&next=admin";
   }
 
   // ---------- Auth flow ----------
-  async function tryClaimPendingInvite() {
-    let raw = null;
-    try { raw = localStorage.getItem(PENDING_INVITE_KEY); } catch (_) {}
-    if (!raw) return null;
-    try {
-      const pending = JSON.parse(raw);
-      if (!pending || !pending.code || !pending.phone) return null;
-      const { data, error } = await sb.rpc("claim_member_invite", {
-        p_temp_password: pending.code,
-        p_phone: pending.phone,
-      });
-      if (!error && data && data.ok) {
-        try { localStorage.removeItem(PENDING_INVITE_KEY); } catch (_) {}
-        return data;
-      }
-    } catch (_) {}
-    return null;
-  }
-
   async function route() {
     const { data: sess } = await sb.auth.getSession();
     if (!sess.session) {
@@ -279,14 +252,6 @@
     }
     state.user = sess.session.user;
     $("user-label").textContent = state.user.email || "";
-
-    const claimedPending = await tryClaimPendingInvite();
-    if (claimedPending && claimedPending.target_role !== "moderator") {
-      status(
-        "تم توثيق حسابك باسم «" + (claimedPending.member_name || "") + "» وحفظ رقم جوالك بنجاح! يمكنك التوجه للشجرة العامة لرفع طلبات التعديل.",
-        "ok"
-      );
-    }
 
     // Check admins table first (admins_read_self policy allows reading own row even at aal1)
     // so non-admin accounts are rejected immediately before MFA QR enrollment.
@@ -931,153 +896,7 @@
     });
   }
 
-  // ---------- Owner Member Invites & Verified Members ----------
-  function inviteShareLink(invite) {
-    const base = window.location.origin + window.location.pathname.replace(/admin\.html$/i, "");
-    const suffix = invite.target_role === "moderator" ? "&next=admin" : "";
-    return base + "?invite=" + encodeURIComponent(invite.temp_password) + suffix;
-  }
-
-  function renderInviteSearchDropdown(q) {
-    const dd = $("inv-member-dropdown");
-    if (!dd) return;
-    clear(dd);
-    const normQ = normalizeAr(q);
-    if (!normQ) {
-      dd.hidden = true;
-      return;
-    }
-    const hits = [];
-    for (const m of state.members) {
-      if (Number(m.generation) < 1) continue;
-      const hay = normalizeAr((m.full_lineage || m.name) + " " + (m.branch_name || ""));
-      if (hay.includes(normQ)) {
-        hits.push(m);
-        if (hits.length >= 25) break;
-      }
-    }
-    if (!hits.length) {
-      dd.hidden = false;
-      dd.appendChild(el("div", { class: "dropdown-item", text: "لا توجد أسماء مطابقة في الشجرة" }));
-      return;
-    }
-    dd.hidden = false;
-    for (const m of hits) {
-      dd.appendChild(
-        el("button", {
-          type: "button",
-          class: "dropdown-item",
-          onclick: () => {
-            state.invMemberId = m.id;
-            state.invMemberName = m.name;
-            $("inv-member-search").value = m.name;
-            dd.hidden = true;
-            const badge = $("inv-member-selected");
-            if (badge) {
-              badge.hidden = false;
-              badge.textContent = "المختار: " + (m.full_lineage || m.name) + " (" + (m.branch_name || "") + ")";
-            }
-          },
-        }, [
-          el("strong", { text: m.name }),
-          el("small", { text: m.full_lineage || m.branch_name || "" }),
-        ])
-      );
-    }
-  }
-
-  async function copyText(txt, okMsg) {
-    try {
-      await navigator.clipboard.writeText(txt);
-      status(okMsg, "ok");
-    } catch (_) {
-      status("تعذّر النسخ التلقائي — يمكنك النسخ يدوياً من الصندوق.", "error");
-    }
-  }
-
-  function bindOwnerInviteControls() {
-    const search = $("inv-member-search");
-    const roleSel = $("inv-role");
-    const permsBox = $("inv-perms-box");
-    const createBtn = $("inv-create-btn");
-    if (!search || !roleSel || !createBtn) return;
-
-    search.addEventListener("input", async () => {
-      if (!state.members.length) {
-        const res = await fetchAllMembersAdmin();
-        if (res.data) state.members = res.data;
-      }
-      renderInviteSearchDropdown(search.value);
-    });
-
-    document.addEventListener("click", (ev) => {
-      const dd = $("inv-member-dropdown");
-      if (dd && !ev.target.closest(".inv-search-wrap")) dd.hidden = true;
-    });
-
-    roleSel.addEventListener("change", () => {
-      if (permsBox) permsBox.hidden = roleSel.value !== "moderator";
-    });
-
-    createBtn.addEventListener("click", async () => {
-      if (!state.invMemberId) {
-        status("اختر اسم العضو من نتائج البحث أولاً.", "error");
-        return;
-      }
-      createBtn.disabled = true;
-      const isMod = roleSel.value === "moderator";
-      const { data, error } = await sb.rpc("owner_create_member_invite", {
-        p_member_id: state.invMemberId,
-        p_target_role: roleSel.value,
-        p_can_review: isMod ? $("inv-perm-review").checked : false,
-        p_can_edit_tree: isMod ? $("inv-perm-tree").checked : false,
-        p_can_access_brand: isMod ? $("inv-perm-brand").checked : false,
-        p_note: $("inv-note").value.trim(),
-        p_expires_days: Number($("inv-expires-days").value || 14),
-      });
-      createBtn.disabled = false;
-      if (error) {
-        status(errText(error), "error");
-        return;
-      }
-      state.lastInvite = data;
-      const link = inviteShareLink(data);
-      $("inv-code-output").textContent = data.temp_password;
-      $("inv-link-preview").textContent = link;
-      $("inv-result-box").hidden = false;
-      $("inv-note").value = "";
-      status("تم توليد كلمة المرور المؤقتة للعضو «" + (data.member_name || "") + "».", "ok");
-      await loadOwnerInvites();
-    });
-
-    if ($("inv-copy-code-btn")) {
-      $("inv-copy-code-btn").addEventListener("click", () => {
-        if (state.lastInvite) copyText(state.lastInvite.temp_password, "تم نسخ كلمة المرور المؤقتة.");
-      });
-    }
-    if ($("inv-copy-link-btn")) {
-      $("inv-copy-link-btn").addEventListener("click", () => {
-        if (state.lastInvite) copyText(inviteShareLink(state.lastInvite), "تم نسخ الرابط المباشر للدعوة.");
-      });
-    }
-    if ($("inv-copy-wa-btn")) {
-      $("inv-copy-wa-btn").addEventListener("click", () => {
-        if (!state.lastInvite) return;
-        const d = state.lastInvite;
-        const link = inviteShareLink(d);
-        const roleTxt = d.target_role === "moderator" ? "منسّق ومشرف في منصة شجرة ذوي عويض" : "عضو موثّق في شجرة ذوي عويض";
-        const msg =
-          "السلام عليكم ورحمة الله وبركاته\n" +
-          "أهلاً بك يا " + d.member_name + "\n" +
-          "تم إعداد دعوتك الخاصة بصلاحية (" + roleTxt + ").\n\n" +
-          "كلمة المرور المؤقتة (لدخول واحد فقط): " + d.temp_password + "\n" +
-          "رابط التفعيل المباشر:\n" + link + "\n\n" +
-          "عند الدخول سيُطلب منك إجبارياً إدخال بريدك الإلكتروني، ورقم جوالك، وتعيين كلمة مرور خاصة بك.";
-        copyText(msg, "تم نسخ رسالة الدعوة للواتساب بنجاح.");
-      });
-    }
-  }
-
+  // ---------- Coordinator Permissions & Registered Members Directory ----------
   const COORD_PERMS = [
     { key: "can_review_requests", arg: "p_can_review", label: "مراجعة واعتماد الطلبات" },
     { key: "can_add_members", arg: "p_can_add", label: "إضافة أسماء وأبناء للشجرة" },
@@ -1100,68 +919,6 @@
       el("span", { class: "switch-label", text: permDef.label }),
     ]);
     return { label, input };
-  }
-
-  async function loadOwnerInvites() {
-    const details = $("owner-invite-details");
-    const card = $("owner-invite-card");
-    if (!card || !details) return;
-    if (state.role !== "owner") {
-      details.hidden = true;
-      card.hidden = true;
-      return;
-    }
-    details.hidden = false;
-    card.hidden = false;
-
-    const invList = $("invites-list");
-    if (!invList) return;
-    const { data: invites, error: invErr } = await sb.rpc("owner_list_member_invites");
-    clear(invList);
-    if (invErr) {
-      invList.appendChild(el("p", { class: "muted", text: errText(invErr) }));
-      return;
-    }
-    if (!invites || !invites.length) {
-      invList.appendChild(el("p", { class: "muted empty", text: "لا توجد دعوات صادرة حتى الآن." }));
-      return;
-    }
-
-    const now = Date.now();
-    for (const inv of invites) {
-      let stText = "نشطة";
-      let stCls = "ok";
-      if (inv.used_at) { stText = "مستخدمة"; stCls = "warn"; }
-      else if (inv.revoked_at) { stText = "ملغاة"; stCls = "bad"; }
-      else if (new Date(inv.expires_at).getTime() <= now) { stText = "منتهية"; stCls = "bad"; }
-
-      const revokeBtn = !inv.used_at && !inv.revoked_at
-        ? el("button", {
-            type: "button",
-            class: "btn btn-danger",
-            text: "إلغاء الدعوة",
-            onclick: async () => {
-              revokeBtn.disabled = true;
-              const { error: rErr } = await sb.rpc("owner_revoke_member_invite", { p_invite_id: inv.id });
-              revokeBtn.disabled = false;
-              if (rErr) return status(errText(rErr), "error");
-              status("تم إلغاء الدعوة.", "ok");
-              loadOwnerInvites();
-            },
-          })
-        : null;
-
-      invList.appendChild(
-        el("div", { class: "audit-row" }, [
-          el("span", { class: "status-badge " + stCls, text: stText }),
-          el("strong", { text: inv.full_lineage || inv.member_name }),
-          el("span", { class: "pill", text: inv.target_role === "moderator" ? "منسّق" : "عضو" }),
-          el("span", { class: "muted small", dir: "ltr", text: inv.code_hint || "" }),
-          el("span", { class: "muted small", text: inv.claimed_email ? "فعّلها: " + inv.claimed_email : "تنتهي: " + fmtDate(inv.expires_at) }),
-          revokeBtn,
-        ])
-      );
-    }
   }
 
   function renderCoordinatorsList() {
@@ -1449,7 +1206,6 @@
   async function loadAdmins() {
     if (state.role !== "owner") return;
     await loadOwnerSettings();
-    await loadOwnerInvites();
 
     const warnBox = $("migration-warning");
     const { data: regData, error: regErr } = await sb.rpc("owner_list_registered_members");
@@ -1515,7 +1271,6 @@
 
   // ---------- Boot ----------
   initAdminTheme();
-  bindOwnerInviteControls();
   bindOwnerMemberDirectoryControls();
   sb.auth.onAuthStateChange((event) => {
     if (event === "SIGNED_OUT") {

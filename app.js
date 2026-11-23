@@ -2687,23 +2687,6 @@
     let ctx = await window.DHAWI_UWAID_DB.fetchMyAccountContext();
 
     if (ctx.signedIn && client) {
-      try {
-        const pendingInvRaw = localStorage.getItem("dhawi_uwaid_pending_invite");
-        if (pendingInvRaw) {
-          const pendingInv = JSON.parse(pendingInvRaw);
-          if (pendingInv && pendingInv.code && pendingInv.phone) {
-            const { data: claimOk, error: claimErr } = await client.rpc("claim_member_invite", {
-              p_temp_password: pendingInv.code,
-              p_phone: pendingInv.phone,
-            });
-            if (!claimErr && claimOk && claimOk.ok) {
-              localStorage.removeItem("dhawi_uwaid_pending_invite");
-              ctx = await window.DHAWI_UWAID_DB.fetchMyAccountContext();
-            }
-          }
-        }
-      } catch (_) {}
-
       if (!ctx.memberProfile) {
         const meta = (ctx.user && ctx.user.user_metadata) || {};
         const pendingMemberId = localStorage.getItem("dhawi_uwaid_pending_member_id") || meta.member_id || "";
@@ -2876,71 +2859,57 @@
     return String(raw || "").replace(/\D/g, "").length;
   }
 
-  async function previewPublicInvite(rawCode) {
-    const box = document.getElementById("member-invite-preview");
-    if (!box) return null;
-    const norm = String(rawCode || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
-    if (norm.length < 10) {
-      box.classList.add("hidden");
-      box.classList.remove("is-err");
-      box.textContent = "";
-      return null;
+  function translateAuthError(err) {
+    const msg = String((err && (err.message || err.error_description)) || err || "");
+    const low = msg.toLowerCase();
+    if (low.includes("rate limit")) {
+      return "تم بلوغ الحد المؤقت لإرسال رسائل تفعيل البريد من خادم سوبابيس (رسالتان كل ساعة في الباقة المجانية). أوقف خيار تأكيد البريد الإلكتروني في إعدادات سوبابيس أو اربط خادم بريد مخصّصاً.";
     }
-    const client = window.DHAWI_UWAID_DB && window.DHAWI_UWAID_DB.getAuthClient();
-    if (!client) return null;
-    const { data, error } = await client.rpc("preview_member_invite", { p_temp_password: rawCode });
-    box.classList.remove("hidden");
-    if (error || !data || !data.valid) {
-      box.classList.add("is-err");
-      const reasonMap = {
-        already_used: "هذه الكلمة المؤقتة استُخدمت من قبل.",
-        revoked: "تم إلغاء هذه الدعوة من قِبل المالك.",
-        expired: "انتهت صلاحية هذه الدعوة.",
-      };
-      box.textContent = (data && reasonMap[data.reason]) || "كلمة المرور المؤقتة غير صالحة.";
-      return null;
+    if (low.includes("already registered") || low.includes("already been registered")) {
+      return "هذا البريد الإلكتروني مسجّل مسبقاً — انتقل إلى تبويب تسجيل الدخول.";
     }
-    box.classList.remove("is-err");
-    box.textContent = `الدعوة باسم: ${data.full_lineage || data.member_name}`;
-    return data;
+    if (low.includes("invalid login credentials")) {
+      return "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
+    }
+    if (low.includes("email not confirmed")) {
+      return "البريد الإلكتروني لم يُفعَّل بعد — افتح رسالة التفعيل في بريدك أو فعّل الحساب من لوحة سوبابيس.";
+    }
+    if (low.includes("password should be at least")) {
+      return "كلمة المرور قصيرة جداً — أدخل ٦ أحرف على الأقل.";
+    }
+    if (low.includes("invalid email") || low.includes("unable to validate email")) {
+      return "صيغة البريد الإلكتروني غير صحيحة.";
+    }
+    return "تعذّر إكمال العملية: " + (msg || "تأكد من البيانات المدخلة.");
   }
 
   function bindMemberAuthGate() {
     const tabIn = document.getElementById("auth-tab-signin");
     const tabUp = document.getElementById("auth-tab-signup");
-    const tabInv = document.getElementById("auth-tab-invite");
     const fIn = document.getElementById("member-signin-form");
     const fUp = document.getElementById("member-signup-form");
-    const fInv = document.getElementById("member-invite-form");
     const fLink = document.getElementById("member-link-form");
 
     const switchAuthTab = (mode) => {
+      const target = mode === "signup" ? "signup" : "signin";
       if (tabIn) {
-        const on = mode === "signin";
+        const on = target === "signin";
         tabIn.classList.toggle("active", on);
         tabIn.setAttribute("aria-selected", String(on));
       }
       if (tabUp) {
-        const on = mode === "signup";
+        const on = target === "signup";
         tabUp.classList.toggle("active", on);
         tabUp.setAttribute("aria-selected", String(on));
       }
-      if (tabInv) {
-        const on = mode === "invite";
-        tabInv.classList.toggle("active", on);
-        tabInv.setAttribute("aria-selected", String(on));
-      }
-      if (fIn) fIn.classList.toggle("hidden", mode !== "signin");
-      if (fUp) fUp.classList.toggle("hidden", mode !== "signup");
-      if (fInv) fInv.classList.toggle("hidden", mode !== "invite");
+      if (fIn) fIn.classList.toggle("hidden", target !== "signin");
+      if (fUp) fUp.classList.toggle("hidden", target !== "signup");
       setMemberAuthStatus("", false);
     };
     window.__duSwitchAuthTab = switchAuthTab;
-    window.__duPreviewPublicInvite = previewPublicInvite;
 
     if (tabIn) tabIn.addEventListener("click", () => switchAuthTab("signin"));
     if (tabUp) tabUp.addEventListener("click", () => switchAuthTab("signup"));
-    if (tabInv) tabInv.addEventListener("click", () => switchAuthTab("invite"));
 
     function setupMemberIdentityPicker(inputId, ddId, pillId, stateKey) {
       const inp = document.getElementById(inputId);
@@ -2980,7 +2949,7 @@
         if (btn) btn.disabled = false;
         document.getElementById("member-signin-password").value = "";
         if (error) {
-          setMemberAuthStatus("تعذّر تسجيل الدخول: تأكد من صحة البريد الإلكتروني وكلمة المرور أو تفعيل البريد.", true);
+          setMemberAuthStatus(translateAuthError(error), true);
           return;
         }
         await refreshAccountUi();
@@ -3019,7 +2988,7 @@
         document.getElementById("member-signup-password").value = "";
 
         if (error) {
-          setMemberAuthStatus("تعذّر إنشاء الحساب: " + (error.message || "تأكد من البيانات المدخلة."), true);
+          setMemberAuthStatus(translateAuthError(error), true);
           return;
         }
         if (data && data.session && data.user) {
@@ -3032,83 +3001,6 @@
         switchAuthTab("signin");
         document.getElementById("member-signin-email").value = email;
         setMemberAuthStatus("تم تسجيل طلب حسابك! افتح بريدك الإلكتروني واضغط رابط التفعيل، ثم ادخل من هنا لتفعيل التحقق الثنائي.", false);
-      });
-    }
-
-    const invCodeEl = document.getElementById("member-invite-code");
-    if (invCodeEl) {
-      let invTimer = null;
-      invCodeEl.addEventListener("input", () => {
-        clearTimeout(invTimer);
-        invTimer = setTimeout(() => previewPublicInvite(invCodeEl.value), 260);
-      });
-    }
-
-    if (fInv) {
-      fInv.addEventListener("submit", async (ev) => {
-        ev.preventDefault();
-        const code = (document.getElementById("member-invite-code")?.value || "").trim();
-        const email = (document.getElementById("member-invite-email")?.value || "").trim();
-        const phone = cleanPhoneStr(document.getElementById("member-invite-phone")?.value);
-        const password = document.getElementById("member-invite-password")?.value || "";
-        const btn = document.getElementById("member-invite-btn");
-
-        const prev = await previewPublicInvite(code);
-        if (!prev) {
-          setMemberAuthStatus("يرجى إدخال كلمة مرور مؤقتة صالحة.", true);
-          return;
-        }
-        if (!email || !email.includes("@")) {
-          setMemberAuthStatus("أدخل بريداً إلكترونياً صحيحاً.", true);
-          return;
-        }
-        if (countPhoneDigits(phone) < 8) {
-          setMemberAuthStatus("رقم الجوال إجباري ويجب أن يكون صحيحاً (٨–١٦ رقماً).", true);
-          return;
-        }
-        if (password.length < 10) {
-          setMemberAuthStatus("كلمة المرور الجديدة يجب أن لا تقل عن ١٠ خانات.", true);
-          return;
-        }
-
-        const client = window.DHAWI_UWAID_DB && window.DHAWI_UWAID_DB.getAuthClient();
-        if (!client) return;
-        if (btn) btn.disabled = true;
-        const { data, error } = await client.auth.signUp({
-          email,
-          password,
-          options: { data: { member_id: prev.member_id, phone } },
-        });
-        document.getElementById("member-invite-password").value = "";
-
-        if (error) {
-          if (btn) btn.disabled = false;
-          setMemberAuthStatus("تعذّر إنشاء الحساب: " + (error.message || "تأكد من البيانات المدخلة."), true);
-          return;
-        }
-
-        if (data && data.session && data.user) {
-          const { error: claimErr } = await client.rpc("claim_member_invite", {
-            p_temp_password: code,
-            p_phone: phone,
-          });
-          if (btn) btn.disabled = false;
-          if (claimErr) {
-            setMemberAuthStatus("تعذّر تفعيل الدعوة: " + (claimErr.message || "حاول مرة أخرى."), true);
-            return;
-          }
-          localStorage.removeItem("dhawi_uwaid_pending_invite");
-          await refreshAccountUi();
-          return;
-        }
-
-        try {
-          localStorage.setItem("dhawi_uwaid_pending_invite", JSON.stringify({ code, phone }));
-        } catch (_) {}
-        if (btn) btn.disabled = false;
-        switchAuthTab("signin");
-        document.getElementById("member-signin-email").value = email;
-        setMemberAuthStatus("تم إنشاء حسابك! افتح بريدك الإلكتروني واضغط رابط التفعيل، ثم سجل دخولك من هنا لربط الاسم ورقم الجوال وتفعيل التحقق الثنائي.", false);
       });
     }
 
@@ -3783,17 +3675,7 @@
 
     const qAuth = params.get("auth");
     const qNext = params.get("next") === "admin" ? "admin" : null;
-    const qInvite = params.get("invite");
-    if (qInvite && qInvite.trim()) {
-      openAuthPortal({ tab: "invite", next: qNext });
-      const invInput = document.getElementById("member-invite-code");
-      if (invInput) {
-        invInput.value = qInvite.trim();
-        if (typeof window.__duPreviewPublicInvite === "function") {
-          window.__duPreviewPublicInvite(invInput.value);
-        }
-      }
-    } else if (qAuth === "login" || qAuth === "signup") {
+    if (qAuth === "login" || qAuth === "signup") {
       openAuthPortal({ tab: qAuth === "signup" ? "signup" : "signin", next: qNext });
     } else {
       refreshAccountUi();
