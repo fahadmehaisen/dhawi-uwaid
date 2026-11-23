@@ -2,7 +2,7 @@
    Offline Service Worker for Dhawi Uwaid PWA
    ========================================================================== */
 
-const CACHE_NAME = "dhawi-uwaid-v12";
+const CACHE_NAME = "dhawi-uwaid-v13";
 const PRECACHE_URLS = [
   "./",
   "./index.html",
@@ -51,29 +51,57 @@ self.addEventListener("fetch", (event) => {
   if (/\/brand\/(logo-studio|letterhead-clean|letterhead-official|occasion-studio|brand-guard)\.(html|js)$/.test(url.pathname)) return;
   if (url.hostname === "cdn.jsdelivr.net") return;
 
-  const isCacheFirst =
-    url.origin !== self.location.origin ||
-    url.pathname.includes("/assets/");
-
-  if (isCacheFirst) {
+  // Google Fonts: never fall back to index.html
+  if (url.hostname === "fonts.gstatic.com") {
     event.respondWith(
       caches.match(req).then((cached) => {
         if (cached) return cached;
-        return fetch(req)
-          .then((res) => {
-            if (res && res.ok) {
-              const copy = res.clone();
-              caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
-            }
-            return res;
-          })
-          .catch(() => caches.match("./index.html"));
+        return fetch(req).then((res) => {
+          if (res && (res.ok || res.type === "opaque")) {
+            const copy = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+          }
+          return res;
+        });
       })
     );
     return;
   }
 
-  // Network-first with cache fallback for HTML, JS, CSS, and tree data
+  if (url.hostname === "fonts.googleapis.com") {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          if (res && (res.ok || res.type === "opaque")) {
+            const copy = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+          }
+          return res;
+        })
+        .catch(() => caches.match(req))
+    );
+    return;
+  }
+
+  const isCacheFirst = url.origin === self.location.origin && url.pathname.includes("/assets/");
+
+  if (isCacheFirst) {
+    event.respondWith(
+      caches.match(req).then((cached) => {
+        if (cached) return cached;
+        return fetch(req).then((res) => {
+          if (res && res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+          }
+          return res;
+        });
+      })
+    );
+    return;
+  }
+
+  // Network-first with cache fallback for same-origin HTML, JS, CSS, and tree data
   event.respondWith(
     fetch(req)
       .then((res) => {
@@ -83,6 +111,8 @@ self.addEventListener("fetch", (event) => {
         }
         return res;
       })
-      .catch(() => caches.match(req).then((c) => c || caches.match("./index.html")))
+      .catch(() =>
+        caches.match(req).then((c) => c || (req.mode === "navigate" ? caches.match("./index.html") : Response.error()))
+      )
   );
 });

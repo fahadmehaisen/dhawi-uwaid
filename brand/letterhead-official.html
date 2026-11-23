@@ -2,9 +2,15 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="ذوي عويض" />
+  <meta name="theme-color" content="#12372A" />
   <title>الترويسة الرسمية — ذوي عويض</title>
   <link rel="icon" type="image/svg+xml" href="../assets/logo-seal-clean.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="../assets/icon-180.png" />
   <script src="brand-guard.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -19,14 +25,21 @@
       --muted: #5A554B;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    body {
+    html, body {
       font-family: 'Tajawal', sans-serif;
       background: #E5DFD3;
       color: var(--ink);
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 20px 12px 40px;
+      overflow-x: clip;
+      padding: calc(16px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
+    }
+    button, input, select, textarea, option, optgroup, summary, a {
+      font-family: 'Tajawal', sans-serif;
+    }
+    h1, h2, h3, h4, .salutation, .brand-text .sub, .no-print strong {
+      font-family: 'Amiri', serif;
     }
     .no-print {
       width: 210mm; max-width: 100%;
@@ -104,6 +117,22 @@
       font-size: 9pt; color: var(--emerald); font-weight: 700; position: relative; z-index: 1;
     }
     .footer-bottom-bar { height: 3.2mm; background: var(--emerald); }
+
+    @media screen and (max-width: 820px) {
+      .no-print { width: 100%; padding: 12px 14px; }
+      .no-print .actions { width: 100%; }
+      .no-print .btn { flex: 1 1 auto; text-align: center; font-size: 0.8rem; }
+      .page { width: 100%; height: auto; min-height: 135vw; }
+      .header { padding: 14px 16px 12px; gap: 10px; }
+      .brand-text img.wm { height: 42px; }
+      .brand-text .sub { font-size: 0.9rem; }
+      .meta-box { width: 155px; padding: 6px 10px; font-size: 0.78rem; }
+      .side-accent { top: 96px; bottom: 56px; right: 8px; }
+      .watermark { width: 58%; height: auto; }
+      .body-area { padding: 18px 20px; font-size: 16px; }
+      .salutation { font-size: 1.25rem; margin-bottom: 16px; }
+      .footer { padding: 10px 16px; font-size: 0.75rem; flex-wrap: wrap; gap: 6px; }
+    }
 
     @media print {
       body { background: none; padding: 0; }

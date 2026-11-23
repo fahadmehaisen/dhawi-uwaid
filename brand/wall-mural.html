@@ -3,8 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="ذوي عويض" />
+  <meta name="theme-color" content="#12372A" />
   <title>اللوحة الجدارية الفاخرة لشجرة ذوي عويض — ٧٦٠ اسماً</title>
   <link rel="icon" type="image/svg+xml" href="../assets/logo-seal-clean.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="../assets/icon-180.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet" />
@@ -28,6 +34,30 @@
       color: #FFFDF8;
       -webkit-tap-highlight-color: transparent;
     }
+    button, input, select, textarea, option, optgroup, summary, a {
+      font-family: 'Tajawal', sans-serif;
+    }
+    input::placeholder, textarea::placeholder {
+      font-family: 'Tajawal', sans-serif;
+    }
+    h1, h2, h3, .brand-title, .selected-pill strong, .m-serif {
+      font-family: 'Amiri', serif;
+    }
+    .m-sans {
+      font-family: 'Tajawal', sans-serif;
+    }
+    .ui-svg {
+      width: 16px;
+      height: 16px;
+      display: block;
+      flex-shrink: 0;
+    }
+    .ui-svg-sm {
+      width: 13px;
+      height: 13px;
+      display: block;
+      flex-shrink: 0;
+    }
     .app-shell {
       display: flex;
       flex-direction: column;
@@ -40,7 +70,7 @@
     .bar {
       background: linear-gradient(135deg, #0B241B 0%, #12372A 100%);
       border-bottom: 1.5px solid var(--gold);
-      padding: 8px 14px;
+      padding: calc(8px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) 8px calc(14px + env(safe-area-inset-left));
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -103,9 +133,12 @@
       right: 11px;
       top: 50%;
       transform: translateY(-50%);
-      font-size: 0.85rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gold-light);
       pointer-events: none;
-      opacity: 0.8;
+      opacity: 0.85;
     }
     .search-clear {
       position: absolute;
@@ -230,7 +263,7 @@
     .branch-bar {
       background: #10281F;
       border-bottom: 1px solid rgba(226, 200, 139, 0.22);
-      padding: 6px 12px;
+      padding: 6px calc(12px + env(safe-area-inset-right)) 6px calc(12px + env(safe-area-inset-left));
       display: flex;
       align-items: center;
       gap: 7px;
@@ -345,17 +378,20 @@
       border: none;
       background: rgba(255,255,255,0.15);
       color: #FFFDF8;
-      width: 26px;
-      height: 26px;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
       cursor: pointer;
       flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .zoom-hud {
       position: absolute;
       bottom: calc(14px + env(safe-area-inset-bottom));
-      left: 14px;
+      left: calc(14px + env(safe-area-inset-left));
       z-index: 35;
       display: flex;
       align-items: center;
@@ -412,17 +448,22 @@
       .dl-menu-wrap { display: block; }
     }
     @media (max-width: 767px) {
-      .bar { padding: 7px 10px; gap: 6px; }
-      .brand img.wm { height: 28px; }
-      .brand-title { font-size: 0.9rem; }
-      .desk-a4-btn, .desk-back-lbl { display: none; }
+      .bar {
+        padding: calc(10px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) 10px calc(12px + env(safe-area-inset-left));
+        gap: 8px;
+      }
+      .brand img.wm { height: 32px; }
+      .brand-copy, .desk-a4-btn, .desk-back-lbl { display: none; }
+      .btn { height: 38px; padding: 0 11px; }
+      .btn-icon { width: 38px; height: 38px; padding: 0; }
+      .btn-back { width: 38px; height: 38px; padding: 0; border-radius: 50%; }
       .mobile-search-toggle { display: inline-flex; }
       .search-wrap {
         display: none;
         position: fixed;
-        top: 52px;
-        right: 10px;
-        left: 10px;
+        top: calc(60px + env(safe-area-inset-top));
+        right: calc(10px + env(safe-area-inset-right));
+        left: calc(10px + env(safe-area-inset-left));
         max-width: none;
         z-index: 75;
         background: #0B241B;
@@ -433,9 +474,9 @@
       }
       .search-wrap.open { display: block; }
       .search-input { font-size: 16px; height: 40px; }
-      .branch-bar { padding: 5px 10px; }
+      .branch-bar { padding: 6px calc(10px + env(safe-area-inset-right)) 6px calc(10px + env(safe-area-inset-left)); }
       .branch-pill { padding: 4px 10px; font-size: 0.74rem; }
-      .zoom-hud { left: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); }
+      .zoom-hud { left: calc(10px + env(safe-area-inset-left)); bottom: calc(12px + env(safe-area-inset-bottom)); }
     }
   </style>
 </head>
@@ -451,14 +492,20 @@
       </div>
 
       <div class="search-wrap" id="search-wrap">
-        <span class="search-ico" aria-hidden="true">🔍</span>
+        <span class="search-ico" aria-hidden="true">
+          <svg class="ui-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg>
+        </span>
         <input type="search" id="mural-search" class="search-input" placeholder="ابحث عن أي اسم للانتقال له في اللوحة..." autocomplete="off" />
-        <button type="button" id="mural-search-clear" class="search-clear" aria-label="مسح">✕</button>
+        <button type="button" id="mural-search-clear" class="search-clear" aria-label="مسح">
+          <svg class="ui-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
         <div id="mural-search-results" class="search-results"></div>
       </div>
 
       <div class="actions">
-        <button type="button" id="mobile-search-btn" class="btn btn-icon mobile-search-toggle" title="بحث عن اسم" aria-label="بحث عن اسم">🔍</button>
+        <button type="button" id="mobile-search-btn" class="btn btn-icon mobile-search-toggle" title="بحث عن اسم" aria-label="بحث عن اسم">
+          <svg class="ui-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg>
+        </button>
 
         <a class="btn btn-gold desk-a4-btn" href="شجرة_ذوي_عويض_طباعة_A4_واضحة.pdf" download="شجرة_ذوي_عويض_طباعة_A4_واضحة.pdf">طباعة A4 واضحة (٧ صفحات)</a>
         <a class="btn btn-emerald desk-extra" href="لوحة_شجرة_ذوي_عويض_الجدارية.pdf" download="لوحة_شجرة_ذوي_عويض_الجدارية.pdf">اللوحة الجدارية PDF</a>
@@ -466,7 +513,10 @@
         <a class="btn desk-extra" href="dhawi-uwaid-wall-mural.svg" download="شجرة_ذوي_عويض_الجدارية.svg">ملف SVG</a>
 
         <div class="dl-menu-wrap">
-          <button type="button" id="dl-menu-btn" class="btn btn-gold">تحميل وطباعة ▾</button>
+          <button type="button" id="dl-menu-btn" class="btn btn-gold">
+            <span>تحميل وطباعة</span>
+            <svg class="ui-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
           <div class="dl-dropdown" id="dl-dropdown">
             <a class="primary" href="شجرة_ذوي_عويض_طباعة_A4_واضحة.pdf" download="شجرة_ذوي_عويض_طباعة_A4_واضحة.pdf"><span>طباعة A4 واضحة (٧ صفحات)</span><span>PDF</span></a>
             <a href="لوحة_شجرة_ذوي_عويض_الجدارية.pdf" download="لوحة_شجرة_ذوي_عويض_الجدارية.pdf"><span>اللوحة الجدارية الكاملة</span><span>PDF</span></a>
@@ -475,7 +525,10 @@
           </div>
         </div>
 
-        <a class="btn" href="../index.html" title="العودة للشجرة التفاعلية">↩ <span class="desk-back-lbl">العودة للشجرة</span></a>
+        <a class="btn btn-back" href="../index.html" title="العودة للشجرة التفاعلية" aria-label="العودة للشجرة التفاعلية">
+          <svg class="ui-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg>
+          <span class="desk-back-lbl">العودة للشجرة</span>
+        </a>
       </div>
     </header>
 
@@ -500,7 +553,9 @@
           <strong id="sel-name"></strong>
           <span id="sel-lineage"></span>
         </div>
-        <button type="button" id="sel-close" aria-label="إغلاق">✕</button>
+        <button type="button" id="sel-close" aria-label="إغلاق">
+          <svg class="ui-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
       </div>
 
       <div class="zoom-hud" aria-label="أدوات التكبير">
@@ -596,12 +651,23 @@
 
     async function loadMural() {
       try {
+        if (document.fonts && document.fonts.ready) {
+          await document.fonts.ready;
+          await Promise.allSettled([
+            document.fonts.load('700 24px "Amiri"'),
+            document.fonts.load('700 20px "Tajawal"'),
+          ]);
+        }
         const res = await fetch("dhawi-uwaid-wall-mural.svg");
         if (!res.ok) throw new Error("fetch failed");
         const txt = await res.text();
         const svgIdx = txt.indexOf("<svg");
         stage.innerHTML = svgIdx >= 0 ? txt.slice(svgIdx) : txt;
         const svgEl = stage.querySelector("svg");
+        const svgStyle = svgEl && svgEl.querySelector("style");
+        if (svgStyle && svgStyle.textContent) {
+          svgStyle.textContent = svgStyle.textContent.replace(/@import\s+url\([^)]+\);?/g, "");
+        }
         svgEl.removeAttribute("width");
         svgEl.removeAttribute("height");
         svgEl.style.width = "4200px";

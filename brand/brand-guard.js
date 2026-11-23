@@ -38,7 +38,7 @@
         document.body.removeChild(document.body.firstChild);
       }
       document.body.style.cssText =
-        "margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#F7F0DF;color:#1C1B18;font-family:'Tajawal',sans-serif;direction:rtl;text-align:center;";
+        "margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:calc(20px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left));background:#F7F0DF;color:#1C1B18;font-family:'Tajawal',sans-serif;direction:rtl;text-align:center;";
 
       const card = document.createElement("div");
       card.style.cssText =
@@ -52,7 +52,8 @@
       const desc = document.createElement("p");
       desc.textContent =
         "استوديو الهوية البصرية والورق الرسمي متاح فقط لمالك المنصة وللمشرفين المخوّلين بصلاحية الهوية والورق الرسمي بعد تسجيل الدخول بالتحقق الثنائي.";
-      desc.style.cssText = "color:#5A554C;line-height:1.75;margin:0 0 20px;font-size:0.96rem;";
+      desc.style.cssText =
+        "font-family:'Tajawal',sans-serif;color:#5A554C;line-height:1.75;margin:0 0 20px;font-size:0.96rem;";
 
       const actions = document.createElement("div");
       actions.style.cssText = "display:flex;gap:10px;justify-content:center;flex-wrap:wrap;";
@@ -61,13 +62,13 @@
       loginLink.href = "../index.html?auth=login&next=admin";
       loginLink.textContent = "بوابة الدخول الموحّدة";
       loginLink.style.cssText =
-        "background:#12372A;color:#F8F4EC;text-decoration:none;font-weight:700;padding:10px 18px;border-radius:10px;";
+        "font-family:'Tajawal',sans-serif;background:#12372A;color:#F8F4EC;text-decoration:none;font-weight:700;padding:10px 18px;border-radius:10px;";
 
       const homeLink = document.createElement("a");
       homeLink.href = "../index.html";
       homeLink.textContent = "العودة للشجرة العامة";
       homeLink.style.cssText =
-        "background:transparent;color:#12372A;border:1px solid rgba(18,55,42,0.3);text-decoration:none;font-weight:700;padding:10px 18px;border-radius:10px;";
+        "font-family:'Tajawal',sans-serif;background:transparent;color:#12372A;border:1px solid rgba(18,55,42,0.3);text-decoration:none;font-weight:700;padding:10px 18px;border-radius:10px;";
 
       actions.appendChild(loginLink);
       actions.appendChild(homeLink);

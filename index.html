@@ -52,7 +52,9 @@
         <!-- Global Smart Search -->
         <div class="global-search-wrap" id="global-search-wrap" role="search">
           <div class="search-input-box">
-            <span class="search-icon" aria-hidden="true">⌕</span>
+            <span class="search-icon" aria-hidden="true">
+              <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg>
+            </span>
             <input
               type="search"
               id="global-search-input"
@@ -61,7 +63,9 @@
               autocomplete="off"
               aria-label="بحث شامل في شجرة ذوي عويض"
             />
-            <button type="button" id="global-search-clear" class="search-clear-btn hidden" aria-label="مسح البحث">✕</button>
+            <button type="button" id="global-search-clear" class="search-clear-btn hidden" aria-label="مسح البحث">
+              <svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
             <button type="button" id="mobile-search-close" class="mobile-only-btn mobile-search-close-btn" aria-label="إغلاق البحث">تم</button>
           </div>
           <div id="global-search-dropdown" class="search-dropdown hidden" role="listbox" aria-label="نتائج البحث السريع"></div>
@@ -74,7 +78,8 @@
           </button>
           <div class="brand-kit-menu desktop-only-action" id="brand-kit-menu">
             <button type="button" id="brand-kit-toggle" class="btn btn-outline btn-sm" aria-expanded="false">
-              <span>اللوحة الجدارية للطباعة ▾</span>
+              <span>اللوحة الجدارية للطباعة</span>
+              <svg class="ui-icon ui-icon-xs chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
             </button>
             <div class="brand-kit-popover hidden" id="brand-kit-popover">
               <a href="brand/wall-mural.html" target="_blank" rel="noopener">معاينة اللوحة الجدارية التفاعلية (٧٦٠ اسماً)</a>
@@ -85,14 +90,19 @@
             </div>
           </div>
           <button type="button" id="theme-toggle-btn" class="btn btn-ghost btn-sm topbar-icon-btn-mobile desktop-only-action" title="التبديل بين النمط التراثي والمجلس الليلي">
-            <span id="theme-toggle-icon" aria-hidden="true">☾</span>
+            <span id="theme-toggle-icon" aria-hidden="true">
+              <svg class="ui-icon icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+              <svg class="ui-icon icon-sun hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.2M12 19.3v2.2M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.9 19.1l1.6-1.6M17.5 6.5l1.6-1.6"/></svg>
+            </span>
             <span id="theme-toggle-label" class="desktop-only-inline">مجلس ليلي</span>
           </button>
           <div class="account-menu-wrap" id="account-menu-wrap">
             <button type="button" id="open-auth-portal-btn" class="btn btn-outline btn-sm topbar-account-btn" aria-expanded="false" title="بوابة الدخول والتسجيل الموحّدة">
               <span id="open-auth-portal-label">تسجيل الدخول</span>
               <span id="open-auth-portal-role" class="desktop-only-inline"></span>
-              <span id="open-auth-portal-caret" class="hidden" aria-hidden="true"> ▾</span>
+              <span id="open-auth-portal-caret" class="hidden" aria-hidden="true">
+                <svg class="ui-icon ui-icon-xs chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+              </span>
             </button>
             <div class="brand-kit-popover account-popover hidden" id="account-popover">
               <div class="account-popover-head">
@@ -143,7 +153,10 @@
           <div class="toolbar-row">
             <div class="branch-bar-row">
               <div class="branch-pills-scroll" id="tree-branch-pills" aria-label="التركيز السريع على الفروع"></div>
-              <button type="button" id="mobile-tree-tools-toggle" class="btn btn-subtle btn-xs mobile-tools-toggle" aria-expanded="false">أدوات ▾</button>
+              <button type="button" id="mobile-tree-tools-toggle" class="btn btn-subtle btn-xs mobile-tools-toggle" aria-expanded="false">
+                <span>أدوات</span>
+                <svg class="ui-icon ui-icon-xs chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
             </div>
             <div class="tree-actions-group" id="tree-actions-group">
               <label class="toggle-chip" for="toggle-ancestors-cb">
@@ -321,7 +334,9 @@
             </div>
 
             <div class="kinship-swap-col">
-              <button type="button" id="kin-swap-btn" class="btn btn-outline btn-icon" title="تبديل الطرفين">⇄</button>
+              <button type="button" id="kin-swap-btn" class="btn btn-outline btn-icon" title="تبديل الطرفين" aria-label="تبديل الطرفين">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg>
+              </button>
             </div>
 
             <div class="kinship-picker-box">
@@ -385,32 +400,42 @@
   <div id="mobile-sections-sheet" class="mobile-menu-sheet hidden" role="dialog" aria-label="أقسام المنصة">
     <div class="mobile-sheet-head">
       <strong>أقسام المنصة</strong>
-      <button type="button" id="mobile-sections-close" class="mobile-sheet-close" aria-label="إغلاق">✕</button>
+      <button type="button" id="mobile-sections-close" class="mobile-sheet-close" aria-label="إغلاق">
+        <svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
     </div>
     <div class="mobile-sheet-list">
       <button type="button" class="mobile-sheet-item" data-view="sunburst">
-        <span class="msheet-icon" aria-hidden="true">◎</span>
+        <span class="msheet-icon" aria-hidden="true">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.5"/><path d="M12 3.5v5M12 15.5v5M3.5 12h5M15.5 12h5"/></svg>
+        </span>
         <span class="msheet-copy">
           <strong>البوصلة النسبية</strong>
           <small>التوزّع الدائري لفروع ذوي عويض</small>
         </span>
       </button>
       <button type="button" class="mobile-sheet-item" data-view="directory">
-        <span class="msheet-icon" aria-hidden="true">▤</span>
+        <span class="msheet-icon" aria-hidden="true">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="2.5"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>
+        </span>
         <span class="msheet-copy">
           <strong>الدليل والبحث</strong>
           <small>تصفية الأسماء حسب الفرع والجيل</small>
         </span>
       </button>
       <button type="button" class="mobile-sheet-item" data-view="kinship">
-        <span class="msheet-icon" aria-hidden="true">⇄</span>
+        <span class="msheet-icon" aria-hidden="true">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8.5" r="3"/><circle cx="16.5" cy="8.5" r="3"/><path d="M3.5 19a4.5 4.5 0 0 1 9 0M12 19a4.5 4.5 0 0 1 8.5-2"/></svg>
+        </span>
         <span class="msheet-copy">
           <strong>وش يقرب لي؟</strong>
           <small>حاسبة صلة القرابة والجد الجامع</small>
         </span>
       </button>
       <button type="button" class="mobile-sheet-item" data-view="analytics">
-        <span class="msheet-icon" aria-hidden="true">▥</span>
+        <span class="msheet-icon" aria-hidden="true">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 19V11M10 19V5M15 19V9M20 19v-6"/></svg>
+        </span>
         <span class="msheet-copy">
           <strong>الإحصائيات</strong>
           <small>تعداد الفروع والأجيال وأكثر الأسماء تكراراً</small>
@@ -422,25 +447,34 @@
   <div id="mobile-more-sheet" class="mobile-menu-sheet hidden" role="dialog" aria-label="القائمة والخيارات">
     <div class="mobile-sheet-head">
       <strong>القائمة والخيارات</strong>
-      <button type="button" id="mobile-more-close" class="mobile-sheet-close" aria-label="إغلاق">✕</button>
+      <button type="button" id="mobile-more-close" class="mobile-sheet-close" aria-label="إغلاق">
+        <svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
     </div>
     <div class="mobile-sheet-list">
       <a href="admin.html" id="mobile-menu-admin-link" class="mobile-sheet-item is-accent hidden">
-        <span class="msheet-icon" aria-hidden="true">⚙</span>
+        <span class="msheet-icon" aria-hidden="true">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8.4-7 10-4-1.6-7-5.5-7-10V6l7-3Z"/><path d="M9.5 12l1.8 1.8 3.7-3.8"/></svg>
+        </span>
         <span class="msheet-copy">
           <strong>لوحة الإدارة</strong>
           <small>إدارة الطلبات والأسماء والمنسّقين</small>
         </span>
       </a>
       <button type="button" id="mobile-menu-account-btn" class="mobile-sheet-item">
-        <span class="msheet-icon" aria-hidden="true">◈</span>
+        <span class="msheet-icon" aria-hidden="true">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5a7 7 0 0 1 14 0"/></svg>
+        </span>
         <span class="msheet-copy">
           <strong>بوابة الدخول وحسابي</strong>
           <small id="mobile-menu-account-sub">تسجيل الدخول أو إنشاء حساب</small>
         </span>
       </button>
       <button type="button" id="mobile-menu-theme-btn" class="mobile-sheet-item">
-        <span class="msheet-icon" id="mobile-menu-theme-icon" aria-hidden="true">☾</span>
+        <span class="msheet-icon" id="mobile-menu-theme-icon" aria-hidden="true">
+          <svg class="ui-icon icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+          <svg class="ui-icon icon-sun hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.2M12 19.3v2.2M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.9 19.1l1.6-1.6M17.5 6.5l1.6-1.6"/></svg>
+        </span>
         <span class="msheet-copy">
           <strong id="mobile-menu-theme-label">المجلس الليلي</strong>
           <small>تبديل مظهر المنصة</small>
@@ -449,7 +483,7 @@
       <details class="mobile-sheet-accordion">
         <summary class="mobile-sheet-accordion-head">
           <span>اللوحة الجدارية والطباعة</span>
-          <span aria-hidden="true">▾</span>
+          <svg class="ui-icon ui-icon-xs chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
         </summary>
         <div class="mobile-sheet-accordion-body">
           <a href="brand/wall-mural.html" target="_blank" rel="noopener">معاينة اللوحة الجدارية التفاعلية (٧٦٠ اسماً)</a>
@@ -504,7 +538,9 @@
       <strong>تثبيت التطبيق على الآيفون</strong>
       <span>اضغط زر المشاركة بالأسفل ثم اختر «إضافة إلى الشاشة الرئيسية».</span>
     </div>
-    <button type="button" id="ios-install-dismiss" class="ios-install-close" aria-label="إخفاء التنبيه">✕</button>
+    <button type="button" id="ios-install-dismiss" class="ios-install-close" aria-label="إخفاء التنبيه">
+      <svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
   </div>
 
   <!-- Slide-Over Profile Drawer -->
@@ -517,7 +553,9 @@
         <h2 id="drawer-person-name" class="drawer-name">...</h2>
         <p id="drawer-tier-sub" class="drawer-sub">...</p>
       </div>
-      <button type="button" id="drawer-close-btn" class="icon-close-btn" aria-label="إغلاق البطاقة">✕</button>
+      <button type="button" id="drawer-close-btn" class="icon-close-btn" aria-label="إغلاق البطاقة">
+        <svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
     </div>
 
     <div class="drawer-body">
@@ -557,7 +595,9 @@
         <h2 id="update-modal-title">إضافة مولود أو طلب تحديث بيانات</h2>
         <p class="modal-sub">تُرسل الطلبات مباشرةً إلى قاعدة بيانات ذوي عويض السحابية لمراجعتها واعتمادها، مع حفظ نسخة محلية وتجهيز رسالة واتساب جاهزة.</p>
       </div>
-      <button type="button" id="modal-close-btn" class="icon-close-btn" aria-label="إغلاق النافذة">✕</button>
+      <button type="button" id="modal-close-btn" class="icon-close-btn" aria-label="إغلاق النافذة">
+        <svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
     </div>
 
     <div class="modal-body">
@@ -662,7 +702,9 @@
         <h2 id="auth-portal-title">بوابة الدخول الموحّدة — ذوي عويض</h2>
         <p class="modal-sub">بوابة واحدة لدخول مدير النظام والمنسّقين وأعضاء العائلة (التسجيل اختياري، التصفح مفتوح للجميع).</p>
       </div>
-      <button type="button" id="auth-portal-close-btn" class="icon-close-btn" aria-label="إغلاق البوابة">✕</button>
+      <button type="button" id="auth-portal-close-btn" class="icon-close-btn" aria-label="إغلاق البوابة">
+        <svg class="ui-icon ui-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
     </div>
 
     <div class="modal-body">

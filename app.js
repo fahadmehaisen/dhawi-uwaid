@@ -272,15 +272,18 @@
     const label = document.getElementById("theme-toggle-label");
     const mIcon = document.getElementById("mobile-menu-theme-icon");
     const mLabel = document.getElementById("mobile-menu-theme-label");
+    [icon, mIcon].forEach((wrap) => {
+      if (!wrap) return;
+      const moon = wrap.querySelector(".icon-moon");
+      const sun = wrap.querySelector(".icon-sun");
+      if (moon) moon.classList.toggle("hidden", theme === "dark");
+      if (sun) sun.classList.toggle("hidden", theme !== "dark");
+    });
     if (theme === "dark") {
-      if (icon) icon.textContent = "☀";
       if (label) label.textContent = "الرقعة التراثية";
-      if (mIcon) mIcon.textContent = "☀";
       if (mLabel) mLabel.textContent = "الرقعة التراثية (النهاري)";
     } else {
-      if (icon) icon.textContent = "☾";
       if (label) label.textContent = "مجلس ليلي";
-      if (mIcon) mIcon.textContent = "☾";
       if (mLabel) mLabel.textContent = "المجلس الليلي";
     }
   }
@@ -1188,11 +1191,12 @@
       y: 16,
       "text-anchor": "middle",
       fill: "#E2BE6E",
+      "font-family": "Tajawal, sans-serif",
       "font-size": "10.5",
       "font-weight": "600",
     });
     hubSub.textContent =
-      root.id === "R00" ? `٧٤٩ من الذرية` : `رجوع ← (${toArabicDigits(root.descendantCount)})`;
+      root.id === "R00" ? `٧٤٩ من الذرية` : `العودة للأعلى (${toArabicDigits(root.descendantCount)})`;
     hubG.appendChild(hubSub);
 
     hubG.addEventListener("click", () => {
@@ -1209,7 +1213,7 @@
     crumbsWrap.textContent = "";
     const chain = getAncestorChain(root.id, false).reverse();
     chain.forEach((n, idx) => {
-      if (idx > 0) crumbsWrap.appendChild(el("span", { className: "chain-sep", textContent: "◀" }));
+      if (idx > 0) crumbsWrap.appendChild(el("span", { className: "chain-sep", textContent: "/" }));
       crumbsWrap.appendChild(
         el("button", {
           type: "button",
@@ -1565,7 +1569,7 @@
 
     const lcaFather = res.lca.parentId ? DATA.nodesById[res.lca.parentId] : null;
     const lcaCol = el("div", { className: "kin-bridge-col kin-lca-col" }, [
-      el("span", { className: "lca-crown", textContent: "✦ الجد الجامع ✦" }),
+      el("span", { className: "lca-crown", textContent: "الجد الجامع" }),
       el("h3", { className: "lca-name", textContent: res.lca.name }),
       el("p", {
         className: "hint-sub",
@@ -1907,7 +1911,7 @@
     const chipsWrap = document.getElementById("drawer-lineage-chips");
     chipsWrap.textContent = "";
     chain.forEach((item, idx) => {
-      if (idx > 0) chipsWrap.appendChild(el("span", { className: "chain-sep", textContent: "←" }));
+      if (idx > 0) chipsWrap.appendChild(el("span", { className: "chain-sep", textContent: "/" }));
       chipsWrap.appendChild(
         el("button", {
           type: "button",
@@ -2002,9 +2006,20 @@
     return lines;
   }
 
-  function downloadLineageCardPng(nodeId) {
+  async function ensureCanvasBrandFonts() {
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+      await Promise.allSettled([
+        document.fonts.load('700 48px "Amiri"'),
+        document.fonts.load('700 28px "Tajawal"'),
+      ]);
+    }
+  }
+
+  async function downloadLineageCardPng(nodeId) {
     const node = DATA.nodesById[nodeId];
     if (!node) return;
+    await ensureCanvasBrandFonts();
     const canvas = document.getElementById("export-canvas");
     const W = 1080;
     const H = 1350;
@@ -2144,8 +2159,9 @@
     }, "image/png");
   }
 
-  function exportTreePosterPng() {
+  async function exportTreePosterPng() {
     if (!state.layoutPositions.size) return;
+    await ensureCanvasBrandFonts();
     let minX = Infinity,
       maxX = -Infinity,
       minY = Infinity,
@@ -3393,7 +3409,6 @@
       toolsToggle.addEventListener("click", () => {
         const isOpen = treeToolbar.classList.toggle("mobile-tools-open");
         toolsToggle.setAttribute("aria-expanded", String(isOpen));
-        toolsToggle.textContent = isOpen ? "أدوات ▴" : "أدوات ▾";
       });
     }
 

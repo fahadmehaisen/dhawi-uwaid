@@ -705,7 +705,7 @@
         el("button", {
           type: "button",
           class: "chip parent",
-          text: "↑ الأب: " + state.byId.get(m.parent_id).name,
+          text: "الأب: " + state.byId.get(m.parent_id).name,
           onclick: () => selectMember(m.parent_id),
         })
       );
@@ -829,14 +829,14 @@
         else if (a.action === "DELETE") summary = o.full_lineage || o.name;
         else {
           const changes = [];
-          if (o.name !== n.name) changes.push("الاسم: " + o.name + " ← " + n.name);
+          if (o.name !== n.name) changes.push("الاسم: " + o.name + " إلى " + n.name);
           if ((o.bio_note || "") !== (n.bio_note || "")) changes.push("الملاحظة عُدّلت");
           if (o.tier !== n.tier) changes.push("نوع العقدة تغيّر");
           if (!changes.length && o.full_lineage !== n.full_lineage) changes.push("تحديث النسب");
           summary = (n.name || "") + (changes.length ? " — " + changes.join("، ") : "");
         }
       } else if (a.table_name === "update_requests") {
-        summary = (n.request_type || o.request_type || "") + " ← " + (STATUS_AR[n.status] || n.status || "");
+        summary = (n.request_type || o.request_type || "") + " — " + (STATUS_AR[n.status] || n.status || "");
       } else if (a.table_name === "member_invites") {
         const evName = n.event === "invite_created" ? "دعوة جديدة" : n.event === "invite_claimed" ? "تم تفعيل الدعوة" : "إلغاء دعوة";
         summary = evName + (n.member_name ? " — " + n.member_name : "") + (n.code_hint ? " (" + n.code_hint + ")" : "");
@@ -1112,7 +1112,7 @@
               el("button", {
                 type: "button",
                 class: "btn btn-ghost",
-                text: "إدارة الصلاحيات ↑",
+                text: "تعديل الصلاحيات",
                 onclick: () => {
                   const targetCard = $("coord-card-" + m.user_id);
                   if (targetCard) targetCard.scrollIntoView({ behavior: "smooth", block: "center" });
